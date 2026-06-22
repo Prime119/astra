@@ -152,6 +152,59 @@ Flujo de activación deseado:
                                    └─ ausente N s ─► STANDBY ─► apaga cámara ─► requiere "Oye Astra"
 ```
 
+### R6.1 · Onboarding por rostro (persona nueva) ⭐
+- La **primera vez** que ASTRA ve a una **persona nueva**, la **saluda**, le pide que **se presente con
+  su nombre** y le **pregunta cómo le gustaría que la llame** (forma de tratamiento).
+- Guarda **rostro + nombre + forma de tratamiento** en su **base de datos** (perfil, cifrada, local)
+  para **reconocerla después** y saber con quién habla.
+- En visitas posteriores la **reconoce** y la trata por su nombre/tratamiento preferido.
+
+> Config: `vision.face_recognition.onboarding` (ask_name, ask_preferred_name, store_face_and_name).
+
+---
+
+## R7 · Almacenamiento de proyecto: preguntar nube / privado / local ⭐
+
+- Cada vez que se **inicia un proyecto nuevo**, ASTRA **pregunta dónde guardarlo**:
+  - **local** → en el dispositivo / SSD *(por defecto y recomendado)*.
+  - **private** → en la **nube, privado**.
+  - **public** → en la **nube, público**.
+- Normalmente lo hace en **local**, pero siempre ofrece la opción.
+
+> ✅ **Ya estaba** en `config.json` (`project_storage`: `ask_on_new_project:true`, `default:"local"`,
+> options local/private/public). Se añadieron etiquetas claras (nube/privado/local). Falta el flujo real
+> de subida a la nube (Fase 3, integrado con copy-on-write de R3).
+
+---
+
+## R8 · Personalidad: formal pero humana, con humor y sarcasmo "nivel J.A.R.V.I.S." ⭐
+
+- Trato **formal pero humano y cercano** (no robótico, no servil).
+- Puede **bromear** y ser **sarcástica al nivel de J.A.R.V.I.S. con Tony Stark**: ingenio **seco,
+  elegante y respetuoso**, nunca hiriente.
+- El **humor/sarcasmo se suprime automáticamente** en **modo crisis / alto estrés** (TARS: bloquea humor
+  y fuerza honestidad; J.A.R.V.I.S. Crisis Mode).
+- Encaja con los **diales** de personalidad: `honestidad` alta, `humor` medio-alto, `calidez` media-alta,
+  `sarcasm_level: jarvis`.
+
+> Config: `personality.tone:"formal-humano"`, `sarcasm_level:"jarvis"`, `humor:55`, `warmth:65`,
+> `sarcasm_must_flag:false` (sarcasmo natural; se marca solo si pudiera causar confusión peligrosa).
+
+---
+
+## R9 · Lectura del estado emocional (afectiva, multimodal) ⭐
+
+- Con la **cámara**, ASTRA interpreta **cómo se siente el usuario al verlo**, y también por su **forma
+  de hablar**.
+- Reconoce: **expresiones/gestos del rostro**, **tono de voz**, **formas/patrones de hablar**, etc.
+- Esa lectura emocional **alimenta el Code-Switching** (empático ↔ táctico) y el **modo crisis**, y la
+  **Doble Perspectiva de Escaneo** de Cyborg (lógica fría + impacto humano).
+- Todo **local y cifrado** (Zero-Knowledge). *(Yui Fusión Multimodal, K.A.R.E.N. lectura biomecánica,
+  Cyborg, F.R.I.D.A.Y. métricas acústicas.)*
+
+> Config: `vision.emotion_recognition` (facial_expressions, voice_tone, speech_patterns, gestures).
+> ❌ Detección real pendiente (Fase 5/7): MediaPipe Face Mesh (expresiones) + análisis de prosodia (voz).
+
 ---
 
 ## Impacto en el roadmap (resumen)
@@ -164,6 +217,10 @@ Flujo de activación deseado:
 | R4 Automatización dentro de apps | 🟡 contrato dry-run | Fase 3 |
 | R5 Holomesa 3D + gestos (física Tierra sin avisos) | ❌ | Fase 7 |
 | R6 Wake word activa cámara + atención + rostro | 🟡 contrato de atención; cámara siempre-on hoy | Fase 5/7 |
+| R6.1 Onboarding por rostro (nombre + tratamiento) | 🟡 config lista; falta BD facial real | Fase 5/7 |
+| R7 Preguntar nube/privado/local al crear proyecto | 🟡 config lista; falta subida a nube real | Fase 3 |
+| R8 Personalidad formal-humana + sarcasmo J.A.R.V.I.S. | 🟡 diales en config; falta reflejarlo en el system prompt | Fase 1 |
+| R9 Lectura emocional multimodal (rostro/voz/gestos) | ❌ config lista; falta detección real | Fase 5/7 |
 
 > **Orden recomendado** (la jaula antes que el león): primero **R1 + R3** (datos seguros e inmutables),
 > luego **R2 + R4** (presencia en el sistema + automatización con auditor/sandbox), y por último

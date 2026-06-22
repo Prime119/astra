@@ -30,11 +30,14 @@
   },
   "personality": {
     "honesty": 90,
-    "humor": 40,
+    "humor": 55,
     "proactivity": 50,
+    "warmth": 65,
     "sarcasm_allowed": true,
-    "sarcasm_must_flag": true,
-    "tone": "profesional-empatico"
+    "sarcasm_level": "jarvis",
+    "sarcasm_must_flag": false,
+    "tone": "formal-humano",
+    "comment_tone": "Formal pero humana y cercana. Puede bromear y ser sarcástica al nivel de J.A.R.V.I.S. con Tony Stark (ingenio seco y respetuoso). El humor/sarcasmo se suprime automáticamente en modo crisis o alto estrés."
   },
   "vision": {
     "attention_camera": true,
@@ -47,7 +50,22 @@
       "enabled": true,
       "comment": "Identifica quién habla (dueño vs otros). Plantillas faciales locales y cifradas (Zero-Knowledge).",
       "owner_label": "owner",
-      "store_in_profile": true
+      "store_in_profile": true,
+      "onboarding": {
+        "enabled": true,
+        "comment": "La PRIMERA vez que ve a una persona nueva: la saluda, le pide que se presente con su nombre y le pregunta cómo le gustaría que la llame. Guarda rostro + nombre + forma de tratamiento en la base de datos para reconocerla después.",
+        "ask_name": true,
+        "ask_preferred_name": true,
+        "store_face_and_name": true
+      }
+    },
+    "emotion_recognition": {
+      "enabled": true,
+      "comment": "Interpreta cómo se siente el usuario al verlo y por su forma de hablar. Multimodal y LOCAL (Zero-Knowledge). Alimenta el Code-Switching y el modo crisis.",
+      "facial_expressions": true,
+      "voice_tone": true,
+      "speech_patterns": true,
+      "gestures": true
     }
   },
   "holomesa": {
@@ -94,7 +112,13 @@
   "project_storage": {
     "default": "local",
     "ask_on_new_project": true,
+    "comment": "Al iniciar un proyecto nuevo, SIEMPRE pregunta dónde guardarlo: local | private (nube privada) | public (nube pública). Por defecto y recomendado: local.",
     "options": ["local", "private", "public"],
+    "labels": {
+      "local": "En el dispositivo / SSD (por defecto)",
+      "private": "En la nube, privado",
+      "public": "En la nube, público"
+    },
     "copy_on_write": {
       "enabled": true,
       "comment": "NUNCA modificar el archivo original. Los cambios y copias de seguridad van a una carpeta overlay (capa superior RW); el original queda inmutable (RO).",
