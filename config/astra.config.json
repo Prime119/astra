@@ -9,12 +9,15 @@
     "enabled": true,
     "gender": "female",
     "tts_engine": "piper",
-    "tts_voice": "es_MX-female",
+    "tts_voice": "es_MX-claude-high",
+    "tts_voice_path": "",
+    "piper_binary": "piper",
     "stt_engine": "faster-whisper",
     "stt_model": "small"
   },
   "brain": {
     "mode": "local",
+    "local_endpoint": "http://127.0.0.1:11434",
     "local_model": "qwen2.5:3b-instruct",
     "local_coder_model": "qwen2.5-coder:7b",
     "cloud_boost": {

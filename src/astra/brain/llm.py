@@ -1,16 +1,13 @@
 """
 Capa 2 — Cerebro cognitivo.
 
-Se conecta a un servidor LLM local (llama.cpp / Ollama, API compatible con OpenAI).
-Si está activado el "Boost" y hay internet, puede derivar a un modelo frontera en la nube
+Cliente real para un servidor LLM local (Ollama, API en http://127.0.0.1:11434).
+Si el "Boost" está activado y hay internet, puede derivar a un modelo frontera en la nube
 (Edge-Cloud híbrido, J.A.R.V.I.S.). Por defecto: SOLO local y offline.
-
-NOTA (Fase 0): este módulo define la interfaz y la lógica de fallback. La inferencia real
-requiere un servidor LLM local corriendo en la PC del usuario (se configura en Fase 1).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 # Modelos sugeridos por tier de hardware (auto-escala)
@@ -25,6 +22,8 @@ CODER_BY_TIER = {
     "potente": "qwen2.5-coder:14b",
 }
 
+Message = dict[str, str]  # {"role": "user"|"assistant"|"system", "content": "..."}
+
 
 @dataclass
 class BrainConfig:
@@ -33,6 +32,7 @@ class BrainConfig:
     coder_model: str = "qwen2.5-coder:7b"
     temperature: float = 0.3
     cloud_boost_enabled: bool = False
+    timeout_s: float = 120.0
 
 
 class Brain:
@@ -43,40 +43,74 @@ class Brain:
     @classmethod
     def from_app_config(cls, cfg, system_prompt: str) -> "Brain":
         tier = cfg.hardware.tier
+        auto = bool(cfg.get("brain", "auto_scale_by_hardware", default=True))
         bc = BrainConfig(
-            local_model=(
-                cfg.get("brain", "local_model")
-                if not cfg.get("brain", "auto_scale_by_hardware", default=True)
-                else MODEL_BY_TIER.get(tier, "qwen2.5:3b-instruct")
-            ),
+            local_endpoint=cfg.get("brain", "local_endpoint", default="http://127.0.0.1:11434"),
+            local_model=(MODEL_BY_TIER.get(tier) if auto else cfg.get("brain", "local_model"))
+            or "qwen2.5:3b-instruct",
             coder_model=CODER_BY_TIER.get(tier, "qwen2.5-coder:7b"),
             temperature=float(cfg.get("brain", "temperature", default=0.3)),
             cloud_boost_enabled=bool(cfg.get("brain", "cloud_boost", "enabled", default=False)),
         )
         return cls(bc, system_prompt)
 
+    # ---------------------------------------------------------------- estado
     def is_local_available(self) -> bool:
-        """Comprueba si hay un servidor LLM local respondiendo."""
+        """Comprueba si hay un servidor Ollama local respondiendo."""
         try:
             import httpx  # type: ignore
+
             r = httpx.get(f"{self.config.local_endpoint}/api/tags", timeout=2.0)
             return r.status_code == 200
         except Exception:
             return False
 
-    def think(self, prompt: str, *, coding: bool = False) -> str:
+    def available_models(self) -> list[str]:
+        try:
+            import httpx  # type: ignore
+
+            r = httpx.get(f"{self.config.local_endpoint}/api/tags", timeout=3.0)
+            data = r.json()
+            return [m.get("name", "") for m in data.get("models", [])]
+        except Exception:
+            return []
+
+    # --------------------------------------------------------------- inferencia
+    def chat(self, history: list[Message], *, coding: bool = False) -> str:
         """
-        Genera una respuesta. Estrategia:
-        1. Si el boost está activo y hay internet -> nube (nivel frontera).
-        2. Si no -> modelo local.
-        3. Si no hay local -> mensaje de degradación graciosa.
+        Envía la conversación al modelo local y devuelve la respuesta.
+        `history` NO incluye el system prompt; se antepone aquí.
         """
         if not self.is_local_available():
             return (
-                "[Astra] Aún no tengo un cerebro local en marcha. "
-                "En la Fase 1 conectaremos el modelo (Ollama/llama.cpp) en tu PC. "
-                "Por ahora opero solo a nivel de estructura."
+                "[Astra] No encuentro mi cerebro local (Ollama). Verifica que esté corriendo "
+                "y que el modelo esté descargado. Mientras tanto, sigo operativa en lo básico."
             )
-        # Inferencia real se implementa en Fase 1 (cliente chat compatible OpenAI/Ollama).
+
         model = self.config.coder_model if coding else self.config.local_model
-        return f"[Astra:{model}] (inferencia local pendiente de Fase 1)"
+        messages: list[Message] = [{"role": "system", "content": self.system_prompt}]
+        messages.extend(history)
+
+        try:
+            import httpx  # type: ignore
+
+            payload = {
+                "model": model,
+                "messages": messages,
+                "stream": False,
+                "options": {"temperature": self.config.temperature},
+            }
+            r = httpx.post(
+                f"{self.config.local_endpoint}/api/chat",
+                json=payload,
+                timeout=self.config.timeout_s,
+            )
+            r.raise_for_status()
+            data = r.json()
+            return (data.get("message", {}) or {}).get("content", "").strip() or "(sin respuesta)"
+        except Exception as exc:  # degradación graciosa
+            return f"[Astra] Tuve un problema al pensar: {exc}"
+
+    def think(self, prompt: str, *, coding: bool = False) -> str:
+        """Atajo de un solo turno (sin historial)."""
+        return self.chat([{"role": "user", "content": prompt}], coding=coding)

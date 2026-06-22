@@ -1,13 +1,13 @@
 """
-Punto de entrada de Astra (Fase 0).
+Punto de entrada de Astra.
 
-⚠️ Esta es una consola de DESARROLLO para verificar que los cimientos funcionan.
-El producto final NO será una ventana de comandos: será una app ambiental con voz e
-interfaz holográfica (Fases 1+). Esto es solo para probar el núcleo.
+⚠️ Esta es una consola de DESARROLLO para probar el núcleo y la voz. El producto final
+NO será una ventana de comandos: será una app ambiental con interfaz holográfica (Fases 7+).
 
 Uso:
-    python -m astra.main          # muestra estado y un mini-chat de prueba
-    python -m astra.main --status # solo el estado del sistema
+    python -m astra.main            # mini-chat de texto (prueba del cerebro)
+    python -m astra.main --status   # solo el estado del sistema
+    python -m astra.main --voice    # conversación por VOZ (Fase 1)
 """
 from __future__ import annotations
 
@@ -22,14 +22,21 @@ def main(argv: list[str] | None = None) -> int:
     astra = Astra.boot()
 
     print("=" * 60)
-    print(f"  🌟 {astra.config.name} — núcleo iniciado (Fase 0)")
+    print(f"  🌟 {astra.config.name} — núcleo iniciado")
     print("=" * 60)
     print(json.dumps(astra.status(), indent=2, ensure_ascii=False))
 
     if "--status" in argv:
         return 0
 
-    print("\n[Mini-chat de prueba — escribe 'salir' para terminar]\n")
+    if "--voice" in argv:
+        from .voice.loop import run_voice_loop
+
+        run_voice_loop(astra)
+        return 0
+
+    # Modo texto (prueba del cerebro)
+    print("\n[Mini-chat de texto — escribe 'salir' para terminar]\n")
     try:
         while True:
             user = input("Tú > ").strip()
