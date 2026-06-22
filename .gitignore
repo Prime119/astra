@@ -1,0 +1,28 @@
+# Perfil escribible del usuario (memoria, aprendizajes) — NUNCA se versiona
+astra-perfil/
+profile/
+*.astra-profile
+
+# Modelos de IA (pesados, se descargan aparte)
+models/
+*.gguf
+*.bin
+*.onnx
+*.pt
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Node / frontend
+node_modules/
+dist/
+build/
+
+# Logs y temporales
+*.log
+.DS_Store
+Thumbs.db

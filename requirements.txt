@@ -1,0 +1,22 @@
+# --- Núcleo (Fase 0/1) ---
+# Detección de hardware
+psutil>=5.9
+
+# Cerebro LLM local (se conecta a un servidor llama.cpp / Ollama local)
+httpx>=0.27
+
+# Memoria
+# (SQLite viene incluido en Python; el vectorial se añade en Fase 2)
+# chromadb>=0.5
+
+# --- Voz (Fase 1) — se instalan cuando se active la fase ---
+# faster-whisper>=1.0     # STT offline
+# piper-tts>=1.2          # TTS offline
+# sounddevice>=0.4        # captura/reproducción de audio
+
+# --- Visión / atención (Fase 7) ---
+# opencv-python>=4.9
+# mediapipe>=0.10
+
+# --- Control del sistema (Fase 4) ---
+# pyautogui>=0.9

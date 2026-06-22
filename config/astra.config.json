@@ -1,0 +1,53 @@
+{
+  "identity": {
+    "name": "Astra",
+    "wake_word": "oye astra",
+    "wake_word_fallback": true,
+    "language": "es"
+  },
+  "voice": {
+    "enabled": true,
+    "gender": "female",
+    "tts_engine": "piper",
+    "tts_voice": "es_MX-female",
+    "stt_engine": "faster-whisper",
+    "stt_model": "small"
+  },
+  "brain": {
+    "mode": "local",
+    "local_model": "qwen2.5:3b-instruct",
+    "local_coder_model": "qwen2.5-coder:7b",
+    "cloud_boost": {
+      "enabled": false,
+      "provider": "none",
+      "note": "Modo Boost (nivel frontera) desactivado por defecto. Requiere internet + API key."
+    },
+    "temperature": 0.3,
+    "auto_scale_by_hardware": true
+  },
+  "personality": {
+    "honesty": 90,
+    "humor": 40,
+    "proactivity": 50,
+    "sarcasm_allowed": true,
+    "sarcasm_must_flag": true,
+    "tone": "profesional-empatico"
+  },
+  "vision": {
+    "attention_camera": true,
+    "gaze_sensitivity": 0.6,
+    "standby_seconds": 45
+  },
+  "runtime": {
+    "mode": "auto",
+    "comment_mode": "auto | portable | resident",
+    "base_dir": "astra-base",
+    "profile_dir": "astra-perfil",
+    "encrypt_profile": true
+  },
+  "project_storage": {
+    "default": "local",
+    "ask_on_new_project": true,
+    "options": ["local", "private", "public"]
+  }
+}
