@@ -38,8 +38,38 @@
   },
   "vision": {
     "attention_camera": true,
+    "camera_always_on": false,
+    "activate_on_wake_word": true,
     "gaze_sensitivity": 0.6,
-    "standby_seconds": 45
+    "standby_seconds": 45,
+    "comment_camera": "La cámara NO está siempre encendida: se activa con 'Oye Astra' y se apaga tras standby_seconds sin atención.",
+    "face_recognition": {
+      "enabled": true,
+      "comment": "Identifica quién habla (dueño vs otros). Plantillas faciales locales y cifradas (Zero-Knowledge).",
+      "owner_label": "owner",
+      "store_in_profile": true
+    }
+  },
+  "holomesa": {
+    "enabled": true,
+    "comment": "Simulación 3D holográfica controlada por cámara + manos (Fase 7).",
+    "renderer": "threejs",
+    "physics_engine": "rapier",
+    "default_physics": "earth",
+    "show_parameters": false,
+    "announce_parameters": false,
+    "comment_parameters": "Por defecto física terrestre (9.81 m/s2). NO mostrar alerta ni apartado de parámetros. Solo cambiar/mencionar si el usuario lo indica explícitamente.",
+    "hand_tracking": {
+      "engine": "mediapipe",
+      "one_hand_gestures": {
+        "select": "seleccionar objeto (si hay más de uno)",
+        "move": "mover posición",
+        "rotate": "rotar",
+        "spin": "girar",
+        "manipulate": "manipular",
+        "pan_space": "con una sola mano, mover el espacio alrededor del/los objeto(s)"
+      }
+    }
   },
   "runtime": {
     "mode": "auto",
@@ -48,9 +78,30 @@
     "profile_dir": "astra-perfil",
     "encrypt_profile": true
   },
+  "deployment": {
+    "install_as": "background_service",
+    "comment": "En un equipo se registra como servicio del sistema, NO como app visible. Autoarranque al encender, ejecución oculta en segundo plano.",
+    "autostart_on_boot": true,
+    "hidden": true,
+    "self_contained_runtime": true,
+    "comment_runtime": "Runtime y modelos viajan en la SSD; en el anfitrión solo se registra el servicio de autoarranque (sin instalar dependencias).",
+    "service": {
+      "windows": "scheduled_task_or_service",
+      "macos": "launchd",
+      "linux": "systemd"
+    }
+  },
   "project_storage": {
     "default": "local",
     "ask_on_new_project": true,
-    "options": ["local", "private", "public"]
+    "options": ["local", "private", "public"],
+    "copy_on_write": {
+      "enabled": true,
+      "comment": "NUNCA modificar el archivo original. Los cambios y copias de seguridad van a una carpeta overlay (capa superior RW); el original queda inmutable (RO).",
+      "immutable_original": true,
+      "overlay_dir_name": "overlay",
+      "per_device_isolation": true,
+      "comment_isolation": "Cada dispositivo crea su propio overlay. Al instalar en otro equipo NO se arrastra la info de proyectos de la SSD; solo se crea una carpeta adicional propia con cambios editables."
+    }
   }
 }
