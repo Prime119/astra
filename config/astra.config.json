@@ -130,7 +130,7 @@
   },
   "intelligence_module": {
     "name": "Falcon",
-    "comment": "Módulo OSINT (inteligencia de fuentes abiertas) inspirado en ShadowBroker. Viene incluido por defecto pero LATENTE y oculto de la interfaz normal; se activa solo cuando se ocupa.",
+    "comment": "Capa de inteligencia GIS enfocada EXCLUSIVAMENTE en la infraestructura de CFE en México. NO incluye aviones, barcos ni datos globales. Incluida por defecto pero LATENTE y oculta; se activa solo cuando se ocupa.",
     "enabled": true,
     "visible_in_ui": false,
     "dormant_until_invoked": true,
@@ -138,22 +138,48 @@
     "comment_auth": "Función de alto privilegio: requiere autenticación del dueño (wake word + rostro/biometría), igual que otras acciones críticas (Zero-Trust).",
     "owner_transparency": true,
     "comment_transparency": "Oculto para terceros, NUNCA para el dueño (anti-gaslighting de Caine). El dueño puede auditar toda consulta y su motivo.",
+    "geo_scope": "mexico_only",
+    "subject_scope": "cfe_only",
     "data_scope": "public_only",
-    "comment_scope": "Solo datos públicos: vuelos (ADS-B), barcos (AIS), satélites, sismos, noticias geolocalizadas, DNS/WHOIS/BGP. Agregación y correlación, sin nuevas capacidades de vigilancia.",
-    "self_hosted": true,
-    "stack": { "frontend": "nextjs+maplibre", "backend": "fastapi+python" },
-    "recon": {
-      "enabled": true,
-      "authorized_only": true,
-      "comment": "Reconocimiento (DNS/WHOIS/BGP/Shodan) SOLO sobre infraestructura propia o con autorización explícita. El auditor veta objetivos no autorizados."
+    "comment_scope": "SOLO datos públicos de infraestructura de CFE en México (OSINT/GIS). Visualización y análisis, sin nuevas capacidades de vigilancia.",
+    "asset_layers": [
+      "subestaciones",
+      "lineas_de_transmision",
+      "lineas_de_distribucion",
+      "torres_electricas",
+      "oficinas_y_centros_de_atencion",
+      "hidroelectricas",
+      "plantas_eolicas",
+      "plantas_solares",
+      "termoelectricas_y_otras_centrales",
+      "red_fibra_optica_cfe_teit",
+      "hotspots_internet_para_todos",
+      "cobertura_satelital_cfe_teit_ses17"
+    ],
+    "comment_satellite": "CFE no opera satélites propios; CFE Internet (CFE TEIT) usa capacidad satelital ARRENDADA (p. ej. SES-17) + su red de fibra sobre las líneas de transmisión. La capa satelital refleja esa cobertura, no satélites de CFE.",
+    "map": {
+      "render": "3d",
+      "hand_control": "pan_only",
+      "comment": "Mapa 3D navegable con la mano SOLO para mover el espacio (desplazarse entre ciudades, subestaciones, etc.). No se manipulan objetos individuales como en la Holomesa.",
+      "engine": "maplibre-gl + deck.gl (3D)"
     },
+    "data_sources_public": [
+      "OpenStreetMap (power=substation/line/tower/plant)",
+      "datos.gob.mx (datos abiertos)",
+      "CENACE / SENER (datos públicos del sistema eléctrico)",
+      "información pública de CFE / CFE TEIT",
+      "imágenes satelitales públicas (p. ej. Sentinel-2)"
+    ],
+    "self_hosted": true,
+    "stack": { "frontend": "nextjs+maplibre+deckgl", "backend": "fastapi+python" },
     "ethics_gate": {
       "bound_to_immutable_core": true,
+      "purpose": "Visualización y análisis de infraestructura PÚBLICA de CFE (uso legítimo: sector energético, investigación, planeación).",
       "forbidden": [
-        "acceso no autorizado a sistemas ajenos",
+        "acceso no autorizado a sistemas/SCADA de CFE o de terceros",
+        "facilitar sabotaje, daño o interrupción de infraestructura crítica",
         "rastreo de personas privadas concretas sin consentimiento",
-        "uso del servicio en segundo plano contra equipos de terceros",
-        "perfilado biométrico de individuos privados a escala"
+        "uso del servicio en segundo plano contra equipos de terceros"
       ],
       "comment": "Vetado por el núcleo ético inmutable (Protocolo de Silas / Anclaje de Imperfección). El módulo es subordinado a la constitución y al auditor."
     }
