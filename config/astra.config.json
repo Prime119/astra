@@ -127,5 +127,35 @@
       "per_device_isolation": true,
       "comment_isolation": "Cada dispositivo crea su propio overlay. Al instalar en otro equipo NO se arrastra la info de proyectos de la SSD; solo se crea una carpeta adicional propia con cambios editables."
     }
+  },
+  "intelligence_module": {
+    "name": "Falcon",
+    "comment": "Módulo OSINT (inteligencia de fuentes abiertas) inspirado en ShadowBroker. Viene incluido por defecto pero LATENTE y oculto de la interfaz normal; se activa solo cuando se ocupa.",
+    "enabled": true,
+    "visible_in_ui": false,
+    "dormant_until_invoked": true,
+    "require_owner_auth": true,
+    "comment_auth": "Función de alto privilegio: requiere autenticación del dueño (wake word + rostro/biometría), igual que otras acciones críticas (Zero-Trust).",
+    "owner_transparency": true,
+    "comment_transparency": "Oculto para terceros, NUNCA para el dueño (anti-gaslighting de Caine). El dueño puede auditar toda consulta y su motivo.",
+    "data_scope": "public_only",
+    "comment_scope": "Solo datos públicos: vuelos (ADS-B), barcos (AIS), satélites, sismos, noticias geolocalizadas, DNS/WHOIS/BGP. Agregación y correlación, sin nuevas capacidades de vigilancia.",
+    "self_hosted": true,
+    "stack": { "frontend": "nextjs+maplibre", "backend": "fastapi+python" },
+    "recon": {
+      "enabled": true,
+      "authorized_only": true,
+      "comment": "Reconocimiento (DNS/WHOIS/BGP/Shodan) SOLO sobre infraestructura propia o con autorización explícita. El auditor veta objetivos no autorizados."
+    },
+    "ethics_gate": {
+      "bound_to_immutable_core": true,
+      "forbidden": [
+        "acceso no autorizado a sistemas ajenos",
+        "rastreo de personas privadas concretas sin consentimiento",
+        "uso del servicio en segundo plano contra equipos de terceros",
+        "perfilado biométrico de individuos privados a escala"
+      ],
+      "comment": "Vetado por el núcleo ético inmutable (Protocolo de Silas / Anclaje de Imperfección). El módulo es subordinado a la constitución y al auditor."
+    }
   }
 }
