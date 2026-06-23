@@ -1,83 +1,106 @@
-# 🚀 Puesta en marcha — Fase 1 (voz + cerebro local)
+# 🚀 Puesta en marcha — Conectar el cerebro (Ollama)
 
-Esta guía es para tu **PC con Windows**. Aquí Astra empieza a **escucharte, pensar y
-responderte hablando**, todo **offline**.
+Esta guía es para tu **PC con Windows**. Aquí Astra/MEC pasan de "modo básico" a **pensar de
+verdad** con un modelo de lenguaje local, todo **offline**.
 
-> Esto es la versión de desarrollo (se ejecuta una vez para probar). La app ambiental
-> "tipo JARVIS" sin consola llega en fases posteriores.
+> Hay dos ediciones (mismo programa): **Astra** (general) y **MEC** (ingeniero de CFE).
 
 ---
 
 ## 1) Instalar el cerebro local (Ollama)
 
 1. Descarga Ollama desde **https://ollama.com/download** e instálalo.
-2. Abre una terminal y descarga el modelo (en español, ligero):
+2. Ábrelo (queda corriendo en segundo plano en `http://127.0.0.1:11434`). ✅
+3. Descarga el modelo (en español, ligero):
    ```
    ollama pull qwen2.5:3b-instruct
    ```
-   Si tu PC es potente (16 GB+ RAM o GPU), mejor:
+   Si tu PC es potente (16 GB+ RAM o GPU), mejor calidad:
    ```
    ollama pull qwen2.5:7b-instruct
    ```
-3. Para programar mejor, opcional:
+4. Para tareas de programación, opcional:
    ```
    ollama pull qwen2.5-coder:7b
    ```
-4. Ollama queda corriendo en segundo plano (http://127.0.0.1:11434). ✅
+
+> 💡 Astra **auto-escala** el modelo según tu hardware (ligera→3b, recomendada→7b, potente→14b).
+> Con `--check` (más abajo) te dice exactamente cuál usa y si te falta descargarlo.
 
 ---
 
-## 2) Instalar Python y las dependencias
+## 2) Obtener el código de Astra y las dependencias
 
-1. Instala **Python 3.11+** desde https://www.python.org/downloads/
-   (marca "Add Python to PATH" durante la instalación).
-2. En la carpeta del proyecto:
+1. Instala **Python 3.11+** (marca "Add Python to PATH").
+2. Clona el repo y entra a la rama del programa:
    ```
-   pip install -r requirements.txt
+   git clone https://github.com/Prime119/astra.git
+   cd astra
+   git checkout feat/programa-dos-ediciones
    ```
+3. (Recomendado) entorno virtual:
+   ```
+   py -m venv venv
+   venv\Scripts\activate
+   ```
+4. Instala las dependencias mínimas del núcleo:
+   ```
+   pip install httpx psutil
+   ```
+   (O todo, incluida la voz: `pip install -r requirements.txt`.)
 
 ---
 
-## 3) Descargar la voz femenina (Piper)
+## 3) Verificar que el cerebro está listo
 
-1. Ve a las voces de Piper en español:
+Desde la raíz del proyecto:
+```
+set PYTHONPATH=src
+python -m astra --check
+```
+- Si dice **"✅ Todo listo"**, ¡a chatear!
+- Si falta algo, te muestra el **comando exacto** (`ollama pull ...`).
+
+> En PowerShell usa `$env:PYTHONPATH="src"` en vez de `set PYTHONPATH=src`.
+
+---
+
+## 4) ¡Hablar con Astra / MEC!
+
+```
+# Astra (edición general)
+python -m astra --full
+
+# MEC (edición CFE, ingeniero profesional)
+python -m astra --cfe
+
+# Un solo turno de prueba
+python -m astra --cfe --say "¿para qué sirve una subestación?"
+
+# Solo estado del sistema
+python -m astra --status
+```
+
+- **Astra** te responde con voz femenina (cuando actives la voz) y trato general.
+- **MEC** responde como **ingeniero de CFE** (formal, técnico) y se activará con "Oye MEC".
+
+> 🔊 La conversación por voz (`--voice`) y la voz Piper se configuran en una fase posterior;
+> por ahora el chat de texto ya usa el cerebro real.
+
+---
+
+## 5) (Opcional) Voz — Piper
+
+1. Descarga una voz de Piper en español:
    **https://huggingface.co/rhasspy/piper-voices/tree/main/es**
-2. Descarga una voz femenina (ej. carpeta `es_MX`), los dos archivos:
-   `*.onnx` y `*.onnx.json`.
-3. Guárdalos en `astra/voices/` y pon la ruta en `config/astra.config.json`:
-   ```json
-   "voice": {
-     "tts_voice_path": "voices/es_MX-xxxxx-medium.onnx"
-   }
-   ```
-
----
-
-## 4) ¡Probar Astra!
-
-Desde la carpeta del proyecto:
-
-```
-# Solo ver el estado del sistema
-python -m astra.main --status
-
-# Mini-chat de texto (prueba el cerebro)
-python -m astra.main
-
-# Conversación por VOZ 🎙️🔊
-python -m astra.main --voice
-```
-
-En modo voz: Astra te saluda, te escucha, y responde hablando.
-Di **"adiós Astra"** para terminar.
-
-> Nota: ejecuta `python` desde la raíz del proyecto con `src` en el PYTHONPATH, o usa los
-> lanzadores `.bat` de la carpeta `launchers/` (se afinan en la siguiente fase).
+2. Guarda los archivos `*.onnx` y `*.onnx.json` en `astra/voices/`.
+3. Apunta la ruta en `config/astra.config.json` → `voice.tts_voice_path`.
 
 ---
 
 ## ❓ Si algo falla
-- *"No encuentro mi cerebro local"* → revisa que Ollama esté corriendo y el modelo descargado.
-- *Sin voz* → revisa que `tts_voice_path` apunte al `.onnx` correcto; si no, Astra mostrará
-  el texto en pantalla (degradación graciosa).
-- *Micrófono* → revisa permisos de micrófono en Windows.
+- *"[Modo básico] Mi cerebro completo no está activo"* → Ollama no está corriendo o falta el
+  modelo. Corre `python -m astra --check` y sigue las instrucciones.
+- *`ModuleNotFoundError: httpx`* → `pip install httpx psutil`.
+- *`python` no se reconoce* → usa `py -m astra ...`.
+- *No encuentra el módulo `astra`* → asegúrate de tener `PYTHONPATH=src` y de estar en la raíz del repo.

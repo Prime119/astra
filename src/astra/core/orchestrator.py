@@ -104,6 +104,7 @@ class Astra:
             },
             "profile_dir": str(self.config.paths.profile_dir),
             "brain_local_online": self.brain.is_local_available(),
+            "brain_model": self.brain.config.local_model,
             "capabilities": self.config.capabilities,
             "personality": {
                 "honesty": self.personality.honesty,

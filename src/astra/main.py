@@ -14,6 +14,7 @@ Uso:
     python -m astra                       # mini-chat de texto (edición full)
     python -m astra --cfe                  # mini-chat en la edición CFE
     python -m astra --status               # solo el estado del sistema
+    python -m astra --check                 # diagnóstico de Ollama (¿está listo el cerebro?)
     python -m astra --say "hola astra"     # un solo turno (no interactivo)
     python -m astra --voice                # conversación por VOZ (Fase 1)
 """
@@ -45,6 +46,31 @@ def _get_say(argv: list[str]) -> str | None:
     return None
 
 
+def _print_brain_check(astra) -> None:
+    """Diagnóstico amigable de Ollama: ¿está corriendo? ¿está el modelo?"""
+    d = astra.brain.diagnose()
+    print("\n🧠 Diagnóstico del cerebro (Ollama)")
+    print("-" * 44)
+    print(f"Endpoint        : {d['endpoint']}")
+    print(f"Ollama en línea : {'✅ sí' if d['reachable'] else '❌ no'}")
+    if not d["reachable"]:
+        print("\n⚠️  No detecto Ollama corriendo. Pasos:")
+        print("   1) Instala Ollama:  https://ollama.com/download")
+        print("   2) Ábrelo (queda en segundo plano en 127.0.0.1:11434).")
+        print(f"   3) Descarga el modelo:  ollama pull {d['model']}")
+        print("   4) Vuelve a ejecutar:  python -m astra --check")
+        return
+    print(f"Modelo principal: {d['model']}")
+    print(f"Modelo de código: {d['coder_model']}")
+    print(f"Modelos locales : {', '.join(d['available']) or '(ninguno)'}")
+    if d["missing"]:
+        print("\n⚠️  Faltan modelos. Descárgalos con:")
+        for tag in d["missing"]:
+            print(f"   ollama pull {tag}")
+    else:
+        print("\n✅ Todo listo. El cerebro de Astra/MEC está operativo.")
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
     astra = Astra.boot(edition=_parse_edition(argv))
@@ -55,6 +81,10 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(astra.status(), indent=2, ensure_ascii=False))
 
     if "--status" in argv:
+        return 0
+
+    if "--check" in argv:
+        _print_brain_check(astra)
         return 0
 
     say = _get_say(argv)

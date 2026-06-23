@@ -121,6 +121,22 @@ class Brain:
         """Atajo de un solo turno (sin historial)."""
         return self.chat([{"role": "user", "content": prompt}], coding=coding)
 
+    # ---------------------------------------------------------------- diagnóstico
+    def diagnose(self) -> dict:
+        """Revisa el estado de Ollama y qué modelos faltan (para el comando --check)."""
+        reachable = self.is_local_available()
+        models = self.available_models() if reachable else []
+        needed = [self.config.local_model, self.config.coder_model]
+        missing = [tag for tag in needed if tag not in models]
+        return {
+            "reachable": reachable,
+            "endpoint": self.config.local_endpoint,
+            "model": self.config.local_model,
+            "coder_model": self.config.coder_model,
+            "available": models,
+            "missing": missing,
+        }
+
     # ----------------------------------------------------------------- fallback
     def _fallback_reply(self, history: list[Message]) -> str:
         """
@@ -136,7 +152,7 @@ class Brain:
         return (
             "[Modo básico] Mi cerebro completo (modelo local Ollama) no está activo ahora mismo, "
             "así que no puedo razonar a fondo todavía." + eco +
-            " Para activarlo: instala Ollama y descarga el modelo "
-            f"({self.config.local_model}). Mientras tanto, el núcleo de seguridad y la memoria "
-            "siguen operativos."
+            "\nPara activarlo: 1) instala y abre Ollama, 2) ejecuta  "
+            f"`ollama pull {self.config.local_model}`.  Verifica el estado con  `python -m astra --check`. "
+            "Mientras tanto, el núcleo de seguridad y la memoria siguen operativos."
         )
