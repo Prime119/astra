@@ -36,13 +36,15 @@ class BrainConfig:
     temperature: float = 0.3
     top_p: float = 0.85
     cloud_boost_enabled: bool = False
-    timeout_s: float = 120.0
+    timeout_s: float = 300.0          # generoso: la 1ª inferencia carga el modelo en memoria
+    keep_alive: str = "30m"           # mantiene el modelo cargado para respuestas rápidas
 
 
 class Brain:
-    def __init__(self, config: BrainConfig, system_prompt: str) -> None:
+    def __init__(self, config: BrainConfig, system_prompt: str, name: str = "Astra") -> None:
         self.config = config
         self.system_prompt = system_prompt
+        self.name = name
 
     @classmethod
     def from_app_config(cls, cfg, system_prompt: str) -> "Brain":
@@ -56,8 +58,9 @@ class Brain:
             temperature=float(cfg.get("brain", "temperature", default=0.3)),
             top_p=float(cfg.get("brain", "top_p", default=0.85)),
             cloud_boost_enabled=bool(cfg.get("brain", "cloud_boost", "enabled", default=False)),
+            timeout_s=float(cfg.get("brain", "timeout_s", default=300.0)),
         )
-        return cls(bc, system_prompt)
+        return cls(bc, system_prompt, name=getattr(cfg, "name", "Astra"))
 
     # ---------------------------------------------------------------- estado
     def is_local_available(self) -> bool:
@@ -101,6 +104,7 @@ class Brain:
                 "model": model,
                 "messages": messages,
                 "stream": False,
+                "keep_alive": self.config.keep_alive,
                 "options": {
                     "temperature": self.config.temperature,
                     "top_p": self.config.top_p,
@@ -115,7 +119,15 @@ class Brain:
             data = r.json()
             return (data.get("message", {}) or {}).get("content", "").strip() or "(sin respuesta)"
         except Exception as exc:  # degradación graciosa
-            return f"[Astra] Tuve un problema al pensar: {exc}"
+            msg = str(exc).lower()
+            if "timed out" in msg or "timeout" in msg or "read timed out" in msg:
+                return (
+                    f"[{self.name}] El modelo tardó demasiado (probablemente se estaba cargando en "
+                    f"memoria por primera vez). Vuelve a intentar: la segunda vez es mucho más rápida. "
+                    f"Tip: abre una terminal y ejecuta una vez `ollama run {self.config.local_model}` "
+                    f"para precargarlo."
+                )
+            return f"[{self.name}] Tuve un problema al pensar: {exc}"
 
     def think(self, prompt: str, *, coding: bool = False) -> str:
         """Atajo de un solo turno (sin historial)."""
