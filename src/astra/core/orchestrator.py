@@ -55,6 +55,7 @@ class Astra:
         constitution = load_constitution()
         personality = Personality.from_config(
             config.get("personality", default={}),
+            name=config.name,
             persona=config.persona,
             domain_focus=config.domain_focus,
         )

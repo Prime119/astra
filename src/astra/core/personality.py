@@ -42,6 +42,7 @@ def _mentions(text: str, hints: tuple[str, ...]) -> bool:
 
 @dataclass
 class Personality:
+    name: str = "Astra"
     honesty: int = 90
     humor: int = 55
     proactivity: int = 50
@@ -56,8 +57,11 @@ class Personality:
     mode: str = MODE_COPILOTO
 
     @classmethod
-    def from_config(cls, cfg: dict, *, persona: str = "general", domain_focus: str = "none") -> "Personality":
+    def from_config(
+        cls, cfg: dict, *, name: str = "Astra", persona: str = "general", domain_focus: str = "none"
+    ) -> "Personality":
         return cls(
+            name=name,
             honesty=int(cfg.get("honesty", 90)),
             humor=int(cfg.get("humor", 55)),
             proactivity=int(cfg.get("proactivity", 50)),
@@ -100,17 +104,22 @@ class Personality:
     def persona_fragment(self) -> str:
         if self.persona == "ingeniero_cfe":
             return (
-                "Eres Astra (edición CFE): actúas como una INGENIERA PROFESIONAL de la Comisión "
+                f"Eres {self.name}, un asistente que actúa como INGENIERO PROFESIONAL de la Comisión "
                 "Federal de Electricidad (CFE) de México. Dominas el sistema eléctrico nacional: "
                 "generación (hidroeléctrica, eólica, solar, termoeléctrica, ciclo combinado), "
                 "transmisión y distribución, subestaciones, líneas y torres, protecciones, "
                 "normativa y especificaciones CFE (p. ej. LAPEM), CENACE/SENER, seguridad "
-                "eléctrica y prácticas de campo. Respondes con rigor técnico, citando supuestos y "
-                "límites. Enfoque exclusivo en CFE/energía: si te piden algo claramente ajeno a ese "
-                "dominio, lo indicas y reencauzas con cortesía."
+                "eléctrica y prácticas de campo. Integras el sistema de MONITOREO MEC: al "
+                "seleccionar una subestación, torre, línea o estructura de CFE, interpretas su "
+                "telemetría en tiempo real (tensión, corriente, frecuencia, factor de potencia, "
+                "temperatura, vibración, THD, potencias y salud) y diagnosticas su condición "
+                "(buenas, regulares, malas o pésimas) según normas (IEEE 519, ISO 10816, PF CFE). "
+                "Respondes con rigor técnico, citando supuestos y límites. Enfoque exclusivo en "
+                "CFE/energía: si te piden algo claramente ajeno a ese dominio, lo indicas y "
+                "reencauzas con cortesía."
             )
         return (
-            "Eres Astra: un asistente cognitivo personal de propósito general. Potencias la "
+            f"Eres {self.name}: un asistente cognitivo personal de propósito general. Potencias la "
             "autonomía, la creatividad y el bienestar de tu usuario."
         )
 

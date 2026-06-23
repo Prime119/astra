@@ -1,12 +1,20 @@
 {
   "edition": {
     "id": "full",
-    "name": "ASTRA Full",
+    "name": "Astra",
     "tagline": "Asistente cognitivo completo, todas las capacidades habilitadas.",
     "persona": "general",
     "domain_focus": "none"
   },
-  "comment": "Edición sin recortes de funciones. El núcleo ético inmutable permanece intacto (eso NO es una limitación opcional). El módulo Falcon (OSINT/CFE) NO se incluye en esta edición.",
+  "comment": "Edición sin recortes de funciones. El núcleo ético inmutable permanece intacto (eso NO es una limitación opcional). El módulo Falcon (OSINT/CFE) y el monitoreo MEC NO se incluyen en esta edición.",
+  "identity": {
+    "name": "Astra",
+    "wake_word": "oye astra"
+  },
+  "voice": {
+    "gender": "female",
+    "tts_voice": "es_MX-claude-high"
+  },
   "capabilities": {
     "text_chat": true,
     "general_knowledge": true,
@@ -19,10 +27,11 @@
     "system_automation": true,
     "web_access": true,
     "cloud_boost": false,
-    "intelligence_falcon": false
+    "intelligence_falcon": false,
+    "mec_monitoring": false
   },
   "intelligence_module": {
     "enabled": false,
-    "comment": "Desactivado en ASTRA Full. Vive solo en la edición CFE."
+    "comment": "Desactivado en Astra (edición Full). Vive solo en la edición MEC/CFE."
   }
 }

@@ -9,28 +9,32 @@ diferencia entre ambas es **solo de configuración** (perfiles de edición), no 
 
 ---
 
-## 🟦 ASTRA Full
+## 🟦 Versión A — **Astra** (edición Full)
+- **Nombre / activación / voz:** **Astra** · "Oye Astra" · voz **femenina**.
 - **Para qué:** asistente cognitivo personal de **propósito general**, con **todas las capacidades
   de función habilitadas**.
 - **Persona:** general.
-- **Módulo Falcon (OSINT/CFE):** ❌ **no incluido**.
+- **Módulo Falcon (OSINT/CFE):** ❌ **no incluido**. · **Monitoreo MEC:** ❌ no incluido.
 - **Conocimiento:** general (abierto).
 
-## 🟩 ASTRA CFE
-- **Para qué:** uso **específico en el área de CFE**. Actúa como **ingeniera profesional de CFE**
+## 🟩 Versión B — **MEC** (edición CFE)
+- **Nombre / activación / voz:** **MEC** · **"Oye MEC"** · voz **masculina**.
+- **Para qué:** uso **específico en el área de CFE**. Actúa como **ingeniero profesional de CFE**
   (generación, transmisión/distribución, subestaciones, normativa, seguridad eléctrica…).
 - **Persona:** `ingeniero_cfe` (formal, técnica, precisa, pero humana).
 - **Capacidades limitadas:** conocimiento general **enfocado a CFE/energía** (`general_knowledge: false`,
   `domain_focus: cfe_energia`).
-- **Módulo Falcon (infraestructura CFE en México):** ✅ **incluido** (latente y bajo autenticación).
+- **Módulo Falcon (infraestructura CFE en México):** ✅ **incluido**.
+- **Monitoreo MEC (ProyectoMEC):** ✅ **incluido** — al seleccionar una subestación, torre, línea o
+  estructura en el mapa 3D, abre el monitoreo del activo en tiempo real (ver `docs/unification/19-MEC-MONITOREO.md`).
 
 ### Comparativa de capacidades
-| Capacidad | Full | CFE |
+| Capacidad | Astra (A) | MEC (B) |
 |---|:---:|:---:|
 | text_chat | ✅ | ✅ |
 | general_knowledge | ✅ | ❌ (enfoque CFE/energía) |
 | code_assistant | ✅ | ✅ |
-| voice | ✅ | ✅ |
+| voice | ✅ (femenina) | ✅ (masculina) |
 | vision_attention | ✅ | ✅ |
 | face_recognition | ✅ | ✅ |
 | emotion_recognition | ✅ | ✅ |
@@ -39,6 +43,7 @@ diferencia entre ambas es **solo de configuración** (perfiles de edición), no 
 | web_access | ✅ | ✅ |
 | cloud_boost | ❌ (opt-in) | ❌ (opt-in) |
 | **intelligence_falcon** | ❌ | ✅ |
+| **mec_monitoring** | ❌ | ✅ |
 
 > Las dos ediciones mantienen **perfiles de memoria separados** (`astra-perfil-full/` y
 > `astra-perfil-cfe/`), para que su aprendizaje y datos **no se mezclen**.
@@ -125,5 +130,7 @@ entrada
 | Copy-on-Write + servicio en 2º plano | 🟡 config/diseño (Fase 2/3) |
 | Holomesa 3D + gestos | ❌ (Fase 7) |
 | Módulo Falcon (infraestructura CFE) | 🟡 config/diseño (Fase 6/7) |
+| Monitoreo MEC — clasificador de condición | ✅ funcional (`src/astra/cfe/monitoring.py`) |
+| Monitoreo MEC — puente con consola real (serial/UI/IA) | 🟡 ProyectoMEC (Fase 6/7) |
 
-> Roadmap completo en `docs/unification/00-SINTESIS-ASTRA.md` y `17`/`18`.
+> Roadmap completo en `docs/unification/00-SINTESIS-ASTRA.md` y `17`/`18`/`19`.
