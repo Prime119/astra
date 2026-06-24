@@ -39,6 +39,10 @@
     "tone": "formal-tecnico-humano",
     "comment_tone": "MEC: ingeniero profesional de CFE. Formal, técnico y preciso, pero humano. Humor/sarcasmo mínimos y siempre subordinados a la claridad técnica y la seguridad."
   },
+  "brain": {
+    "temperature": 0.2,
+    "comment": "Temperatura baja para respuestas técnicas precisas y deterministas (menos invención/alucinación)."
+  },
   "intelligence_module": {
     "enabled": true,
     "asset_selection_opens": "mec_monitoring",
