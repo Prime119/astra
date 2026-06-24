@@ -64,6 +64,43 @@
   #panel .warn{color:var(--warn);}
   #panel .mec{margin-top:10px;padding-top:8px;border-top:1px solid var(--hud-dk);color:var(--text);font-size:11px;}
   #panel .mec b{color:var(--glow);}
+
+  /* ===== Vista de detalle "Núcleo MEC" (overlay pantalla completa) ===== */
+  #detail{position:fixed;inset:0;z-index:50;display:none;background:rgba(4,8,16,0.94);}
+  #detail.open{display:block;}
+  #detailStage{position:absolute;inset:0;}
+  #detailStage canvas{display:block;}
+  #detailBar{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:12px;
+    padding:0 16px;z-index:3;pointer-events:none;
+    background:linear-gradient(180deg,rgba(8,26,40,.95),rgba(4,8,16,0));border-bottom:1px solid var(--hud-dk);}
+  #detailBar .dmark{color:var(--glow);font-weight:900;letter-spacing:2px;font-size:14px;text-shadow:0 0 10px var(--hud);}
+  #detailBar .dname{color:var(--text);font-weight:bold;font-size:14px;}
+  #detailBar .dtype{color:var(--muted);font-size:11px;}
+  #detailBar .dcond{font-size:11px;font-weight:bold;padding:3px 9px;border-radius:4px;letter-spacing:.5px;}
+  #detailBar .dspacer{flex:1;}
+  #detailBar .dcoord{color:var(--muted);font-size:11px;}
+  #dBack{pointer-events:auto;cursor:pointer;background:#0a1c2b;border:1px solid var(--hud);color:var(--glow);
+    font-family:inherit;font-size:11px;letter-spacing:1px;padding:7px 12px;border-radius:6px;}
+  #dBack:hover{background:var(--hud);color:#04121b;font-weight:bold;}
+
+  .dcol{position:absolute;top:62px;bottom:54px;width:294px;display:flex;flex-direction:column;gap:10px;
+    z-index:2;pointer-events:none;}
+  .dcol.left{left:14px;} .dcol.right{right:14px;}
+  .dpanel{background:rgba(7,20,32,0.82);border:1px solid var(--hud-dk);border-radius:8px;pointer-events:auto;
+    box-shadow:0 0 18px rgba(34,211,238,.12);display:flex;flex-direction:column;overflow:hidden;position:relative;}
+  .dpanel .ph{padding:5px 10px;color:var(--glow);font-size:10.5px;letter-spacing:1.5px;
+    border-bottom:1px solid var(--hud-dk);display:flex;justify-content:space-between;align-items:center;}
+  .dpanel .ph .phk{color:var(--good);font-size:9px;letter-spacing:1px;}
+  .dpanel canvas{flex:1;width:100%;min-height:64px;display:block;}
+  .dvals{padding:9px 11px;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;}
+  .dvals .vr{display:flex;justify-content:space-between;font-size:11px;}
+  .dvals .vr .k{color:var(--muted);} .dvals .vr .v{color:var(--text);font-weight:bold;}
+  #mecTicker{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);max-width:48vw;z-index:3;
+    background:rgba(7,20,32,.88);border:1px solid var(--hud-dk);border-left:3px solid var(--hud);border-radius:6px;
+    padding:8px 14px;font-size:12px;line-height:1.45;color:var(--text);pointer-events:none;
+    box-shadow:0 0 18px rgba(34,211,238,.12);}
+  #mecTicker b{color:var(--glow);}
+  .dhint{position:absolute;bottom:16px;right:16px;z-index:3;color:var(--muted);font-size:10px;pointer-events:none;}
 </style>
 </head>
 <body>
@@ -99,7 +136,35 @@
   <div class="body" id="panelBody"></div>
 </div>
 
+<div id="detail">
+  <div id="detailStage"></div>
+  <div id="detailBar">
+    <span class="dmark">◆ NÚCLEO MEC</span>
+    <span id="dName" class="dname">—</span>
+    <span id="dType" class="dtype">—</span>
+    <span id="dCond" class="dcond">—</span>
+    <span class="dspacer"></span>
+    <span id="dCoord" class="dcoord"></span>
+    <button id="dBack">◀ VOLVER AL MAPA</button>
+  </div>
+  <div class="dcol left">
+    <div class="dpanel" style="flex:1"><div class="ph"><span>OSCILOGRAMA · V / I</span><span class="phk">● LIVE</span></div><canvas id="cvOsc"></canvas></div>
+    <div class="dpanel" style="flex:1"><div class="ph"><span>ESPECTRO ARMÓNICO · THD</span></div><canvas id="cvSpec"></canvas></div>
+    <div class="dpanel" style="flex:1"><div class="ph"><span>TRIÁNGULO DE POTENCIAS</span></div><canvas id="cvTri"></canvas></div>
+  </div>
+  <div class="dcol right">
+    <div class="dpanel" style="flex:0 0 auto"><div class="ph"><span>PARÁMETROS EN VIVO</span><span class="phk">● LIVE</span></div><div id="dVals" class="dvals"></div></div>
+    <div class="dpanel" style="flex:1"><div class="ph"><span>TENDENCIAS · TEMP / VIB</span></div><canvas id="cvTrend"></canvas></div>
+    <div class="dpanel" style="flex:1"><div class="ph"><span>MONITOR DE CONDICIÓN · SALUD / THD</span></div><canvas id="cvCond"></canvas></div>
+  </div>
+  <div id="mecTicker"><b>MEC:</b> <span id="dMec">—</span></div>
+  <div class="dhint">arrastra para rotar · rueda para zoom</div>
+</div>
+
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="holo-lib.js"></script>
 <script>
 // ============ Diagnóstico (mismos criterios del monitoreo MEC) ============
 function diagnose(m){
@@ -232,7 +297,7 @@ map.on('load',()=>{
       map.easeTo({center:f.geometry.coordinates,zoom:z});
     });
   });
-  map.on('click','pts',(e)=>select(+e.features[0].properties.id));
+  map.on('click','pts',(e)=>openDetail(+e.features[0].properties.id));
   ['clusters','pts'].forEach(l=>{
     map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
     map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
@@ -242,7 +307,8 @@ map.on('load',()=>{
   setInterval(()=>{
     ASSETS.forEach(a=>{ if(Math.random()<0.25) a.t=genTelemetry(); });
     if(map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
-    if(selectedId!=null) renderPanel();
+    if(selectedId!=null && !detailOpen()) renderPanel();
+    if(detailOpen()) refreshDetailHeader();
   },3000);
 });
 
@@ -276,6 +342,148 @@ function renderPanel(){
     ${d.err.length?`<div class="flag err">⚠ ${d.err.join(' · ')}</div>`:''}
     ${d.warn.length?`<div class="flag warn">• ${d.warn.join(' · ')}</div>`:''}
     <div class="mec"><b>MEC:</b> ${mecComment(a,d)}</div>`;
+}
+
+// ============ Vista de detalle "Núcleo MEC" (modelo 3D + gráficas MEC) ============
+const detailEl=document.getElementById('detail');
+let dViewer=null, dAssetId=null, dPhase=0, dRAF=null, dTimer=null;
+const DCAP=64;
+const dHist={temp:[],vib:[],salud:[],thd:[]};
+let dLive=null;
+function detailOpen(){ return detailEl.classList.contains('open'); }
+
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function sampleLive(a){
+  const b=a.t, jit=(v,p)=>v+(Math.random()-0.5)*p;
+  dLive={ v:jit(b.v,1.4), i:Math.max(0,jit(b.i,2.2)), freq:jit(b.freq,0.05),
+    pf:clamp(jit(b.pf,0.008),0.5,1), thd:Math.max(0,jit(b.thd,0.35)),
+    vib:Math.max(0,jit(b.vib,0.18)), temp:jit(b.temp,0.55), salud:clamp(jit(b.salud,0.7),0,100) };
+}
+function pushHist(){
+  const H=dHist; H.temp.push(dLive.temp); H.vib.push(dLive.vib); H.salud.push(dLive.salud); H.thd.push(dLive.thd);
+  ['temp','vib','salud','thd'].forEach(k=>{ if(H[k].length>DCAP) H[k].shift(); });
+}
+function mecDetail(a,d){
+  const n=a.name;
+  if(d.cond==='buenas') return `Todo en orden con ${n}. Tensión, frecuencia y factor de potencia están dentro de norma y la salud del activo se mantiene alta. No hace falta intervenir; lo seguimos vigilando.`;
+  if(d.cond==='regulares'){ const f=(d.warn[0]||'algunos parámetros al límite'); return `${n} opera bien, pero estoy vigilando de cerca: ${f.toLowerCase()}. Conviene agendar una revisión preventiva antes de que escale.`; }
+  if(d.cond==='malas'){ const f=(d.err[0]||d.warn[0]||'parámetros degradados'); return `Ojo con ${n}: ${f.toLowerCase()}. Recomiendo revisarla en el próximo turno y no dejarla pasar.`; }
+  return `Alerta seria en ${n}: ${(d.err.join('; ')||'condiciones críticas').toLowerCase()}. Hay que intervenir de inmediato y mandar verificación en sitio.`;
+}
+function refreshDetailHeader(){
+  const a=ASSETS.find(x=>x.id===dAssetId); if(!a)return;
+  sampleLive(a); pushHist();
+  const d=diagnose(a.t), col=COND_HEX[d.cond];
+  document.getElementById('dName').textContent=a.name;
+  document.getElementById('dType').textContent='· '+TYPE_LABEL[a.type]+' · '+(a.estado||'México');
+  const cb=document.getElementById('dCond');
+  cb.textContent=COND_TXT[d.cond]+' · salud '+dLive.salud.toFixed(0)+'%';
+  cb.style.background=col+'22'; cb.style.color=col; cb.style.border='1px solid '+col;
+  document.getElementById('dCoord').textContent=a.lat.toFixed(3)+', '+a.lon.toFixed(3);
+  document.getElementById('dMec').textContent=mecDetail(a,d);
+  const m=dLive;
+  document.getElementById('dVals').innerHTML=
+    row('Tensión',m.v.toFixed(1)+' V')+row('Corriente',m.i.toFixed(1)+' A')+
+    row('Frecuencia',m.freq.toFixed(2)+' Hz')+row('F. potencia',m.pf.toFixed(3))+
+    row('THD',m.thd.toFixed(1)+' %')+row('Vibración',m.vib.toFixed(2)+' mm/s')+
+    row('Temperatura',m.temp.toFixed(1)+' °C')+row('Salud',m.salud.toFixed(0)+' %');
+}
+function row(k,v){ return `<div class="vr"><span class="k">${k}</span><span class="v">${v}</span></div>`; }
+
+function openDetail(i){
+  const a=ASSETS.find(x=>x.id===i); if(!a)return;
+  dAssetId=i; selectedId=i;
+  panel.style.display='none';
+  detailEl.classList.add('open');
+  const stage=document.getElementById('detailStage');
+  if(!dViewer && window.Holo){
+    dViewer=Holo.createViewer(stage,{terrain:false,rings:true,motes:true,
+      autoRotate:true,autoRotateSpeed:0.55,cameraPos:[11,8,15],target:[0,4,0],
+      fogDensity:0.012,minDistance:6,maxDistance:46});
+  } else if(dViewer){ dViewer.start(); }
+  if(dViewer){ const key=(window.Holo&&Holo.TYPE2MODEL[a.type])||'subestacion'; dViewer.setModel(key); setTimeout(()=>dViewer.resize(),30); }
+  Object.values(dHist).forEach(arr=>arr.length=0);
+  refreshDetailHeader();
+  if(dTimer) clearInterval(dTimer);
+  dTimer=setInterval(refreshDetailHeader,1000);
+  if(!dRAF) dLoop();
+}
+function closeDetail(){
+  detailEl.classList.remove('open');
+  if(dViewer) dViewer.stop();
+  if(dTimer){ clearInterval(dTimer); dTimer=null; }
+  if(dRAF){ cancelAnimationFrame(dRAF); dRAF=null; }
+  dAssetId=null; selectedId=null;
+}
+document.getElementById('dBack').onclick=closeDetail;
+addEventListener('keydown',e=>{ if(e.key==='Escape'&&detailOpen()) closeDetail(); });
+addEventListener('resize',()=>{ if(dViewer&&detailOpen()) dViewer.resize(); });
+
+// ---- motor de gráficas (canvas 2D, estilo holográfico) ----
+function gctx(id){
+  const c=document.getElementById(id); const r=c.getBoundingClientRect(); const dpr=window.devicePixelRatio||1;
+  const W=Math.max(2,Math.round(r.width*dpr)), H=Math.max(2,Math.round(r.height*dpr));
+  if(c.width!==W||c.height!==H){ c.width=W; c.height=H; }
+  const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w:r.width,h:r.height};
+}
+function grid(ctx,w,h){
+  ctx.strokeStyle='rgba(34,211,238,0.10)'; ctx.lineWidth=1;
+  for(let x=0;x<=w;x+=Math.max(20,w/8)){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
+  for(let y=0;y<=h;y+=Math.max(16,h/4)){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+}
+function legend(ctx,items){ ctx.font='9px monospace'; ctx.textAlign='left'; let x=8;
+  items.forEach(it=>{ ctx.fillStyle=it.c; ctx.fillRect(x,7,9,3); ctx.fillStyle='#9fb6c6'; ctx.fillText(it.t,x+13,11); x+=13+ctx.measureText(it.t).width+12; }); }
+function drawOsc(){
+  if(!dLive)return; const {ctx,w,h}=gctx('cvOsc'); ctx.clearRect(0,0,w,h); grid(ctx,w,h);
+  const mid=h*0.52, cyc=3, vAmp=h*0.34, iAmp=h*0.30*clamp(dLive.i/45,0.25,1.15), ph=Math.acos(clamp(dLive.pf,0,1)), td=dLive.thd/100;
+  ctx.lineWidth=2; ctx.strokeStyle='#22d3ee'; ctx.beginPath();
+  for(let x=0;x<=w;x++){const a=(x/w)*cyc*2*Math.PI+dPhase; const y=mid-Math.sin(a)*vAmp; x?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+  ctx.strokeStyle='#facc15'; ctx.beginPath();
+  for(let x=0;x<=w;x++){const a=(x/w)*cyc*2*Math.PI+dPhase-ph; const f=Math.sin(a)+td*Math.sin(3*a)+0.5*td*Math.sin(5*a);
+    const y=mid-f*iAmp; x?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+  legend(ctx,[{c:'#22d3ee',t:'Tensión'},{c:'#facc15',t:'Corriente'}]);
+}
+function drawSpec(){
+  if(!dLive)return; const {ctx,w,h}=gctx('cvSpec'); ctx.clearRect(0,0,w,h); grid(ctx,w,h);
+  const thd=dLive.thd, vals=[100,thd*1.2,thd*2.0,thd*0.8,thd*1.5,thd*0.5,thd*1.0,thd*0.4], n=vals.length;
+  const gap=w*0.03, bw=(w-gap*(n+1))/n;
+  for(let k=0;k<n;k++){ const v=clamp(vals[k],0,110), bh=(v/110)*(h-22), x=gap+k*(bw+gap), y=h-bh-12;
+    ctx.fillStyle='rgba(249,115,22,0.45)'; ctx.fillRect(x,y,bw,bh);
+    ctx.strokeStyle='#67e8f9'; ctx.lineWidth=1; ctx.strokeRect(x,y,bw,bh);
+    ctx.fillStyle='#6b8597'; ctx.font='9px monospace'; ctx.textAlign='center'; ctx.fillText('H'+(k+1),x+bw/2,h-2); }
+  ctx.fillStyle='#f97316'; ctx.font='10px monospace'; ctx.textAlign='right'; ctx.fillText('THD '+thd.toFixed(1)+'%',w-6,12);
+}
+function drawSeries(id,series){
+  const {ctx,w,h}=gctx(id); ctx.clearRect(0,0,w,h); grid(ctx,w,h);
+  series.forEach(se=>{ const d=se.data; if(d.length<2)return;
+    ctx.strokeStyle=se.c; ctx.lineWidth=2; ctx.beginPath();
+    d.forEach((val,idx)=>{ const x=(idx/(DCAP-1))*w; const y=h-6-clamp((val-se.min)/(se.max-se.min),0,1)*(h-16);
+      idx?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
+    const lv=d[d.length-1], ly=h-6-clamp((lv-se.min)/(se.max-se.min),0,1)*(h-16);
+    ctx.fillStyle=se.c; ctx.beginPath(); ctx.arc((d.length-1)/(DCAP-1)*w,ly,2.5,0,7); ctx.fill(); });
+  legend(ctx,series.map(s=>({c:s.c,t:s.t})));
+}
+function drawTri(){
+  if(!dLive)return; const {ctx,w,h}=gctx('cvTri'); ctx.clearRect(0,0,w,h); grid(ctx,w,h);
+  const pf=clamp(dLive.pf,0,1), P=pf, Q=Math.sqrt(Math.max(0,1-pf*pf));
+  const ox=w*0.16, oy=h*0.82, sc=Math.min(w*0.66,h*0.62), px=ox+P*sc, qx=px, qy=oy-Q*sc;
+  ctx.lineWidth=2.5; ctx.strokeStyle='#22d3ee'; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(px,oy); ctx.stroke();
+  ctx.strokeStyle='#facc15'; ctx.beginPath(); ctx.moveTo(px,oy); ctx.lineTo(qx,qy); ctx.stroke();
+  ctx.strokeStyle='#d1d5db'; ctx.setLineDash([5,4]); ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(qx,qy); ctx.stroke(); ctx.setLineDash([]);
+  const S=dLive.v*dLive.i/1000;
+  ctx.font='10px monospace'; ctx.textAlign='left';
+  ctx.fillStyle='#22d3ee'; ctx.fillText('P '+(S*P).toFixed(1)+' kW', ox, oy+14);
+  ctx.fillStyle='#facc15'; ctx.fillText('Q '+(S*Q).toFixed(1)+' kVAr', qx+6, (oy+qy)/2);
+  ctx.fillStyle='#d1d5db'; ctx.fillText('S '+S.toFixed(1)+' kVA', (ox+qx)/2-30, (oy+qy)/2-8);
+  ctx.fillStyle='#67e8f9'; ctx.fillText('FP '+pf.toFixed(3), ox, 14);
+}
+function dLoop(){
+  dRAF=requestAnimationFrame(dLoop);
+  dPhase+=0.06;
+  drawOsc(); drawSpec(); drawTri();
+  drawSeries('cvTrend',[{data:dHist.temp,c:'#ef4444',t:'Temp °C',min:30,max:90},{data:dHist.vib,c:'#a855f7',t:'Vib mm/s',min:0,max:12}]);
+  drawSeries('cvCond',[{data:dHist.salud,c:'#10b981',t:'Salud %',min:0,max:100},{data:dHist.thd,c:'#f97316',t:'THD %',min:0,max:20}]);
 }
 </script>
 </body>
