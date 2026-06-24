@@ -322,45 +322,42 @@ function mEdificio(){ // oficinas
   g.add(ring(2.8,0.05,HUD,0.4));
   return g;
 }
-function mPresa(){ // hidroeléctrica: presa en arco + embalse + vertedero + tuberías + casa de máquinas
+function mPresa(){ // hidroeléctrica: muro de gravedad macizo + embalse + torres de toma + vertedero + casa de máquinas
   clearSpin(); const g=new THREE.Group();
-  const Hd=6.5, A=Math.PI*0.36, Rarc=7;
-  const zc=a=>Rarc*Math.cos(a)-Rarc;                 // arco convexo hacia el agua (+Z)
-  const pt=(a,y,zo)=>[Rarc*Math.sin(a), y, zc(a)+(zo||0)];
-  const NA=26, dam=[];
-  for(let i=0;i<=NA;i++){const a=-A+i/NA*2*A; dam.push(...pt(a,0),...pt(a,Hd));}      // nervaduras verticales
-  for(let h=0;h<=7;h++){const y=h/7*Hd;                                               // arcos horizontales
-    for(let i=0;i<NA;i++){const a0=-A+i/NA*2*A,a1=-A+(i+1)/NA*2*A; dam.push(...pt(a0,y),...pt(a1,y));}}
-  g.add(segs(dam,HUD,0.7));
-  // corona / camino con grosor
-  const crest=[];
-  for(let i=0;i<NA;i++){const a0=-A+i/NA*2*A,a1=-A+(i+1)/NA*2*A;
-    crest.push(...pt(a0,Hd,0.55),...pt(a1,Hd,0.55)); crest.push(...pt(a0,Hd,0),...pt(a0,Hd,0.55));}
-  g.add(segs(crest,GLOW,0.5));
-  // vertederos (3 compuertas) en el centro
-  const gate=[]; [-1.5,0,1.5].forEach(gx=>{
-    gate.push(gx-0.5,Hd,0.05, gx-0.5,Hd-2.4,0.05);  gate.push(gx+0.5,Hd,0.05, gx+0.5,Hd-2.4,0.05);
-    gate.push(gx-0.5,Hd-2.4,0.05, gx+0.5,Hd-2.4,0.05);
-    for(let k=1;k<5;k++) gate.push(gx-0.5,Hd-k*0.48,0.05, gx+0.5,Hd-k*0.48,0.05);
-  });
-  g.add(segs(gate,GLOW,0.6));
-  // agua cayendo por el vertedero
-  const fall=[]; [-1.5,0,1.5].forEach(gx=>{ for(let k=0;k<6;k++){const fx=gx-0.4+k*0.16;
-    fall.push(fx,Hd-0.2,0.12, fx,0.3,-0.7);} });
-  g.add(segs(fall,GLOW,0.4));
-  g.add(addSteam(0,0.5,-0.9,3.2,70));                // espuma al pie
-  // embalse (superficie de agua) detrás
-  const water=holo(new THREE.PlaneGeometry(22,13),{fill:0.07,edge:0,color:GLOW});
-  water.rotation.x=-Math.PI/2; water.position.set(0,Hd-0.5,7); g.add(water);
-  const wg=[]; for(let i=-5;i<=5;i++){ wg.push(i*2,Hd-0.5,1, i*2,Hd-0.5,13);
-    wg.push(-10,Hd-0.5,1+(i+5)*1.2, 10,Hd-0.5,1+(i+5)*1.2); }
+  const Hd=6, W=6.5, nx=18, ny=8, curve=1.7;
+  const zMid=x=>curve*(1-(x/W)*(x/W));     // corona bombeada hacia el agua (+Z)
+  const zU=x=>zMid(x)+0.3;                  // cara aguas arriba (casi vertical)
+  const thick=y=>0.5+2.2*(1-y/Hd);          // grosor: delgado en la corona, ancho en la base
+  const zD=(x,y)=>zMid(x)-thick(y);         // cara aguas abajo (talud inclinado)
+  const X=i=>-W+i/nx*2*W, Y=j=>j/ny*Hd;
+  const up=[], dn=[], cr=[], side=[];
+  for(let i=0;i<=nx;i++){const x=X(i); up.push(x,0,zU(x), x,Hd,zU(x));}
+  for(let j=0;j<=ny;j++){const y=Y(j); for(let i=0;i<nx;i++) up.push(X(i),y,zU(X(i)), X(i+1),y,zU(X(i+1)));}
+  for(let i=0;i<=nx;i++){const x=X(i); for(let j=0;j<ny;j++) dn.push(x,Y(j),zD(x,Y(j)), x,Y(j+1),zD(x,Y(j+1)));}
+  for(let j=0;j<=ny;j++){const y=Y(j); for(let i=0;i<nx;i++) dn.push(X(i),y,zD(X(i),y), X(i+1),y,zD(X(i+1),y));}
+  for(let i=0;i<=nx;i++){const x=X(i); cr.push(x,Hd,zU(x), x,Hd,zD(x,Hd)); cr.push(x,0,zU(x), x,0,zD(x,0));}
+  for(let j=0;j<=ny;j++){[0,nx].forEach(i=>{const x=X(i); side.push(x,Y(j),zU(x), x,Y(j),zD(x,Y(j)));});}
+  g.add(segs(up,HUD,0.75)); g.add(segs(dn,HUD,0.7)); g.add(segs(cr,GLOW,0.6)); g.add(segs(side,HUD,0.7));
+  // vertedero: agua desbordando por el centro y cayendo por el talud
+  const fall=[]; for(let s=0;s<11;s++){const x=-1.6+s/10*3.2;
+    for(let j=ny;j>0;j--){const y0=Y(j),y1=Y(j-1); fall.push(x,y0,zD(x,y0)-0.05, x,y1,zD(x,y1)-0.05);} }
+  g.add(segs(fall,GLOW,0.45));
+  g.add(addSteam(0,0.4, zD(0,0)-0.4, 3.4, 80));        // espuma al pie del vertedero
+  // embalse (lago) aguas arriba, cerca de la corona
+  const water=holo(new THREE.PlaneGeometry(26,15),{fill:0.07,edge:0,color:GLOW});
+  water.rotation.x=-Math.PI/2; water.position.set(0,Hd-0.4, zU(0)+7.5); g.add(water);
+  const wg=[]; for(let i=-6;i<=6;i++){ wg.push(i*2,Hd-0.4,zU(0)+0.6, i*2,Hd-0.4,zU(0)+15);
+    wg.push(-12,Hd-0.4,zU(0)+0.6+(i+6)*1.2, 12,Hd-0.4,zU(0)+0.6+(i+6)*1.2); }
   g.add(segs(wg,0x0e6b85,0.3));
-  // tuberías de presión (penstocks) hacia la casa de máquinas
-  [-2.2,0,2.2].forEach(x=>{ const tube=holo(new THREE.CylinderGeometry(0.3,0.3,7,12),{fill:0.05,edge:0.5});
-    tube.position.set(x,Hd*0.4,-1.2); tube.rotation.x=-0.6; g.add(tube); });
-  // casa de máquinas aguas abajo
-  const ph=holo(new THREE.BoxGeometry(7,1.5,2.2)); ph.position.set(0,0.75,-3.0); g.add(ph);
-  g.add(ring(11,0.05,HUD,0.3,90));
+  // torres de toma cilíndricas en el embalse, con puente a la corona
+  [-3.2,3.2].forEach(x=>{ const th=Hd+0.9;
+    g.add(holo(new THREE.CylinderGeometry(0.42,0.42,th,16),{fill:0.05,edge:0.5}).translateX(x).translateY(th/2).translateZ(zU(x)+1.4));
+    const rr=ring(0.58,0,GLOW,0.55,18); rr.position.set(x,th,zU(x)+1.4); g.add(rr);
+    g.add(segs([x,Hd,zU(x)+1.4, x,Hd,zU(x)],GLOW,0.55)); });
+  // casa de máquinas al pie (aguas abajo)
+  const ph=holo(new THREE.BoxGeometry(9,1.6,2.4)); ph.position.set(0,0.8, zD(0,0)-1.6); g.add(ph);
+  const phr=[]; for(let i=1;i<6;i++){const x=-4.5+i*1.5; phr.push(x,0,zD(0,0)-2.8, x,1.6,zD(0,0)-2.8);} g.add(segs(phr,GLOW,0.4));
+  g.add(ring(12,0.05,HUD,0.3,90));
   return g;
 }
 function mNuclear(){ // edificio de contención (cilindro+cúpula) + nave de turbinas + torre de enfriamiento
