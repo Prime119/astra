@@ -187,18 +187,32 @@ function transformer(cx,cz){
   return t;
 }
 
-function mAerogenerador(){ // central eólica
+function bladeLines(){ // aspa perfilada (ancha en la raíz, fina en la punta) con costillas
+  const L=4.6, root=0.6, tip=0.12, s=[];
+  s.push(-root/2,0,0, -tip/2,L,0);  s.push(root/2,0,0, tip/2,L,0);   // bordes
+  s.push(-root/2,0,0, root/2,0,0);  s.push(-tip/2,L,0, tip/2,L,0);   // raíz y punta
+  s.push(0,0,0, 0,L,0);                                              // larguero
+  for(let r=1;r<7;r++){const y=r/7*L, w=root+(tip-root)*(r/7); s.push(-w/2,y,0, w/2,y,0);}
+  return segs(s,HUD,0.85);
+}
+function makeTurbine(){
+  const t=new THREE.Group();
+  t.add(holo(new THREE.CylinderGeometry(0.18,0.34,9,14)).translateY(4.5));            // torre cónica
+  t.add(holo(new THREE.CylinderGeometry(0.5,0.7,0.4,16)).translateY(0.2));            // base
+  t.add(holo(new THREE.BoxGeometry(1.5,0.75,0.8)).translateY(9).translateZ(-0.1));    // góndola
+  t.add(holo(new THREE.ConeGeometry(0.32,0.8,10)).rotateX(-Math.PI/2).translateY(9).translateZ(-0.7)); // cola
+  const hub=new THREE.Group(); hub.position.set(0,9,0.55);
+  hub.add(holo(new THREE.ConeGeometry(0.28,0.6,12)).rotateX(Math.PI/2));              // spinner (nariz)
+  for(let k=0;k<3;k++){const arm=new THREE.Group(); arm.add(bladeLines()); arm.rotation.z=k*2*Math.PI/3; hub.add(arm);}
+  t.add(hub); spin.push({obj:hub,axis:'z',speed:0.8});
+  return t;
+}
+function mAerogenerador(){ // central eólica (parque con varias turbinas)
   const g=new THREE.Group(); clearSpin();
-  const tower=holo(new THREE.CylinderGeometry(0.16,0.28,9,12)); tower.position.y=2.0; g.add(tower);
-  const nacelle=holo(new THREE.BoxGeometry(1.4,0.7,0.7)); nacelle.position.y=6.7; g.add(nacelle);
-  const hub=new THREE.Group(); hub.position.set(0,6.7,0.5);
-  hub.add(holo(new THREE.ConeGeometry(0.25,0.5,10),{})); 
-  for(let k=0;k<3;k++){
-    const blade=holo(new THREE.BoxGeometry(0.18,4.2,0.5),{}); blade.position.y=2.1; 
-    const arm=new THREE.Group(); arm.add(blade); arm.rotation.z=k*Math.PI*2/3; hub.add(arm);
-  }
-  g.add(hub); spin.push({obj:hub,axis:'z',speed:0.9});
-  g.add(ring(2.4,6.7,HUD,0.3).rotateX(Math.PI/2)); // anillo HUD frontal
+  g.add(makeTurbine());
+  const t2=makeTurbine(); t2.scale.setScalar(0.6); t2.position.set(-6.5,0,-6); g.add(t2);
+  const t3=makeTurbine(); t3.scale.setScalar(0.5); t3.position.set(7,0,-8); g.add(t3);
+  const rr=ring(3,0,HUD,0.25,48); rr.rotation.x=Math.PI/2; rr.position.set(0,9,0.55); g.add(rr);
   return g;
 }
 function mTorreTransmision(){ // pilón de celosía con arriostre en X, crucetas, aisladores y conductores
@@ -305,21 +319,75 @@ function mSubestacion(){ // pórticos de celosía + busbars + aisladores + trans
   g.add(ring(10,0.05,HUD,0.35,84));
   return g;
 }
-function mSolar(){
+function solarTable(cx,cz,len){ // mesa de paneles inclinada con rejilla de celdas y postes
+  const tbl=new THREE.Group();
+  const surf=new THREE.Group();
+  surf.add(holo(new THREE.BoxGeometry(len,0.06,1.8),{edge:0.7}));
+  const grid=[], cols=Math.round(len/0.55);
+  for(let i=0;i<=cols;i++){const x=-len/2+i/cols*len; grid.push(x,0.05,-0.9, x,0.05,0.9);}
+  for(let j=0;j<=3;j++){const z=-0.9+j/3*1.8; grid.push(-len/2,0.05,z, len/2,0.05,z);}
+  surf.add(segs(grid,GLOW,0.5));
+  surf.rotation.x=-0.5; surf.position.y=1.25; tbl.add(surf);
+  const post=[], np=Math.round(len/1.8);
+  for(let i=0;i<=np;i++){const x=-len/2+i/np*len; post.push(x,0,0, x,1.25,0);}
+  post.push(-len/2,1.25,0, len/2,1.25,0);  // tubo de torsión (tracker)
+  tbl.add(segs(post,HUD,0.8));
+  tbl.position.set(cx,0,cz); return tbl;
+}
+function mSolar(){ // planta fotovoltaica (campo de mesas + estación inversora)
   clearSpin(); const g=new THREE.Group();
-  for(let r=-1;r<=1;r++)for(let c=-2;c<=2;c++){
-    const p=holo(new THREE.BoxGeometry(1.6,0.06,1.0),{}); p.position.set(c*2.0,1.0,r*2.4); p.rotation.x=-0.5; g.add(p);
-    g.add(holo(new THREE.CylinderGeometry(0.04,0.04,1.0,6)).translateX(c*2.0).translateZ(r*2.4).translateY(0.5));
-  }
-  g.add(ring(5.2,0.05,HUD,0.35));
+  [-5.4,-1.8,1.8,5.4].forEach(z=> g.add(solarTable(0,z,11)) );
+  const inv=holo(new THREE.BoxGeometry(1.8,1.3,1.3)); inv.position.set(7.5,0.65,0); g.add(inv);   // inversor/transformador
+  g.add(segs([6.6,1.3,0, 6.6,2.0,0, 8.4,1.3,0, 8.4,2.0,0],GLOW,0.5));
+  g.add(ring(9,0.05,HUD,0.3,80));
   return g;
 }
-function mEdificio(){ // oficinas
+function building(cx,cz,w,d,floors,fh){ // edificio con losas de piso y ventanas (mullions)
+  const b=new THREE.Group(); const H=floors*fh;
+  b.add(holo(new THREE.BoxGeometry(w,H,d),{edge:0.6,fill:0.05}).translateX(cx).translateY(H/2).translateZ(cz));
+  const s=[];
+  for(let f=1;f<floors;f++){const y=f*fh;                               // losas de piso
+    s.push(cx-w/2,y,cz+d/2, cx+w/2,y,cz+d/2);  s.push(cx-w/2,y,cz-d/2, cx+w/2,y,cz-d/2);
+    s.push(cx-w/2,y,cz-d/2, cx-w/2,y,cz+d/2);  s.push(cx+w/2,y,cz-d/2, cx+w/2,y,cz+d/2);}
+  const cw=Math.round(w/0.7); for(let i=1;i<cw;i++){const x=cx-w/2+i/cw*w;  // mullions frente/atrás
+    s.push(x,0,cz+d/2, x,H,cz+d/2);  s.push(x,0,cz-d/2, x,H,cz-d/2);}
+  const cd=Math.round(d/0.7); for(let i=1;i<cd;i++){const z=cz-d/2+i/cd*d; // mullions laterales
+    s.push(cx-w/2,0,z, cx-w/2,H,z);  s.push(cx+w/2,0,z, cx+w/2,H,z);}
+  b.add(segs(s,HUD,0.55));
+  return {grp:b,H:H};
+}
+function mEdificio(){ // oficinas CFE (torre + ala baja + azotea)
   clearSpin(); const g=new THREE.Group();
-  const b=holo(new THREE.BoxGeometry(3,5,3)); b.position.y=2.5; g.add(b);
-  const s=[];for(let f=1;f<5;f++){s.push(-1.5,f,1.5,1.5,f,1.5,-1.5,f,-1.5,1.5,f,-1.5,1.5,f,-1.5,1.5,f,1.5,-1.5,f,-1.5,-1.5,f,1.5);}
-  g.add(segs(s,HUD,0.5));
-  g.add(ring(2.8,0.05,HUD,0.4));
+  const main=building(0,0,3.4,3.0,7,0.95); g.add(main.grp);
+  g.add(holo(new THREE.BoxGeometry(1.9,0.9,1.7),{edge:0.6}).translateY(main.H+0.45));        // núcleo azotea
+  g.add(holo(new THREE.BoxGeometry(0.7,0.45,0.7)).translateX(0.8).translateY(main.H+0.22).translateZ(-0.5)); // HVAC
+  g.add(segs([-0.8,main.H+0.9,0.4, -0.8,main.H+2.3,0.4],GLOW,0.7));                            // antena
+  const wing=building(3.9,0.5,2.4,2.6,3,0.95); g.add(wing.grp);                                // ala baja
+  g.add(holo(new THREE.BoxGeometry(1.8,0.5,0.7)).translateY(0.25).translateZ(1.7));            // marquesina entrada
+  g.add(ring(6,0.05,HUD,0.35,80));
+  return g;
+}
+function warehouse(cx,cz,w,d,h){ // nave/almacén con techo a dos aguas y puertas de carga
+  const wh=new THREE.Group();
+  wh.add(holo(new THREE.BoxGeometry(w,h,d),{edge:0.6,fill:0.05}).translateX(cx).translateY(h/2).translateZ(cz));
+  const s=[], ridge=h+1.1;
+  s.push(cx,ridge,cz-d/2, cx,ridge,cz+d/2);                                       // cumbrera
+  const n=Math.round(d/1.0);
+  for(let i=0;i<=n;i++){const z=cz-d/2+i/n*d; s.push(cx-w/2,h,z, cx,ridge,z); s.push(cx,ridge,z, cx+w/2,h,z);}  // faldones
+  const zf=cz+d/2+0.02;                                                           // puertas de carga (frente)
+  for(let bI=0;bI<3;bI++){const xc=cx-w/2+(bI+0.5)*w/3, dw=0.95, dh=h*0.7;
+    s.push(xc-dw/2,0,zf, xc-dw/2,dh,zf); s.push(xc+dw/2,0,zf, xc+dw/2,dh,zf); s.push(xc-dw/2,dh,zf, xc+dw/2,dh,zf);
+    for(let k=1;k<4;k++) s.push(xc-dw/2,dh*k/4,zf, xc+dw/2,dh*k/4,zf);}
+  wh.add(segs(s,HUD,0.7));
+  return wh;
+}
+function mAlmacenes(){ // almacenes / patio logístico CFE
+  clearSpin(); const g=new THREE.Group();
+  g.add(warehouse(-2.6,0,5.2,4.2,2.7));
+  g.add(warehouse(3.8,1.2,4.2,3.2,2.3));
+  [[-6,4.2],[-4.3,4.8],[6,-3.2],[5,-4.6]].forEach(([x,z])=>          // contenedores en el patio
+    g.add(holo(new THREE.BoxGeometry(1.5,0.95,0.75)).translateX(x).translateY(0.47).translateZ(z)) );
+  g.add(ring(8.5,0.05,HUD,0.3,80));
   return g;
 }
 function mPresa(){ // hidroeléctrica: muro de gravedad macizo + embalse + torres de toma + vertedero + casa de máquinas
@@ -391,6 +459,7 @@ const MODELS={
   solar:{f:mSolar,name:"Planta Solar",type:"Fotovoltaica",glb:"planta-solar.glb"},
   presa:{f:mPresa,name:"Presa / Hidroeléctrica",type:"Generación Hidráulica",glb:"presa.glb"},
   edificio:{f:mEdificio,name:"Oficinas CFE",type:"Administrativo",glb:"oficinas.glb"},
+  almacen:{f:mAlmacenes,name:"Almacenes",type:"Logística / Bodegas",glb:"almacenes.glb"},
   nuclear:{f:mNuclear,name:"Central Nuclear",type:"Reactor + Enfriamiento",glb:"central-nuclear.glb"},
 };
 
