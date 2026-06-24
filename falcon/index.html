@@ -66,8 +66,10 @@
   #panel .mec b{color:var(--glow);}
 
   /* ===== Vista de detalle "Núcleo MEC" (overlay pantalla completa) ===== */
-  #detail{position:fixed;inset:0;z-index:50;display:none;background:rgba(4,8,16,0.94);}
+  #detail{position:fixed;inset:0;z-index:50;display:none;opacity:0;transition:opacity .55s ease;
+    background:radial-gradient(ellipse at 50% 56%, rgba(4,8,16,0.10) 0%, rgba(4,8,16,0.55) 60%, rgba(4,8,16,0.85) 100%);}
   #detail.open{display:block;}
+  #detail.show{opacity:1;}
   #detailStage{position:absolute;inset:0;}
   #detailStage canvas{display:block;}
   #detailBar{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:12px;
@@ -82,6 +84,9 @@
   #dBack{pointer-events:auto;cursor:pointer;background:#0a1c2b;border:1px solid var(--hud);color:var(--glow);
     font-family:inherit;font-size:11px;letter-spacing:1px;padding:7px 12px;border-radius:6px;}
   #dBack:hover{background:var(--hud);color:#04121b;font-weight:bold;}
+  #dXls{pointer-events:auto;cursor:pointer;background:#0a2018;border:1px solid var(--good);color:var(--good);
+    font-family:inherit;font-size:11px;letter-spacing:1px;padding:7px 12px;border-radius:6px;}
+  #dXls:hover{background:var(--good);color:#04121b;font-weight:bold;}
 
   .dcol{position:absolute;top:62px;bottom:54px;width:294px;display:flex;flex-direction:column;gap:10px;
     z-index:2;pointer-events:none;}
@@ -145,6 +150,7 @@
     <span id="dCond" class="dcond">—</span>
     <span class="dspacer"></span>
     <span id="dCoord" class="dcoord"></span>
+    <button id="dXls">⬇ EXCEL</button>
     <button id="dBack">◀ VOLVER AL MAPA</button>
   </div>
   <div class="dcol left">
@@ -266,7 +272,7 @@ const map=new maplibregl.Map({
       attribution:"© OpenStreetMap, © CARTO" } },
     layers:[{id:"carto",type:"raster",source:"carto"}]
   },
-  center:[-102,23.6], zoom:4.6, minZoom:4.4, maxZoom:18, maxPitch:0,
+  center:[-102,23.6], zoom:4.6, minZoom:4.4, maxZoom:18, maxPitch:70,
   maxBounds:[[-122,11],[-83,34]]   // no te alejas más que ver todo México
 });
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
@@ -390,32 +396,90 @@ function refreshDetailHeader(){
 }
 function row(k,v){ return `<div class="vr"><span class="k">${k}</span><span class="v">${v}</span></div>`; }
 
+let dShowTO=null, dCloseTO=null, dCamPrev=null;
 function openDetail(i){
   const a=ASSETS.find(x=>x.id===i); if(!a)return;
   dAssetId=i; selectedId=i;
   panel.style.display='none';
-  detailEl.classList.add('open');
+  // recuerda la vista actual del mapa para regresar al cerrar
+  dCamPrev={center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()};
+  // vuelo de aproximación tipo "street view": baja y se inclina hacia el activo
+  try{ map.flyTo({center:[a.lon,a.lat], zoom:16, pitch:68, bearing:(map.getBearing()+35),
+        duration:2400, curve:1.6, essential:true}); }catch(e){}
+  // visor 3D TRANSPARENTE (el piso es el propio mapa que se ve detrás)
   const stage=document.getElementById('detailStage');
   if(!dViewer && window.Holo){
-    dViewer=Holo.createViewer(stage,{terrain:false,rings:true,motes:true,
-      autoRotate:true,autoRotateSpeed:0.55,cameraPos:[11,8,15],target:[0,4,0],
-      fogDensity:0.012,minDistance:6,maxDistance:46});
+    dViewer=Holo.createViewer(stage,{terrain:false,rings:true,motes:true,fog:false,alpha:true,background:null,
+      autoRotate:true,autoRotateSpeed:0.5,cameraPos:[11,7,15],target:[0,4,0],minDistance:6,maxDistance:46});
   } else if(dViewer){ dViewer.start(); }
-  if(dViewer){ const key=(window.Holo&&Holo.TYPE2MODEL[a.type])||'subestacion'; dViewer.setModel(key); setTimeout(()=>dViewer.resize(),30); }
+  if(dViewer){ const key=(window.Holo&&Holo.TYPE2MODEL[a.type])||'subestacion'; dViewer.setModel(key); }
   Object.values(dHist).forEach(arr=>arr.length=0);
   refreshDetailHeader();
   if(dTimer) clearInterval(dTimer);
   dTimer=setInterval(refreshDetailHeader,1000);
   if(!dRAF) dLoop();
+  // muestra el overlay; el fade-in del holograma ocurre a mitad del vuelo (se siente continuo)
+  if(dCloseTO){clearTimeout(dCloseTO);dCloseTO=null;}
+  detailEl.classList.add('open'); detailEl.classList.remove('show');
+  if(dShowTO) clearTimeout(dShowTO);
+  dShowTO=setTimeout(()=>{ detailEl.classList.add('show'); if(dViewer) dViewer.resize(); }, 1250);
 }
 function closeDetail(){
-  detailEl.classList.remove('open');
-  if(dViewer) dViewer.stop();
-  if(dTimer){ clearInterval(dTimer); dTimer=null; }
-  if(dRAF){ cancelAnimationFrame(dRAF); dRAF=null; }
-  dAssetId=null; selectedId=null;
+  detailEl.classList.remove('show');                 // fade-out
+  if(dShowTO){clearTimeout(dShowTO);dShowTO=null;}
+  if(dCamPrev){ try{ map.flyTo({center:dCamPrev.center,zoom:dCamPrev.zoom,bearing:dCamPrev.bearing,
+        pitch:dCamPrev.pitch,duration:1500,essential:true}); }catch(e){} }
+  if(dCloseTO) clearTimeout(dCloseTO);
+  dCloseTO=setTimeout(()=>{
+    detailEl.classList.remove('open');
+    if(dViewer) dViewer.stop();
+    if(dTimer){ clearInterval(dTimer); dTimer=null; }
+    if(dRAF){ cancelAnimationFrame(dRAF); dRAF=null; }
+    dAssetId=null; selectedId=null;
+  }, 560);
+}
+// Descarga un reporte (CSV compatible con Excel) del activo seleccionado
+function downloadExcel(){
+  const a=ASSETS.find(x=>x.id===dAssetId); if(!a||!dLive)return;
+  const d=diagnose(a.t), m=dLive, sep=';', nl='\r\n';
+  const esc=v=>{ const s=String(v); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const r=(...c)=>c.map(esc).join(sep);
+  const thd=m.thd, esp=[100,thd*1.2,thd*2.0,thd*0.8,thd*1.5,thd*0.5,thd*1.0,thd*0.4];
+  const now=new Date().toLocaleString('es-MX');
+  const L=[];
+  L.push(r('ANÁLISIS DE MEC'));
+  L.push(r('Activo',a.name));
+  L.push(r('Tipo',TYPE_LABEL[a.type]));
+  L.push(r('Ubicación',(a.estado||'México')+' ('+a.lat.toFixed(4)+', '+a.lon.toFixed(4)+')'));
+  L.push(r('Condición',COND_TXT[d.cond]));
+  L.push(r('Fecha',now));
+  L.push('');
+  L.push(r('PARÁMETRO','VALOR','UNIDAD'));
+  L.push(r('Tensión',m.v.toFixed(1),'V'));
+  L.push(r('Corriente',m.i.toFixed(1),'A'));
+  L.push(r('Frecuencia',m.freq.toFixed(2),'Hz'));
+  L.push(r('Factor de potencia',m.pf.toFixed(3),''));
+  L.push(r('THD',m.thd.toFixed(1),'%'));
+  L.push(r('Vibración',m.vib.toFixed(2),'mm/s'));
+  L.push(r('Temperatura',m.temp.toFixed(1),'°C'));
+  L.push(r('Salud',m.salud.toFixed(0),'%'));
+  L.push('');
+  L.push(r('ESPECTRO ARMÓNICO'));
+  L.push(r('Armónico','Magnitud (%)'));
+  esp.forEach((v,k)=> L.push(r('H'+(k+1),v.toFixed(1))));
+  L.push('');
+  L.push(r('ANÁLISIS DE MEC'));
+  L.push(r(mecDetail(a,d)));
+  const csv='\uFEFF'+L.join(nl);
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  link.href=url; link.download='MEC_'+a.name.replace(/[^\w\-]+/g,'_')+'.csv';
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 document.getElementById('dBack').onclick=closeDetail;
+document.getElementById('dXls').onclick=downloadExcel;
 addEventListener('keydown',e=>{ if(e.key==='Escape'&&detailOpen()) closeDetail(); });
 addEventListener('resize',()=>{ if(dViewer&&detailOpen()) dViewer.resize(); });
 
