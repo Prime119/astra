@@ -1,0 +1,71 @@
+{
+  "edition": {
+    "id": "cfe",
+    "name": "MEC",
+    "tagline": "Asistente especializado que actúa como ingeniero profesional de CFE, con monitoreo MEC.",
+    "persona": "ingeniero_cfe",
+    "domain_focus": "cfe_energia"
+  },
+  "comment": "Edición especializada para CFE. Se llama MEC, voz masculina, se activa con 'Oye MEC'. Capacidades de propósito general limitadas (enfoque CFE/energía), persona de ingeniero profesional de CFE, módulo Falcon (infraestructura CFE) y sistema de monitoreo MEC (ProyectoMEC). Núcleo ético inmutable intacto.",
+  "identity": {
+    "name": "MEC",
+    "wake_word": "oye mec"
+  },
+  "voice": {
+    "gender": "male",
+    "tts_voice": "es_ES-davefx-medium",
+    "comment": "Voz masculina. La voz Piper concreta es configurable; es_ES-davefx-medium es una voz masculina en español."
+  },
+  "capabilities": {
+    "text_chat": true,
+    "general_knowledge": false,
+    "code_assistant": true,
+    "voice": true,
+    "vision_attention": true,
+    "face_recognition": true,
+    "emotion_recognition": true,
+    "holomesa": true,
+    "system_automation": true,
+    "web_access": true,
+    "cloud_boost": false,
+    "intelligence_falcon": true,
+    "mec_monitoring": true
+  },
+  "personality": {
+    "honesty": 95,
+    "humor": 30,
+    "proactivity": 60,
+    "warmth": 55,
+    "tone": "formal-tecnico-humano",
+    "comment_tone": "MEC: ingeniero profesional de CFE. Formal, técnico y preciso, pero humano. Humor/sarcasmo mínimos y siempre subordinados a la claridad técnica y la seguridad."
+  },
+  "brain": {
+    "temperature": 0.2,
+    "comment": "Temperatura baja para respuestas técnicas precisas y deterministas (menos invención/alucinación)."
+  },
+  "intelligence_module": {
+    "enabled": true,
+    "asset_selection_opens": "mec_monitoring",
+    "comment_selection": "Al seleccionar una subestación, torre, línea o estructura de CFE en el mapa 3D, se abre el monitoreo MEC del activo."
+  },
+  "mec_monitoring": {
+    "enabled": true,
+    "comment": "Sistema de monitoreo eléctrico en tiempo real (ProyectoMEC: 'MEC Industrial Analytics Pro'). SOLO en la edición MEC/CFE.",
+    "source_repo": "Prime119/ProyectoMEC",
+    "opens_on_asset_selection": ["subestacion", "torre_electrica", "linea", "estructura_cfe", "motor", "central"],
+    "telemetry": [
+      "tension_v", "corriente_a", "frecuencia_hz", "factor_potencia",
+      "temperatura_c", "vibracion_mms", "thd_pct",
+      "potencia_activa_w", "potencia_reactiva_var", "potencia_aparente_va", "salud_pct"
+    ],
+    "ai_engine": {
+      "autoencoder": "detección de anomalías por error de reconstrucción",
+      "lstm": "predicción de salud futura",
+      "isolation_forest": "detección de outliers"
+    },
+    "standards": ["IEEE 519 (THD)", "ISO 10816 (vibración)", "PF >= 0.92 (CFE)"],
+    "condition_scale": ["buenas", "regulares", "malas", "pesimas"],
+    "real_time": true,
+    "data_source": "serial/COM o simulación (panel_de_control.txt)"
+  }
+}

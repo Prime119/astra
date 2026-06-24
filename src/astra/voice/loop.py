@@ -13,7 +13,10 @@ from .stt import Ear, STTConfig
 from .tts import TTSConfig, Voice
 
 
-STOP_WORDS = ("adiós astra", "adios astra", "detente astra", "hasta luego astra")
+STOP_WORDS = (
+    "adiós astra", "adios astra", "detente astra", "hasta luego astra",
+    "adiós mec", "adios mec", "detente mec", "hasta luego mec",
+)
 
 
 def build_voice_io(astra: Astra) -> tuple[Ear, Voice]:
