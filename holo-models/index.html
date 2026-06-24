@@ -201,31 +201,40 @@ function mAerogenerador(){ // central eólica
   g.add(ring(2.4,6.7,HUD,0.3).rotateX(Math.PI/2)); // anillo HUD frontal
   return g;
 }
-function mTorreTransmision(){ // pilón de transmisión (lattice) + líneas
+function mTorreTransmision(){ // pilón de celosía con arriostre en X, crucetas, aisladores y conductores
   const g=new THREE.Group(); clearSpin();
-  const H=9,b=1.7,t=0.55, lv=[0,2.2,4.4,6.0,7.4,H];
-  const w=y=>b+(t-b)*(y/H);
-  const corner=(y,sx,sz)=>[sx*w(y),y,sz*w(y)];
-  const s=[];
+  const H=11, baseHalf=1.9, waistHalf=0.5, waistY=6.5;
+  const w=y=> y<=waistY ? baseHalf+(waistHalf-baseHalf)*(y/waistY) : waistHalf;
   const C=[[1,1],[1,-1],[-1,-1],[-1,1]];
-  for(let c=0;c<4;c++){for(let i=0;i<lv.length-1;i++){
-    const a=corner(lv[i],C[c][0],C[c][1]),d=corner(lv[i+1],C[c][0],C[c][1]); s.push(...a,...d);
-  }}
-  for(const y of lv){for(let c=0;c<4;c++){const a=corner(y,C[c][0],C[c][1]),d=corner(y,C[(c+1)%4][0],C[(c+1)%4][1]);s.push(...a,...d);}}
-  for(let i=0;i<lv.length-1;i++){for(let c=0;c<4;c++){
-    const a=corner(lv[i],C[c][0],C[c][1]),d=corner(lv[i+1],C[(c+1)%4][0],C[(c+1)%4][1]);s.push(...a,...d);
-  }}
-  // crucetas (crossarms)
-  const arms=[6.0,7.4,8.6];
-  arms.forEach(y=>{const ww=w(y)+2.2; s.push(-ww,y,0, ww,y,0); 
-    s.push(-ww,y,0,-ww,y-0.5,0, ww,y,0,ww,y-0.5,0,  -ww*0.5,y,0,-ww*0.5,y-0.45,0, ww*0.5,y,0,ww*0.5,y-0.45,0);});
-  g.add(segs(s,HUD,0.85));
-  // conductores (líneas con catenaria) a ambos lados, a lo largo de Z
-  const cond=[]; const ends=[];
-  arms.forEach(y=>{const ww=w(y)+2.2;[-ww,-ww*0.5,ww*0.5,ww].forEach(x=>ends.push([x,y-0.5]));});
-  const Z=15, sag=1.1;
-  const yAt=(y0,z)=>y0 - sag*(1-(z/Z)*(z/Z));   // catenaria simple
-  ends.forEach(([x,y0])=>{ for(let z=-Z;z<Z;z++){ cond.push(x,yAt(y0,z),z, x,yAt(y0,z+1),z+1); } });
+  const cor=(y,c)=>[C[c][0]*w(y), y, C[c][1]*w(y)];
+  const lv=[]; const NP=11; for(let i=0;i<=NP;i++) lv.push(i/NP*H);
+  const s=[];
+  for(let c=0;c<4;c++) for(let i=0;i<lv.length-1;i++) s.push(...cor(lv[i],c),...cor(lv[i+1],c));   // 4 patas
+  for(const y of lv) for(let c=0;c<4;c++) s.push(...cor(y,c),...cor(y,(c+1)%4));                     // horizontales
+  for(let i=0;i<lv.length-1;i++) for(let c=0;c<4;c++){ const c2=(c+1)%4;                              // arriostre en X
+    s.push(...cor(lv[i],c),...cor(lv[i+1],c2)); s.push(...cor(lv[i],c2),...cor(lv[i+1],c)); }
+  g.add(segs(s,HUD,0.8));
+  // crucetas triangulares (3 niveles) a ambos lados
+  const arms=[7.4,8.7,10.0], armS=[], tips=[];
+  arms.forEach((y,idx)=>{ const reach=2.7-idx*0.25;
+    [-1,1].forEach(side=>{ const xTip=side*(w(y)+reach);
+      armS.push(side*w(y),y,0.3, xTip,y,0);  armS.push(side*w(y),y,-0.3, xTip,y,0);  // cuerdas superiores
+      armS.push(side*w(y),y-0.75,0, xTip,y,0);                                        // cuerda inferior
+      const NB=4; for(let b=1;b<NB;b++){const xb=side*w(y)+(xTip-side*w(y))*b/NB;
+        armS.push(xb,y,0, xb,y-0.75*(1-b/NB),0);}                                     // montantes
+      tips.push([xTip,y]); });
+  });
+  g.add(segs(armS,HUD,0.8));
+  // pico superior (para cable de guarda)
+  const peak=[], ytop=H+1.0; for(let c=0;c<4;c++) peak.push(...cor(H,c), 0,ytop,0);
+  g.add(segs(peak,HUD,0.7));
+  // cadenas de aisladores colgantes + conductores con catenaria (a lo largo de Z)
+  const ins=[], cond=[], Z=16, sag=1.5, yAt=(y0,z)=>y0 - sag*(1-(z/Z)*(z/Z));
+  tips.forEach(([x,y])=>{ const ny=y-0.9;
+    for(let k=0;k<5;k++) ins.push(x,y-k*0.18,0, x,y-(k+1)*0.18,0);
+    for(let z=-Z;z<Z;z++) cond.push(x,yAt(ny,z),z, x,yAt(ny,z+1),z+1); });
+  for(let z=-Z;z<Z;z++) cond.push(0,yAt(ytop,z),z, 0,yAt(ytop,z+1),z+1); // cable de guarda
+  g.add(segs(ins,GLOW,0.7));
   g.add(segs(cond,GLOW,0.4));
   return g;
 }
@@ -313,13 +322,45 @@ function mEdificio(){ // oficinas
   g.add(ring(2.8,0.05,HUD,0.4));
   return g;
 }
-function mPresa(){ // hidroeléctrica (presa en arco)
+function mPresa(){ // hidroeléctrica: presa en arco + embalse + vertedero + tuberías + casa de máquinas
   clearSpin(); const g=new THREE.Group();
-  const prof=[new THREE.Vector2(0.2,0),new THREE.Vector2(1.4,0),new THREE.Vector2(0.7,5),new THREE.Vector2(0.2,5)];
-  const wall=holo(new THREE.LatheGeometry(prof,32,Math.PI*0.25,Math.PI*0.5),{wire:true,edge:0.6,fill:0.05});
-  wall.scale.set(3,1,3); wall.position.y=0; g.add(wall);
-  const water=holo(new THREE.CircleGeometry(6,40,Math.PI*0.25,Math.PI*0.5),{wire:true,edge:0.25,fill:0.06,color:GLOW});
-  water.rotation.x=-Math.PI/2; water.position.y=4.6; water.scale.set(1.2,1.2,1.2); g.add(water);
+  const Hd=6.5, A=Math.PI*0.36, Rarc=7;
+  const zc=a=>Rarc*Math.cos(a)-Rarc;                 // arco convexo hacia el agua (+Z)
+  const pt=(a,y,zo)=>[Rarc*Math.sin(a), y, zc(a)+(zo||0)];
+  const NA=26, dam=[];
+  for(let i=0;i<=NA;i++){const a=-A+i/NA*2*A; dam.push(...pt(a,0),...pt(a,Hd));}      // nervaduras verticales
+  for(let h=0;h<=7;h++){const y=h/7*Hd;                                               // arcos horizontales
+    for(let i=0;i<NA;i++){const a0=-A+i/NA*2*A,a1=-A+(i+1)/NA*2*A; dam.push(...pt(a0,y),...pt(a1,y));}}
+  g.add(segs(dam,HUD,0.7));
+  // corona / camino con grosor
+  const crest=[];
+  for(let i=0;i<NA;i++){const a0=-A+i/NA*2*A,a1=-A+(i+1)/NA*2*A;
+    crest.push(...pt(a0,Hd,0.55),...pt(a1,Hd,0.55)); crest.push(...pt(a0,Hd,0),...pt(a0,Hd,0.55));}
+  g.add(segs(crest,GLOW,0.5));
+  // vertederos (3 compuertas) en el centro
+  const gate=[]; [-1.5,0,1.5].forEach(gx=>{
+    gate.push(gx-0.5,Hd,0.05, gx-0.5,Hd-2.4,0.05);  gate.push(gx+0.5,Hd,0.05, gx+0.5,Hd-2.4,0.05);
+    gate.push(gx-0.5,Hd-2.4,0.05, gx+0.5,Hd-2.4,0.05);
+    for(let k=1;k<5;k++) gate.push(gx-0.5,Hd-k*0.48,0.05, gx+0.5,Hd-k*0.48,0.05);
+  });
+  g.add(segs(gate,GLOW,0.6));
+  // agua cayendo por el vertedero
+  const fall=[]; [-1.5,0,1.5].forEach(gx=>{ for(let k=0;k<6;k++){const fx=gx-0.4+k*0.16;
+    fall.push(fx,Hd-0.2,0.12, fx,0.3,-0.7);} });
+  g.add(segs(fall,GLOW,0.4));
+  g.add(addSteam(0,0.5,-0.9,3.2,70));                // espuma al pie
+  // embalse (superficie de agua) detrás
+  const water=holo(new THREE.PlaneGeometry(22,13),{fill:0.07,edge:0,color:GLOW});
+  water.rotation.x=-Math.PI/2; water.position.set(0,Hd-0.5,7); g.add(water);
+  const wg=[]; for(let i=-5;i<=5;i++){ wg.push(i*2,Hd-0.5,1, i*2,Hd-0.5,13);
+    wg.push(-10,Hd-0.5,1+(i+5)*1.2, 10,Hd-0.5,1+(i+5)*1.2); }
+  g.add(segs(wg,0x0e6b85,0.3));
+  // tuberías de presión (penstocks) hacia la casa de máquinas
+  [-2.2,0,2.2].forEach(x=>{ const tube=holo(new THREE.CylinderGeometry(0.3,0.3,7,12),{fill:0.05,edge:0.5});
+    tube.position.set(x,Hd*0.4,-1.2); tube.rotation.x=-0.6; g.add(tube); });
+  // casa de máquinas aguas abajo
+  const ph=holo(new THREE.BoxGeometry(7,1.5,2.2)); ph.position.set(0,0.75,-3.0); g.add(ph);
+  g.add(ring(11,0.05,HUD,0.3,90));
   return g;
 }
 function mNuclear(){ // edificio de contención (cilindro+cúpula) + nave de turbinas + torre de enfriamiento
