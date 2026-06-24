@@ -187,25 +187,37 @@ function transformer(cx,cz){
   return t;
 }
 
-function bladeLines(){ // aspa perfilada (ancha en la raíz, fina en la punta) con costillas
-  const L=4.6, root=0.6, tip=0.12, s=[];
-  s.push(-root/2,0,0, -tip/2,L,0);  s.push(root/2,0,0, tip/2,L,0);   // bordes
-  s.push(-root/2,0,0, root/2,0,0);  s.push(-tip/2,L,0, tip/2,L,0);   // raíz y punta
-  s.push(0,0,0, 0,L,0);                                              // larguero
-  for(let r=1;r<7;r++){const y=r/7*L, w=root+(tip-root)*(r/7); s.push(-w/2,y,0, w/2,y,0);}
+function bladeLines(){ // aspa con planta curva (aerodinámica): cuerda ancha cerca de la raíz y afinada a la punta
+  const L=4.9, N=11, le=[], te=[], s=[];
+  const chord=t=> t<0.14 ? 0.22+(t/0.14)*0.5 : 0.72*Math.pow((1-t)/0.86,0.65)+0.07;
+  for(let i=0;i<=N;i++){const t=i/N, y=t*L, c=chord(t), sweep=0.18*t*t;
+    le.push([-c*0.4+sweep,y]); te.push([c*0.6+sweep,y]);}
+  for(let i=0;i<N;i++){ s.push(le[i][0],le[i][1],0, le[i+1][0],le[i+1][1],0);
+    s.push(te[i][0],te[i][1],0, te[i+1][0],te[i+1][1],0); }
+  s.push(le[0][0],0,0, te[0][0],0,0);  s.push(le[N][0],L,0, te[N][0],L,0);   // raíz y punta
+  for(let i=1;i<N;i++) s.push(le[i][0],le[i][1],0, te[i][0],te[i][1],0);      // costillas
   return segs(s,HUD,0.85);
 }
 function makeTurbine(){
   const t=new THREE.Group();
-  t.add(holo(new THREE.CylinderGeometry(0.18,0.34,9,14)).translateY(4.5));            // torre cónica
-  t.add(holo(new THREE.CylinderGeometry(0.5,0.7,0.4,16)).translateY(0.2));            // base
-  t.add(holo(new THREE.BoxGeometry(1.5,0.75,0.8)).translateY(9).translateZ(-0.1));    // góndola
-  t.add(holo(new THREE.ConeGeometry(0.32,0.8,10)).rotateX(-Math.PI/2).translateY(9).translateZ(-0.7)); // cola
-  const hub=new THREE.Group(); hub.position.set(0,9,0.55);
-  hub.add(holo(new THREE.ConeGeometry(0.28,0.6,12)).rotateX(Math.PI/2));              // spinner (nariz)
+  t.add(holo(new THREE.CylinderGeometry(0.17,0.36,9,16)).translateY(4.5));            // torre cónica esbelta
+  t.add(holo(new THREE.CylinderGeometry(0.55,0.8,0.45,18)).translateY(0.22));         // cimentación
+  t.add(holo(new THREE.BoxGeometry(1.6,0.78,0.85)).translateY(9).translateZ(-0.12));  // góndola
+  t.add(holo(new THREE.ConeGeometry(0.34,0.85,12)).rotateX(-Math.PI/2).translateY(9).translateZ(-0.75)); // cola
+  const hub=new THREE.Group(); hub.position.set(0,9,0.5);
+  hub.add(holo(new THREE.CylinderGeometry(0.3,0.34,0.5,16)).rotateX(Math.PI/2));       // cubo del rotor (eje en Z)
+  const nose=holo(new THREE.SphereGeometry(0.34,16,10)); nose.position.z=0.35; hub.add(nose); // nariz redondeada
   for(let k=0;k<3;k++){const arm=new THREE.Group(); arm.add(bladeLines()); arm.rotation.z=k*2*Math.PI/3; hub.add(arm);}
   t.add(hub); spin.push({obj:hub,axis:'z',speed:0.8});
   return t;
+}
+function mAerogenerador(){ // central eólica (parque con varias turbinas)
+  const g=new THREE.Group(); clearSpin();
+  g.add(makeTurbine());
+  const t2=makeTurbine(); t2.scale.setScalar(0.58); t2.position.set(-6.8,0,-6.5); g.add(t2);
+  const t3=makeTurbine(); t3.scale.setScalar(0.48); t3.position.set(7.2,0,-8.5); g.add(t3);
+  const rr=ring(3.1,0,HUD,0.22,52); rr.rotation.x=Math.PI/2; rr.position.set(0,9,0.5); g.add(rr);
+  return g;
 }
 function mAerogenerador(){ // central eólica (parque con varias turbinas)
   const g=new THREE.Group(); clearSpin();
@@ -367,27 +379,38 @@ function mEdificio(){ // oficinas CFE (torre + ala baja + azotea)
   g.add(ring(6,0.05,HUD,0.35,80));
   return g;
 }
-function warehouse(cx,cz,w,d,h){ // nave/almacén con techo a dos aguas y puertas de carga
-  const wh=new THREE.Group();
-  wh.add(holo(new THREE.BoxGeometry(w,h,d),{edge:0.6,fill:0.05}).translateX(cx).translateY(h/2).translateZ(cz));
-  const s=[], ridge=h+1.1;
-  s.push(cx,ridge,cz-d/2, cx,ridge,cz+d/2);                                       // cumbrera
-  const n=Math.round(d/1.0);
-  for(let i=0;i<=n;i++){const z=cz-d/2+i/n*d; s.push(cx-w/2,h,z, cx,ridge,z); s.push(cx,ridge,z, cx+w/2,h,z);}  // faldones
-  const zf=cz+d/2+0.02;                                                           // puertas de carga (frente)
-  for(let bI=0;bI<3;bI++){const xc=cx-w/2+(bI+0.5)*w/3, dw=0.95, dh=h*0.7;
-    s.push(xc-dw/2,0,zf, xc-dw/2,dh,zf); s.push(xc+dw/2,0,zf, xc+dw/2,dh,zf); s.push(xc-dw/2,dh,zf, xc+dw/2,dh,zf);
-    for(let k=1;k<4;k++) s.push(xc-dw/2,dh*k/4,zf, xc+dw/2,dh*k/4,zf);}
-  wh.add(segs(s,HUD,0.7));
-  return wh;
-}
-function mAlmacenes(){ // almacenes / patio logístico CFE
+function mAlmacenes(){ // almacén logístico CFE: nave industrial (techo plano + andenes)
   clearSpin(); const g=new THREE.Group();
-  g.add(warehouse(-2.6,0,5.2,4.2,2.7));
-  g.add(warehouse(3.8,1.2,4.2,3.2,2.3));
-  [[-6,4.2],[-4.3,4.8],[6,-3.2],[5,-4.6]].forEach(([x,z])=>          // contenedores en el patio
-    g.add(holo(new THREE.BoxGeometry(1.5,0.95,0.75)).translateX(x).translateY(0.47).translateZ(z)) );
-  g.add(ring(8.5,0.05,HUD,0.3,80));
+  const w=9, d=5.5, h=3.0, pp=h+0.4;
+  g.add(holo(new THREE.BoxGeometry(w,h,d),{edge:0.6,fill:0.05}).translateY(h/2));   // cuerpo largo y bajo
+  const s=[];
+  // parapeto (azotea plana con borde sobresaliente)
+  [d/2,-d/2].forEach(z=>{ s.push(-w/2,h,z, -w/2,pp,z); s.push(w/2,h,z, w/2,pp,z); s.push(-w/2,pp,z, w/2,pp,z); });
+  s.push(-w/2,pp,d/2,-w/2,pp,-d/2);  s.push(w/2,pp,d/2, w/2,pp,-d/2);
+  // banda de fachada + costillas del recubrimiento sobre las puertas
+  s.push(-w/2,h*0.55,d/2, w/2,h*0.55,d/2);
+  const cols=Math.round(w/1.1); for(let i=1;i<cols;i++){const x=-w/2+i/cols*w; s.push(x,h*0.55,d/2, x,h,d/2);}
+  g.add(segs(s,HUD,0.65));
+  // andenes de carga (varias puertas) en el frente
+  const bays=6, zf=d/2+0.02, dw=1.0, dh=h*0.5, dy=0.1, door=[];
+  for(let b=0;b<bays;b++){const xc=-w/2+(b+0.5)*w/bays;
+    door.push(xc-dw/2,dy,zf, xc-dw/2,dh,zf);  door.push(xc+dw/2,dy,zf, xc+dw/2,dh,zf);
+    door.push(xc-dw/2,dh,zf, xc+dw/2,dh,zf);  door.push(xc-dw/2,dy,zf, xc+dw/2,dy,zf);
+    for(let k=1;k<3;k++) door.push(xc-dw/2,dy+(dh-dy)*k/3,zf, xc+dw/2,dy+(dh-dy)*k/3,zf);}
+  g.add(segs(door,GLOW,0.6));
+  // marquesina (canopy) sobre el andén
+  const can=[], cy=h*0.6, cz2=d/2+1.1;
+  can.push(-w/2,cy,d/2, w/2,cy,d/2);  can.push(-w/2,cy,cz2, w/2,cy,cz2);
+  can.push(-w/2,cy,d/2,-w/2,cy,cz2);  can.push(w/2,cy,d/2, w/2,cy,cz2);
+  for(let b=0;b<=bays;b++){const xc=-w/2+b*w/bays; can.push(xc,0,cz2, xc,cy,cz2);}
+  g.add(segs(can,HUD,0.55));
+  // unidades de azotea (HVAC) + tragaluces
+  [[-2.6,0.6],[0,-0.8],[2.6,0.8]].forEach(([x,z])=> g.add(holo(new THREE.BoxGeometry(0.9,0.45,0.9)).translateX(x).translateY(pp+0.22).translateZ(z)) );
+  const sky=[]; for(let i=-2;i<=2;i++) sky.push(i*1.6,pp+0.02,-d/2+0.7, i*1.6,pp+0.02,d/2-0.7); g.add(segs(sky,GLOW,0.35));
+  // un tráiler en el andén (logística)
+  g.add(holo(new THREE.BoxGeometry(2.8,1.4,1.1)).translateX(-w/2+1.4).translateY(0.7).translateZ(cz2+0.95));   // caja
+  g.add(holo(new THREE.BoxGeometry(0.75,0.95,1.0)).translateX(-w/2+3.05).translateY(0.48).translateZ(cz2+0.95)); // tractor
+  g.add(ring(8.5,0.05,HUD,0.3,84));
   return g;
 }
 function mPresa(){ // hidroeléctrica: muro de gravedad macizo + embalse + torres de toma + vertedero + casa de máquinas
