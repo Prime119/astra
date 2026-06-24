@@ -19,6 +19,7 @@ from ..memory.store import Memory
 from .auditor import Auditor, Risk
 from .config import Config, load_config
 from .constitution import Constitution, load_constitution
+from .guardian import Guardian
 from .personality import MODE_CONFORT, MODE_CRISIS, Personality
 
 
@@ -45,7 +46,10 @@ class Astra:
     auditor: Auditor
     memory: Memory
     brain: Brain
+    guardian: Guardian
     integrity_ok: bool = True
+    tamper_ok: bool = True
+    tamper_reason: str = ""
     pending_action: str | None = None
     history: list[dict] = field(default_factory=list)
 
@@ -66,6 +70,10 @@ class Astra:
         # Verificación de integridad del núcleo ético (Zero-Trust, regla 6).
         integrity_ok = cls._check_integrity(memory, constitution)
 
+        # Guardián: candado de dueño + evidencia de manipulación del código (anti-robo).
+        guardian = Guardian(profile_dir=config.paths.profile_dir)
+        tamper_ok, tamper_reason = guardian.verify()
+
         system_prompt = _build_system_prompt(constitution, personality, config)
         brain = Brain.from_app_config(config, system_prompt=system_prompt)
 
@@ -76,7 +84,10 @@ class Astra:
             auditor=auditor,
             memory=memory,
             brain=brain,
+            guardian=guardian,
             integrity_ok=integrity_ok,
+            tamper_ok=tamper_ok,
+            tamper_reason=tamper_reason,
         )
 
     @staticmethod
@@ -96,6 +107,7 @@ class Astra:
             "persona": self.config.persona,
             "version_constitution": self.constitution.short_hash,
             "integrity_ok": self.integrity_ok,
+            "guardian": self.guardian.status(),
             "mode": "portátil" if self.config.paths.is_portable else "residente",
             "hardware": {
                 "ram_gb": self.config.hardware.ram_gb,
@@ -116,7 +128,14 @@ class Astra:
 
     def handle(self, user_text: str) -> str:
         """Procesa una entrada de texto por todo el pipeline de seguridad."""
-        # 0) Parálisis preventiva si el núcleo ético fue alterado (regla 6).
+        # 0a) Tamper-lock: el código fue alterado sin autorización del dueño -> no opera.
+        if not self.tamper_ok:
+            return (
+                "🛑 Sistema bloqueado: detecté que el código fue modificado sin la autorización "
+                f"del dueño ({self.tamper_reason}). No operaré hasta que el dueño verifique su "
+                "identidad y vuelva a sellar el sistema (`python -m astra --seal`)."
+            )
+        # 0b) Parálisis preventiva si el núcleo ético fue alterado (regla 6).
         if not self.integrity_ok:
             return (
                 "🛑 Parálisis preventiva: detecté que mi núcleo ético fue modificado respecto a su "

@@ -15,6 +15,8 @@ Uso:
     python -m astra --cfe                  # mini-chat en la edición CFE
     python -m astra --status               # solo el estado del sistema
     python -m astra --check                 # diagnóstico de Ollama (¿está listo el cerebro?)
+    python -m astra --seal                  # (dueño) sella el código: protección anti-modificación
+    python -m astra --verify                # verifica la integridad del código (tamper-lock)
     python -m astra --say "hola astra"     # un solo turno (no interactivo)
     python -m astra --voice                # conversación por VOZ (Fase 1)
 """
@@ -85,6 +87,21 @@ def main(argv: list[str] | None = None) -> int:
 
     if "--check" in argv:
         _print_brain_check(astra)
+        return 0
+
+    if "--seal" in argv:
+        if not astra.guardian.owner_present():
+            print("\n⚠️  Sellar el sistema es una acción de DUEÑO. En el build protegido requerirá tu "
+                  "rostro. Por ahora, ejecútalo con la sesión de dueño activa (ASTRA_OWNER=1).")
+        digest = astra.guardian.seal()
+        print(f"\n🔒 Sistema SELLADO por el dueño. Huella del código: {digest[:16]}…")
+        print("Desde ahora, si alguien modifica el código sin tu autorización (tu rostro),")
+        print("el sistema se bloqueará y no funcionará. Vuelve a sellar tras cambios legítimos.")
+        return 0
+
+    if "--verify" in argv:
+        ok, reason = astra.guardian.verify()
+        print(f"\n🛡️  Integridad del código: {'✅ OK' if ok else '❌ ALTERADO'} — {reason}")
         return 0
 
     say = _get_say(argv)
