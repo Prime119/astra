@@ -187,26 +187,27 @@ function transformer(cx,cz){
   return t;
 }
 
-function bladeLines(){ // aspa con planta curva (aerodinámica): cuerda ancha cerca de la raíz y afinada a la punta
-  const L=4.9, N=11, le=[], te=[], s=[];
-  const chord=t=> t<0.14 ? 0.22+(t/0.14)*0.5 : 0.72*Math.pow((1-t)/0.86,0.65)+0.07;
-  for(let i=0;i<=N;i++){const t=i/N, y=t*L, c=chord(t), sweep=0.18*t*t;
+function bladeLines(){ // aspa con contorno curvo limpio + larguero central (sin "costillas" tipo peine)
+  const L=4.9, N=16, le=[], te=[], s=[];
+  const chord=t=> t<0.14 ? 0.20+(t/0.14)*0.52 : 0.72*Math.pow((1-t)/0.86,0.7)+0.05;
+  for(let i=0;i<=N;i++){const t=i/N, y=t*L, c=chord(t), sweep=0.16*t*t;
     le.push([-c*0.4+sweep,y]); te.push([c*0.6+sweep,y]);}
-  for(let i=0;i<N;i++){ s.push(le[i][0],le[i][1],0, le[i+1][0],le[i+1][1],0);
-    s.push(te[i][0],te[i][1],0, te[i+1][0],te[i+1][1],0); }
-  s.push(le[0][0],0,0, te[0][0],0,0);  s.push(le[N][0],L,0, te[N][0],L,0);   // raíz y punta
-  for(let i=1;i<N;i++) s.push(le[i][0],le[i][1],0, te[i][0],te[i][1],0);      // costillas
+  for(let i=0;i<N;i++){ s.push(le[i][0],le[i][1],0, le[i+1][0],le[i+1][1],0);     // borde de ataque
+    s.push(te[i][0],te[i][1],0, te[i+1][0],te[i+1][1],0); }                        // borde de salida
+  s.push(le[0][0],0,0, te[0][0],0,0);  s.push(le[N][0],L,0, te[N][0],L,0);         // raíz y punta
+  const mid=i=>(le[i][0]+te[i][0])/2;
+  for(let i=0;i<N;i++) s.push(mid(i),i/N*L,0, mid(i+1),(i+1)/N*L,0);               // larguero central
   return segs(s,HUD,0.85);
 }
 function makeTurbine(){
   const t=new THREE.Group();
-  t.add(holo(new THREE.CylinderGeometry(0.17,0.36,9,16)).translateY(4.5));            // torre cónica esbelta
-  t.add(holo(new THREE.CylinderGeometry(0.55,0.8,0.45,18)).translateY(0.22));         // cimentación
-  t.add(holo(new THREE.BoxGeometry(1.6,0.78,0.85)).translateY(9).translateZ(-0.12));  // góndola
-  t.add(holo(new THREE.ConeGeometry(0.34,0.85,12)).rotateX(-Math.PI/2).translateY(9).translateZ(-0.75)); // cola
+  const tower=holo(new THREE.CylinderGeometry(0.17,0.36,9,16)); tower.position.y=4.5; t.add(tower);   // torre cónica
+  const base=holo(new THREE.CylinderGeometry(0.55,0.8,0.45,18)); base.position.y=0.22; t.add(base);   // cimentación
+  const nac=holo(new THREE.BoxGeometry(1.7,0.8,0.95)); nac.position.set(0,9,-0.1); t.add(nac);          // góndola
+  const tail=holo(new THREE.ConeGeometry(0.3,0.7,12)); tail.rotation.x=-Math.PI/2; tail.position.set(0,9,-0.9); t.add(tail); // cola (apex -Z)
   const hub=new THREE.Group(); hub.position.set(0,9,0.5);
-  hub.add(holo(new THREE.CylinderGeometry(0.3,0.34,0.5,16)).rotateX(Math.PI/2));       // cubo del rotor (eje en Z)
-  const nose=holo(new THREE.SphereGeometry(0.34,16,10)); nose.position.z=0.35; hub.add(nose); // nariz redondeada
+  const cube=holo(new THREE.CylinderGeometry(0.3,0.34,0.5,16)); cube.rotation.x=Math.PI/2; hub.add(cube);            // cubo del rotor
+  const nose=holo(new THREE.ConeGeometry(0.3,0.55,14)); nose.rotation.x=Math.PI/2; nose.position.z=0.45; hub.add(nose); // nariz (apex +Z)
   for(let k=0;k<3;k++){const arm=new THREE.Group(); arm.add(bladeLines()); arm.rotation.z=k*2*Math.PI/3; hub.add(arm);}
   t.add(hub); spin.push({obj:hub,axis:'z',speed:0.8});
   return t;
