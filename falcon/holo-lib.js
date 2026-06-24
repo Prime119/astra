@@ -121,8 +121,8 @@
     const rr=ring(3,0,HUD,0.25,48); rr.rotation.x=Math.PI/2; rr.position.set(0,9,0.55); g.add(rr);
     return g;
   }
-  function mTorreTransmision(){
-    const g=new THREE.Group(); clearSpin();
+  function txTower(){ // un solo pilón (cuerpo + crucetas + aisladores), sin conductores
+    const g=new THREE.Group();
     const H=11, baseHalf=1.9, waistHalf=0.5, waistY=6.5;
     const w=y=> y<=waistY ? baseHalf+(waistHalf-baseHalf)*(y/waistY) : waistHalf;
     const C=[[1,1],[1,-1],[-1,-1],[-1,1]];
@@ -146,12 +146,30 @@
     g.add(segs(armS,HUD,0.8));
     const peak=[], ytop=H+1.0; for(let c=0;c<4;c++) peak.push(...cor(H,c), 0,ytop,0);
     g.add(segs(peak,HUD,0.7));
-    const ins=[], cond=[], Z=16, sag=1.5, yAt=(y0,z)=>y0 - sag*(1-(z/Z)*(z/Z));
-    tips.forEach(([x,y])=>{ const ny=y-0.9;
-      for(let k=0;k<5;k++) ins.push(x,y-k*0.18,0, x,y-(k+1)*0.18,0);
-      for(let z=-Z;z<Z;z++) cond.push(x,yAt(ny,z),z, x,yAt(ny,z+1),z+1); });
-    for(let z=-Z;z<Z;z++) cond.push(0,yAt(ytop,z),z, 0,yAt(ytop,z+1),z+1);
+    const ins=[]; tips.forEach(([x,y])=>{ for(let k=0;k<5;k++) ins.push(x,y-k*0.18,0, x,y-(k+1)*0.18,0); });
     g.add(segs(ins,GLOW,0.7));
+    return {g, tips, ytop};
+  }
+  function mTorreTransmision(){ // LÍNEA de transmisión: varias torres + conductores entre ellas
+    clearSpin(); const g=new THREE.Group();
+    const span=12, towersZ=[-span,0,span], sag=1.7;
+    const data=towersZ.map(z=>{ const t=txTower(); t.g.position.z=z; g.add(t.g); return {z,tips:t.tips,ytop:t.ytop}; });
+    const cond=[];
+    function vano(z0,z1,x,y0){ const mid=(z0+z1)/2, half=(z1-z0)/2, N=18;
+      for(let k=0;k<N;k++){ const za=z0+(k/N)*(z1-z0), zb=z0+((k+1)/N)*(z1-z0);
+        const ya=y0 - sag*(1-Math.pow((za-mid)/half,2)), yb=y0 - sag*(1-Math.pow((zb-mid)/half,2));
+        cond.push(x,ya,za, x,yb,zb); } }
+    for(let i=0;i<data.length-1;i++){ const z0=data[i].z, z1=data[i+1].z;
+      data[i].tips.forEach(([x,y])=> vano(z0,z1,x,y-0.9));   // conductores de fase
+      vano(z0,z1,0,data[i].ytop-0.15);                        // cable de guarda (pico)
+    }
+    // la línea continúa más allá de las torres extremas (se pierde a lo lejos)
+    const ext=11;
+    function stub(zEnd,dir,tips){ const N=12; tips.forEach(([x,y])=>{ const ny=y-0.9;
+      for(let k=0;k<N;k++){ const za=zEnd+dir*(k/N)*ext, zb=zEnd+dir*((k+1)/N)*ext;
+        const ya=ny - sag*(Math.abs(za-zEnd)/ext), yb=ny - sag*(Math.abs(zb-zEnd)/ext);
+        cond.push(x,ya,za, x,yb,zb); } }); }
+    stub(towersZ[0],-1,data[0].tips); stub(towersZ[towersZ.length-1],1,data[data.length-1].tips);
     g.add(segs(cond,GLOW,0.4));
     return g;
   }
