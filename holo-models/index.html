@@ -63,6 +63,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
 const HUD=0x22d3ee, GLOW=0x67e8f9;
 
@@ -182,7 +183,7 @@ function mTorreTransmision(){ // pilón de transmisión (lattice) + líneas
 }
 function mTorreEnfriamiento(){ // hiperboloide realista (cuello cerca del tope)
   clearSpin(); const g=new THREE.Group();
-  const H=10, yT=8, throat=1.7, c=5.5;            // base ancha -> cuello arriba -> ligera campana
+  const H=13, yT=10, throat=1.6, c=7.0;           // más alta y esbelta (silueta real)
   const rAt=y=>throat*Math.sqrt(1+Math.pow((y-yT)/c,2));
   const prof=[]; for(let i=0;i<=30;i++){const y=i/30*H; prof.push(new THREE.Vector2(rAt(y),y));}
   g.add(holo(new THREE.LatheGeometry(prof,48),{wire:true,edge:0.42,fill:0.04}));
@@ -256,26 +257,51 @@ function mNuclear(){ // edificio de contención (cilindro + cúpula) + torre de 
 }
 
 const MODELS={
-  aerogenerador:{f:mAerogenerador,name:"Aerogenerador",type:"Central Eólica"},
-  transmision:{f:mTorreTransmision,name:"Torre de Transmisión",type:"Líneas / Pilón"},
-  enfriamiento:{f:mTorreEnfriamiento,name:"Torre de Enfriamiento",type:"Termoeléctrica"},
-  subestacion:{f:mSubestacion,name:"Subestación",type:"Transformación"},
-  solar:{f:mSolar,name:"Planta Solar",type:"Fotovoltaica"},
-  presa:{f:mPresa,name:"Presa / Hidroeléctrica",type:"Generación Hidráulica"},
-  edificio:{f:mEdificio,name:"Oficinas CFE",type:"Administrativo"},
-  nuclear:{f:mNuclear,name:"Central Nuclear",type:"Reactor + Enfriamiento"},
+  aerogenerador:{f:mAerogenerador,name:"Aerogenerador",type:"Central Eólica",glb:"aerogenerador.glb"},
+  transmision:{f:mTorreTransmision,name:"Torre de Transmisión",type:"Líneas / Pilón",glb:"torre-transmision.glb"},
+  enfriamiento:{f:mTorreEnfriamiento,name:"Torre de Enfriamiento",type:"Termoeléctrica",glb:"torre-enfriamiento.glb"},
+  subestacion:{f:mSubestacion,name:"Subestación",type:"Transformación",glb:"subestacion.glb"},
+  solar:{f:mSolar,name:"Planta Solar",type:"Fotovoltaica",glb:"planta-solar.glb"},
+  presa:{f:mPresa,name:"Presa / Hidroeléctrica",type:"Generación Hidráulica",glb:"presa.glb"},
+  edificio:{f:mEdificio,name:"Oficinas CFE",type:"Administrativo",glb:"oficinas.glb"},
+  nuclear:{f:mNuclear,name:"Central Nuclear",type:"Reactor + Enfriamiento",glb:"central-nuclear.glb"},
 };
 
-let current=null;
-function show(key){
-  if(current){scene.remove(current);} clearSpin();
-  current=MODELS[key].f(); scene.add(current);
+// Convierte cualquier modelo 3D real en holograma cian (wireframe + relleno aditivo)
+function applyHolo(obj){
+  obj.traverse(o=>{ if(o.isMesh){
+    o.material=new THREE.MeshBasicMaterial({color:HUD,wireframe:true,transparent:true,opacity:0.55});
+  }});
+}
+// Escala y centra el modelo para que mida ~target de alto y se apoye en y=0
+function fitModel(obj,target){
+  let box=new THREE.Box3().setFromObject(obj); const size=new THREE.Vector3(); box.getSize(size);
+  const s=target/Math.max(size.y,0.001); obj.scale.setScalar(s);
+  box=new THREE.Box3().setFromObject(obj); const c=new THREE.Vector3(); box.getCenter(c);
+  obj.position.x-=c.x; obj.position.z-=c.z; obj.position.y-=box.min.y;
+}
+
+let current=null, loadToken=0;
+function setCurrent(obj){ if(current) scene.remove(current); current=obj; scene.add(obj); }
+function setActive(key){ [...document.querySelectorAll('#picker button')].forEach(b=>b.classList.toggle('active',b.dataset.k===key)); }
+function updateCard(key){
   document.getElementById('cName').textContent=MODELS[key].name;
   document.getElementById('cType').textContent=MODELS[key].type+" · CFE";
   const carga=40+Math.floor(Math.random()*60);
-  document.getElementById('cCarga').textContent=carga+"%";
-  document.getElementById('cBar').style.width=carga+"%";
-  [...document.querySelectorAll('#picker button')].forEach(b=>b.classList.toggle('active',b.dataset.k===key));
+  document.getElementById('cCarga').textContent=carga+"%"; document.getElementById('cBar').style.width=carga+"%";
+}
+function show(key){
+  const m=MODELS[key]; const token=++loadToken; clearSpin();
+  setCurrent(m.f());          // respaldo a código: aparece al instante
+  updateCard(key); setActive(key);
+  // si hay un modelo 3D REAL disponible, lo carga y reemplaza (efecto holográfico)
+  if(m.glb && THREE.GLTFLoader){
+    new THREE.GLTFLoader().load('models3d/'+m.glb,
+      (gltf)=>{ if(token!==loadToken) return; clearSpin();
+        const obj=gltf.scene; applyHolo(obj); fitModel(obj,9); setCurrent(obj); },
+      undefined,
+      ()=>{ /* no existe el .glb -> se queda el modelo a código */ });
+  }
 }
 // Botones
 const picker=document.getElementById('picker');
