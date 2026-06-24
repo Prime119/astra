@@ -214,15 +214,16 @@ function inMexico(lon,lat){return inPoly(lon,lat,MX_MAINLAND)||inPoly(lon,lat,MX
 // ============ Generación de MUCHOS activos CFE (representativos) ============
 // Activos reales destacados:
 const NAMED=[
-  {name:"S.E. Cerro Gordo",type:"subestacion",lon:-99.05,lat:19.72},
-  {name:"S.E. Monterrey Oriente",type:"subestacion",lon:-100.18,lat:25.70},
-  {name:"S.E. Guadalajara",type:"subestacion",lon:-103.35,lat:20.67},
-  {name:"C.H. Malpaso",type:"hidro",lon:-93.60,lat:17.18},
-  {name:"C.H. Chicoasén",type:"hidro",lon:-93.10,lat:16.93},
-  {name:"C.E. La Venta",type:"eolica",lon:-94.80,lat:16.60},
-  {name:"C.F.V. Puerto Peñasco",type:"solar",lon:-113.53,lat:31.30},
-  {name:"C.T. Tula",type:"termo",lon:-99.12,lat:20.05},
-  {name:"S.E. Hermosillo",type:"subestacion",lon:-110.97,lat:29.07},
+  {name:"S.E. Hermosillo",type:"subestacion",lon:-110.97,lat:29.07,estado:"Sonora"},
+  {name:"C.F.V. Puerto Peñasco",type:"solar",lon:-113.53,lat:31.30,estado:"Sonora"},
+  {name:"C.T. Puerto Libertad",type:"termo",lon:-112.68,lat:29.91,estado:"Sonora"},
+  {name:"S.E. Culiacán",type:"subestacion",lon:-107.39,lat:24.80,estado:"Sinaloa"},
+  {name:"C.H. Sanalona",type:"hidro",lon:-107.13,lat:24.82,estado:"Sinaloa"},
+  {name:"S.E. Chihuahua Industrial",type:"subestacion",lon:-106.07,lat:28.63,estado:"Chihuahua"},
+  {name:"S.E. Mexicali",type:"subestacion",lon:-115.47,lat:32.62,estado:"Baja California"},
+  {name:"S.E. La Paz",type:"subestacion",lon:-110.31,lat:24.14,estado:"Baja California Sur"},
+  {name:"S.E. Torreón",type:"subestacion",lon:-103.41,lat:25.54,estado:"Coahuila"},
+  {name:"S.E. Durango",type:"subestacion",lon:-104.65,lat:24.02,estado:"Durango"},
 ];
 function pickType(){const r=Math.random();
   if(r<0.55)return"subestacion"; if(r<0.80)return"torre"; if(r<0.86)return"solar";
@@ -234,20 +235,31 @@ function genTelemetry(){
   if(roll>0.95){temp=66+Math.random()*16;vib=7+Math.random()*4;thd=9+Math.random()*9;pf=0.70+Math.random()*0.12;salud=18+Math.random()*30;}
   return {v:120+Math.random()*12,i:10+Math.random()*45,freq:59.8+Math.random()*0.4,pf,temp,vib,thd,salud};
 }
+// Estados a monitorear (noroeste) con su caja de coordenadas
+const REGION=[
+  {estado:"Baja California",     baja:true, lon0:-117.3,lon1:-113.0, lat0:28.00,lat1:32.70},
+  {estado:"Baja California Sur", baja:true, lon0:-115.2,lon1:-109.4, lat0:22.80,lat1:28.05},
+  {estado:"Sonora",                         lon0:-113.6,lon1:-108.5, lat0:26.50,lat1:32.40},
+  {estado:"Sinaloa",                        lon0:-109.2,lon1:-105.5, lat0:22.60,lat1:27.00},
+  {estado:"Chihuahua",                      lon0:-108.8,lon1:-103.4, lat0:25.60,lat1:31.60},
+  {estado:"Durango",                        lon0:-107.0,lon1:-102.6, lat0:22.50,lat1:26.80},
+  {estado:"Coahuila",                       lon0:-103.8,lon1:-100.2, lat0:24.60,lat1:29.70},
+];
 const ASSETS=[];
 let id=0;
-NAMED.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:"",t:genTelemetry()}));
-// Distribuir ~520 activos dentro de México
-const TARGET=520; let guard=0;
-while(ASSETS.length<TARGET && guard<40000){
+NAMED.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado,t:genTelemetry()}));
+// Distribuir activos SOLO dentro de los 7 estados del noroeste
+const TARGET=200; let guard=0;
+while(ASSETS.length<TARGET && guard<60000){
   guard++;
-  const lon=-117+Math.random()*31, lat=14.5+Math.random()*18.2;
-  if(!inMexico(lon,lat))continue;
+  const r=REGION[Math.floor(Math.random()*REGION.length)];
+  const lon=r.lon0+Math.random()*(r.lon1-r.lon0), lat=r.lat0+Math.random()*(r.lat1-r.lat0);
+  const ok = r.baja ? inPoly(lon,lat,MX_BAJA) : inPoly(lon,lat,MX_MAINLAND);   // sólo tierra
+  if(!ok) continue;
   const type=pickType();
-  const estado=ESTADOS[Math.floor(Math.random()*ESTADOS.length)];
   const num=100+Math.floor(Math.random()*900);
-  const name=`${TYPE_PREFIX[type]} ${estado} ${num}`;
-  ASSETS.push({id:id++,name,type,lon,lat,estado,t:genTelemetry()});
+  const name=`${TYPE_PREFIX[type]} ${r.estado} ${num}`;
+  ASSETS.push({id:id++,name,type,lon,lat,estado:r.estado,t:genTelemetry()});
 }
 document.getElementById('count').textContent = ASSETS.length+" activos";
 
@@ -272,8 +284,8 @@ const map=new maplibregl.Map({
       attribution:"© OpenStreetMap, © CARTO" } },
     layers:[{id:"carto",type:"raster",source:"carto"}]
   },
-  center:[-102,23.6], zoom:4.6, minZoom:4.4, maxZoom:18, maxPitch:70,
-  maxBounds:[[-122,11],[-83,34]]   // no te alejas más que ver todo México
+  center:[-109,27.6], zoom:5.7, minZoom:5.5, maxZoom:18, maxPitch:70,
+  maxBounds:[[-126,18],[-94,36]]   // no te alejas más que ver la región noroeste
 });
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
 
