@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FALCON // HOLO-MODELOS — Biblioteca 3D CFE</title>
+<style>
+  :root{--bg:#040810;--hud:#22d3ee;--glow:#67e8f9;--hud-dk:#0e7490;--text:#cdeffb;--muted:#6b8597;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:'Consolas','Courier New',monospace;overflow:hidden;}
+  #app{position:fixed;inset:0;}
+  canvas{display:block;}
+  #topbar{position:fixed;top:0;left:0;right:0;height:46px;z-index:10;pointer-events:none;
+    display:flex;align-items:center;gap:14px;padding:0 18px;
+    background:linear-gradient(180deg,rgba(8,26,40,.85),rgba(4,8,16,0));}
+  #topbar .mark{color:var(--glow);font-weight:900;font-size:16px;letter-spacing:3px;text-shadow:0 0 10px var(--hud);}
+  #topbar .sub{color:var(--hud);font-size:11px;letter-spacing:2px;}
+  #topbar .spacer{flex:1;}
+  #topbar .dot{color:#10b981;font-size:11px;font-weight:bold;letter-spacing:1px;}
+
+  /* Tarjeta de info (derecha) */
+  #card{position:fixed;top:64px;right:18px;width:260px;z-index:10;
+    background:rgba(7,20,32,.8);border:1px solid var(--hud-dk);border-radius:8px;padding:12px 14px;
+    box-shadow:0 0 22px rgba(34,211,238,.18);}
+  #card .name{color:var(--glow);font-weight:bold;font-size:14px;letter-spacing:1px;}
+  #card .type{color:var(--muted);font-size:11px;margin:2px 0 10px;}
+  #card .row{display:flex;justify-content:space-between;font-size:11px;margin:4px 0;color:var(--muted);}
+  #card .row b{color:var(--text);}
+  #card .bar{height:5px;background:#0c2230;border-radius:3px;margin-top:3px;overflow:hidden;}
+  #card .bar > i{display:block;height:100%;background:linear-gradient(90deg,#0e7490,#22d3ee);}
+
+  /* Selector de modelos (abajo) */
+  #picker{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:10;
+    display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:92vw;
+    background:rgba(7,20,32,.7);border:1px solid var(--hud-dk);border-radius:10px;padding:8px;}
+  #picker button{background:#0a1c2b;border:1px solid var(--hud-dk);color:var(--muted);
+    font-family:inherit;font-size:11px;letter-spacing:.5px;padding:7px 11px;border-radius:6px;cursor:pointer;}
+  #picker button:hover{color:var(--text);border-color:var(--hud);}
+  #picker button.active{color:#04121b;background:var(--hud);border-color:var(--glow);font-weight:bold;
+    box-shadow:0 0 12px rgba(34,211,238,.5);}
+  #hint{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:10;pointer-events:none;
+    color:var(--muted);font-size:11px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="topbar">
+  <span class="mark">◤ FALCON</span>
+  <span class="sub">// HOLO-MODELOS — BIBLIOTECA 3D · CFE</span>
+  <span class="spacer"></span>
+  <span class="dot">● HOLOGRAMA ACTIVO</span>
+</div>
+<div id="card">
+  <div class="name" id="cName">—</div>
+  <div class="type" id="cType">—</div>
+  <div class="row"><span>Estado</span><b id="cEstado">NOMINAL</b></div>
+  <div class="row"><span>Carga</span><b id="cCarga">—</b></div>
+  <div class="bar"><i id="cBar" style="width:80%"></i></div>
+</div>
+<div id="hint">Arrastra para rotar · rueda para zoom · elige un modelo abajo</div>
+<div id="picker"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+const HUD=0x22d3ee, GLOW=0x67e8f9;
+
+// ---------- Escena ----------
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x040810);
+scene.fog=new THREE.FogExp2(0x040810,0.018);
+const camera=new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 1000);
+camera.position.set(9,7,13);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(devicePixelRatio); renderer.setSize(innerWidth,innerHeight);
+document.getElementById('app').appendChild(renderer.domElement);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true; controls.dampingFactor=0.08; controls.target.set(0,3,0);
+controls.maxPolarAngle=Math.PI*0.49; controls.minDistance=5; controls.maxDistance=40;
+
+// ---------- Helpers holográficos ----------
+function holo(geo,{color=HUD,wire=false,fill=0.05,edge=0.9,thr=20}={}){
+  const g=new THREE.Group();
+  if(fill>0){
+    g.add(new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color,transparent:true,opacity:fill,
+      blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})));
+  }
+  if(edge>0){
+    const lg = wire ? new THREE.WireframeGeometry(geo) : new THREE.EdgesGeometry(geo,thr);
+    g.add(new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color,transparent:true,opacity:edge})));
+  }
+  return g;
+}
+function segs(list,color=HUD,op=0.85){ // list: [x1,y1,z1,x2,y2,z2,...]
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(list,3));
+  return new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color,transparent:true,opacity:op}));
+}
+function ring(r,y=0.05,color=HUD,op=0.5,seg=64){
+  const pts=[];for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*r,y,Math.sin(a)*r));}
+  return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color,transparent:true,opacity:op}));
+}
+
+// ---------- Terreno plexus (malla cian) ----------
+const terrain=new THREE.Group();
+(function(){
+  const N=44, S=80, pts=[], seg=[];
+  const H=(x,z)=>Math.sin(x*0.25)*0.6+Math.cos(z*0.22)*0.6+Math.sin((x+z)*0.13)*0.5;
+  const grid=[];
+  for(let i=0;i<=N;i++){grid[i]=[];for(let j=0;j<=N;j++){
+    const x=(i/N-0.5)*S, z=(j/N-0.5)*S, y=H(x,z)-1.8;
+    grid[i][j]=new THREE.Vector3(x,y,z); pts.push(x,y,z);
+  }}
+  for(let i=0;i<=N;i++)for(let j=0;j<=N;j++){
+    if(i<N){const a=grid[i][j],b=grid[i+1][j];seg.push(a.x,a.y,a.z,b.x,b.y,b.z);}
+    if(j<N){const a=grid[i][j],b=grid[i][j+1];seg.push(a.x,a.y,a.z,b.x,b.y,b.z);}
+  }
+  terrain.add(segs(seg,0x0e6b85,0.35));
+  const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+  terrain.add(new THREE.Points(pg,new THREE.PointsMaterial({color:GLOW,size:0.18,transparent:true,opacity:0.7})));
+})();
+scene.add(terrain);
+
+// Anillos HUD en la base del modelo
+const baseRings=new THREE.Group();
+baseRings.add(ring(4.2,-0.04,HUD,0.5)); baseRings.add(ring(5.6,-0.06,GLOW,0.25)); baseRings.add(ring(3.1,-0.02,HUD,0.35));
+scene.add(baseRings);
+
+// Partículas que ascienden
+const motes=(function(){
+  const n=120,p=[];for(let i=0;i<n;i++)p.push((Math.random()-0.5)*16,Math.random()*14-2,(Math.random()-0.5)*16);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
+  const m=new THREE.Points(g,new THREE.PointsMaterial({color:GLOW,size:0.1,transparent:true,opacity:0.5}));
+  scene.add(m);return m;
+})();
+
+// ---------- Modelos por tipo ----------
+const spin=[]; // objetos que rotan (aspas, etc.)
+const steam=[]; // penachos de vapor animados
+function clearSpin(){spin.length=0; steam.length=0;}
+
+// Penacho de vapor (puntos ascendentes) — se añade como hijo del grupo del modelo
+function addSteam(x,y,z,r,n){
+  const pts=[]; for(let i=0;i<n;i++) pts.push(x+(Math.random()-0.5)*r, y+Math.random()*3.6, z+(Math.random()-0.5)*r);
+  const gg=new THREE.BufferGeometry(); gg.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+  const m=new THREE.Points(gg,new THREE.PointsMaterial({color:GLOW,size:0.26,transparent:true,opacity:0.35,
+    blending:THREE.AdditiveBlending,depthWrite:false}));
+  steam.push({m,baseY:y,top:y+3.8,r}); return m;
+}
+// Columna de celosía de 4 cuerdas con diagonales en zig-zag (N niveles)
+function latticeColumn(x,z,h,half,levels){
+  levels=levels||6; const s=[], C=[[1,1],[1,-1],[-1,-1],[-1,1]], lv=[];
+  for(let i=0;i<=levels;i++) lv.push(i/levels*h);
+  const cor=(y,sx,sz)=>[x+sx*half,y,z+sz*half];
+  for(let c=0;c<4;c++)for(let i=0;i<levels;i++)s.push(...cor(lv[i],...C[c]),...cor(lv[i+1],...C[c]));      // cuerdas
+  for(const y of lv)for(let c=0;c<4;c++)s.push(...cor(y,...C[c]),...cor(y,...C[(c+1)%4]));                 // horizontales
+  for(let i=0;i<levels;i++)for(let c=0;c<4;c++){const c2=(c+1)%4;                                          // diagonales
+    if(i%2===0) s.push(...cor(lv[i],...C[c]),...cor(lv[i+1],...C[c2]));
+    else        s.push(...cor(lv[i+1],...C[c]),...cor(lv[i],...C[c2]));}
+  return s;
+}
+// Aislador tipo poste (columna de discos) en (x,z) desde y0, alto h
+function insulator(x,z,y0,h){
+  const grp=new THREE.Group();
+  grp.add(holo(new THREE.CylinderGeometry(0.07,0.07,h,8),{fill:0.04,edge:0.4}).translateX(x).translateY(y0+h/2).translateZ(z));
+  const n=Math.max(3,Math.round(h/0.22));
+  for(let i=1;i<n;i++){const rr=ring(0.15,y0+i*h/n,GLOW,0.45,14); rr.position.x=x; rr.position.z=z; grp.add(rr);}
+  return grp;
+}
+// Transformador de potencia (tanque + radiadores + bujes + conservador)
+function transformer(cx,cz){
+  const t=new THREE.Group();
+  const tank=holo(new THREE.BoxGeometry(1.7,1.5,1.2)); tank.position.set(cx,0.85,cz); t.add(tank);
+  const cons=holo(new THREE.CylinderGeometry(0.24,0.24,1.5,14)); cons.rotation.z=Math.PI/2; cons.position.set(cx,2.0,cz-0.5); t.add(cons);
+  [-0.5,0,0.5].forEach(bx=>{const b=holo(new THREE.CylinderGeometry(0.08,0.13,1.0,8)); b.position.set(cx+bx,2.25,cz+0.3); b.rotation.x=-0.3; t.add(b);
+    const rr=ring(0.18,0,GLOW,0.5,12); rr.position.set(cx+bx,2.75,cz+0.45); t.add(rr);});
+  const rad=[];
+  [-1,1].forEach(side=>{ const xf=cx+side*1.0;
+    for(let f=0;f<=7;f++){const zz=cz-0.55+f*0.157; rad.push(xf,0.3,zz, xf,1.4,zz);}
+    rad.push(xf,0.3,cz-0.55, xf,0.3,cz+0.55,  xf,1.4,cz-0.55, xf,1.4,cz+0.55);
+    rad.push(cx+side*0.85,0.85,cz-0.4, xf,0.85,cz-0.4,  cx+side*0.85,0.85,cz+0.4, xf,0.85,cz+0.4);
+  });
+  t.add(segs(rad,GLOW,0.55));
+  return t;
+}
+
+function bladeLines(){ // pala 3D y delgada: dos contornos (grosor) + relleno tenue
+  const L=4.5, N=18, th=0.10, le=[], te=[];
+  const chord=t=> t<0.16 ? 0.07+(t/0.16)*0.45 : 0.52*Math.pow((1-t)/0.84,0.85)+0.03;
+  for(let i=0;i<=N;i++){const t=i/N, y=t*L, c=chord(t), sweep=0.12*t*t;
+    le.push([-c*0.42+sweep,y]); te.push([c*0.58+sweep,y]);}
+  const g=new THREE.Group();
+  const shape=new THREE.Shape(); shape.moveTo(le[0][0],le[0][1]);
+  for(let i=1;i<=N;i++) shape.lineTo(le[i][0],le[i][1]);
+  for(let i=N;i>=0;i--) shape.lineTo(te[i][0],te[i][1]);
+  g.add(new THREE.Mesh(new THREE.ShapeGeometry(shape),
+    new THREE.MeshBasicMaterial({color:HUD,transparent:true,opacity:0.06,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})));
+  const s=[];
+  [th/2,-th/2].forEach(z=>{                                  // contorno en dos planos -> grosor 3D
+    for(let i=0;i<N;i++){ s.push(le[i][0],le[i][1],z, le[i+1][0],le[i+1][1],z);
+      s.push(te[i][0],te[i][1],z, te[i+1][0],te[i+1][1],z); }
+    s.push(le[0][0],le[0][1],z, te[0][0],te[0][1],z);  s.push(le[N][0],le[N][1],z, te[N][0],te[N][1],z); });
+  for(let i=0;i<=N;i+=3){ s.push(le[i][0],le[i][1],th/2, le[i][0],le[i][1],-th/2);   // conectores de grosor
+    s.push(te[i][0],te[i][1],th/2, te[i][0],te[i][1],-th/2); }
+  g.add(segs(s,HUD,0.8));
+  return g;
+}
+function makeTurbine(){
+  const t=new THREE.Group();
+  const tower=holo(new THREE.CylinderGeometry(0.16,0.34,9,16)); tower.position.y=4.5; t.add(tower);   // torre cónica
+  const base=holo(new THREE.CylinderGeometry(0.55,0.8,0.45,18)); base.position.y=0.22; t.add(base);   // cimentación
+  // góndola aerodinámica (cápsula octagonal achatada) - más pequeña y redondeada
+  const nacGrp=new THREE.Group();
+  const nac=holo(new THREE.CylinderGeometry(0.30,0.26,1.5,8),{fill:0.06,edge:0.6});
+  nac.rotation.x=Math.PI/2; nacGrp.add(nac);
+  nacGrp.scale.set(1.25,0.82,1); nacGrp.position.set(0,9,-0.15); t.add(nacGrp);
+  // anemómetro/antena arriba (como la foto)
+  t.add(holo(new THREE.BoxGeometry(0.12,0.12,0.12)).translateY(9.3).translateZ(-0.5));
+  t.add(segs([0,9.3,-0.55, 0,9.75,-0.55],GLOW,0.6));
+  // rotor: cubo + nariz redondeada + aspas
+  const hub=new THREE.Group(); hub.position.set(0,9,0.55);
+  const cube=holo(new THREE.CylinderGeometry(0.26,0.28,0.4,14)); cube.rotation.x=Math.PI/2; hub.add(cube);
+  const nose=holo(new THREE.ConeGeometry(0.27,0.5,16)); nose.rotation.x=Math.PI/2; nose.position.z=0.42; hub.add(nose);
+  for(let k=0;k<3;k++){const arm=new THREE.Group(); arm.add(bladeLines()); arm.rotation.z=k*2*Math.PI/3; hub.add(arm);}
+  t.add(hub); spin.push({obj:hub,axis:'z',speed:0.8});
+  return t;
+}
+function mAerogenerador(){ // central eólica (parque con varias turbinas)
+  const g=new THREE.Group(); clearSpin();
+  g.add(makeTurbine());
+  const t2=makeTurbine(); t2.scale.setScalar(0.58); t2.position.set(-6.8,0,-6.5); g.add(t2);
+  const t3=makeTurbine(); t3.scale.setScalar(0.48); t3.position.set(7.2,0,-8.5); g.add(t3);
+  const rr=ring(3.1,0,HUD,0.22,52); rr.rotation.x=Math.PI/2; rr.position.set(0,9,0.5); g.add(rr);
+  return g;
+}
+function mAerogenerador(){ // central eólica (parque con varias turbinas)
+  const g=new THREE.Group(); clearSpin();
+  g.add(makeTurbine());
+  const t2=makeTurbine(); t2.scale.setScalar(0.6); t2.position.set(-6.5,0,-6); g.add(t2);
+  const t3=makeTurbine(); t3.scale.setScalar(0.5); t3.position.set(7,0,-8); g.add(t3);
+  const rr=ring(3,0,HUD,0.25,48); rr.rotation.x=Math.PI/2; rr.position.set(0,9,0.55); g.add(rr);
+  return g;
+}
+function mTorreTransmision(){ // pilón de celosía con arriostre en X, crucetas, aisladores y conductores
+  const g=new THREE.Group(); clearSpin();
+  const H=11, baseHalf=1.9, waistHalf=0.5, waistY=6.5;
+  const w=y=> y<=waistY ? baseHalf+(waistHalf-baseHalf)*(y/waistY) : waistHalf;
+  const C=[[1,1],[1,-1],[-1,-1],[-1,1]];
+  const cor=(y,c)=>[C[c][0]*w(y), y, C[c][1]*w(y)];
+  const lv=[]; const NP=11; for(let i=0;i<=NP;i++) lv.push(i/NP*H);
+  const s=[];
+  for(let c=0;c<4;c++) for(let i=0;i<lv.length-1;i++) s.push(...cor(lv[i],c),...cor(lv[i+1],c));   // 4 patas
+  for(const y of lv) for(let c=0;c<4;c++) s.push(...cor(y,c),...cor(y,(c+1)%4));                     // horizontales
+  for(let i=0;i<lv.length-1;i++) for(let c=0;c<4;c++){ const c2=(c+1)%4;                              // arriostre en X
+    s.push(...cor(lv[i],c),...cor(lv[i+1],c2)); s.push(...cor(lv[i],c2),...cor(lv[i+1],c)); }
+  g.add(segs(s,HUD,0.8));
+  // crucetas triangulares (3 niveles) a ambos lados
+  const arms=[7.4,8.7,10.0], armS=[], tips=[];
+  arms.forEach((y,idx)=>{ const reach=2.7-idx*0.25;
+    [-1,1].forEach(side=>{ const xTip=side*(w(y)+reach);
+      armS.push(side*w(y),y,0.3, xTip,y,0);  armS.push(side*w(y),y,-0.3, xTip,y,0);  // cuerdas superiores
+      armS.push(side*w(y),y-0.75,0, xTip,y,0);                                        // cuerda inferior
+      const NB=4; for(let b=1;b<NB;b++){const xb=side*w(y)+(xTip-side*w(y))*b/NB;
+        armS.push(xb,y,0, xb,y-0.75*(1-b/NB),0);}                                     // montantes
+      tips.push([xTip,y]); });
+  });
+  g.add(segs(armS,HUD,0.8));
+  // pico superior (para cable de guarda)
+  const peak=[], ytop=H+1.0; for(let c=0;c<4;c++) peak.push(...cor(H,c), 0,ytop,0);
+  g.add(segs(peak,HUD,0.7));
+  // cadenas de aisladores colgantes + conductores con catenaria (a lo largo de Z)
+  const ins=[], cond=[], Z=16, sag=1.5, yAt=(y0,z)=>y0 - sag*(1-(z/Z)*(z/Z));
+  tips.forEach(([x,y])=>{ const ny=y-0.9;
+    for(let k=0;k<5;k++) ins.push(x,y-k*0.18,0, x,y-(k+1)*0.18,0);
+    for(let z=-Z;z<Z;z++) cond.push(x,yAt(ny,z),z, x,yAt(ny,z+1),z+1); });
+  for(let z=-Z;z<Z;z++) cond.push(0,yAt(ytop,z),z, 0,yAt(ytop,z+1),z+1); // cable de guarda
+  g.add(segs(ins,GLOW,0.7));
+  g.add(segs(cond,GLOW,0.4));
+  return g;
+}
+function mTorreEnfriamiento(){ // hiperboloide realista con nervaduras, patas en A y vapor
+  clearSpin(); const g=new THREE.Group();
+  const H=13, baseR=4.2, throatR=2.3, throatY=H*0.80;
+  const c=throatY/Math.sqrt(Math.pow(baseR/throatR,2)-1);
+  const rAt=y=>throatR*Math.sqrt(1+Math.pow((y-throatY)/c,2));
+  const NV=40;
+  const prof=[]; for(let i=0;i<=NV;i++){const y=i/NV*H; prof.push(new THREE.Vector2(rAt(y),y));}
+  g.add(holo(new THREE.LatheGeometry(prof,64),{fill:0.05,edge:0})); // sólo relleno tenue
+  // nervaduras verticales (meridianos) — dan la forma de cáscara de concreto
+  const ribs=[]; const MER=30;
+  for(let m=0;m<MER;m++){const a=m/MER*Math.PI*2, ca=Math.cos(a), sa=Math.sin(a);
+    for(let i=0;i<NV;i++){const y0=i/NV*H,y1=(i+1)/NV*H;
+      ribs.push(ca*rAt(y0),y0,sa*rAt(y0), ca*rAt(y1),y1,sa*rAt(y1));}}
+  g.add(segs(ribs,HUD,0.5));
+  for(let i=0;i<=11;i++){const y=i/11*H; g.add(ring(rAt(y),y,GLOW,0.3,72));}
+  // patas en A inclinadas (la cáscara se apoya a ~1.6 m del suelo) — icónicas
+  const legs=[], NL=30, rb=rAt(0), yL=1.6;
+  for(let i=0;i<NL;i++){
+    const a0=i/NL*Math.PI*2, a1=(i+1)/NL*Math.PI*2, am=(i+0.5)/NL*Math.PI*2;
+    const x0=Math.cos(a0)*rb, z0=Math.sin(a0)*rb, x1=Math.cos(a1)*rb, z1=Math.sin(a1)*rb;
+    const xm=Math.cos(am)*rb, zm=Math.sin(am)*rb;
+    legs.push(x0,yL,z0, xm,0,zm,  xm,0,zm, x1,yL,z1);
+  }
+  g.add(segs(legs,HUD,0.7));
+  g.add(ring(rb,yL,HUD,0.6,72));
+  // vapor saliendo de la boca superior
+  g.add(addSteam(0,H,0,throatR*1.5,90));
+  return g;
+}
+
+// Poste de celosía de 4 patas (devuelve segmentos)
+function latticePost(x,z,h,half){
+  const s=[], C=[[1,1],[1,-1],[-1,-1],[-1,1]], lv=[0,h*0.33,h*0.66,h];
+  const cor=(y,sx,sz)=>[x+sx*half,y,z+sz*half];
+  for(let c=0;c<4;c++)for(let i=0;i<lv.length-1;i++)s.push(...cor(lv[i],...C[c]),...cor(lv[i+1],...C[c]));
+  for(const y of lv)for(let c=0;c<4;c++)s.push(...cor(y,...C[c]),...cor(y,...C[(c+1)%4]));
+  for(let i=0;i<lv.length-1;i++)for(let c=0;c<4;c++)s.push(...cor(lv[i],...C[c]),...cor(lv[i+1],...C[(c+1)%4]));
+  return s;
+}
+function mSubestacion(){ // pórticos de celosía + busbars + aisladores + transformadores
+  clearSpin(); const g=new THREE.Group();
+  const s=[]; const gx=[-5,0,5], gh=5.2, gw=2.4;
+  // tres pórticos (portal frames) de celosía en fila
+  gx.forEach(cx=>{
+    s.push(...latticeColumn(cx-gw,0,gh,0.26,7));
+    s.push(...latticeColumn(cx+gw,0,gh,0.26,7));
+    // viga superior de celosía (dos cuerdas + zig-zag)
+    s.push(cx-gw,gh,0, cx+gw,gh,0,  cx-gw,gh+0.55,0, cx+gw,gh+0.55,0);
+    const n=12; for(let i=0;i<n;i++){const x0=cx-gw+i/n*2*gw, x1=cx-gw+(i+1)/n*2*gw;
+      s.push(x0,(i%2?gh+0.55:gh),0, x1,(i%2?gh:gh+0.55),0);}
+  });
+  // busbars longitudinales (a lo largo de X) a 3 alturas
+  [gh-0.35,gh-0.95,gh-1.55].forEach(y=>s.push(gx[0]-gw,y,0, gx[2]+gw,y,0));
+  // cadenas de aisladores en suspensión bajo cada viga
+  gx.forEach(cx=>{ for(let k=0;k<6;k++) s.push(cx,gh-k*0.16,0, cx,gh-(k+1)*0.16,0); });
+  g.add(segs(s,HUD,0.8));
+  // aisladores tipo poste (columnas de discos) sosteniendo equipo
+  [-5,-2.5,2.5,5].forEach(x=> g.add(insulator(x,1.6,0,2.2)) );
+  // transformadores de potencia frente a los pórticos
+  [-4,0,4].forEach(cx=> g.add(transformer(cx,4.6)) );
+  // caseta de control
+  const house=holo(new THREE.BoxGeometry(3,1.6,2)); house.position.set(8.2,0.8,3); g.add(house);
+  const s2=[]; for(let f=1;f<3;f++) s2.push(6.7,0.8*f,4, 9.7,0.8*f,4, 6.7,0.8*f,2, 9.7,0.8*f,2);
+  g.add(segs(s2,GLOW,0.4));
+  g.add(ring(10,0.05,HUD,0.35,84));
+  return g;
+}
+function solarTable(cx,cz,len){ // mesa de paneles inclinada con rejilla de celdas y postes
+  const tbl=new THREE.Group();
+  const surf=new THREE.Group();
+  surf.add(holo(new THREE.BoxGeometry(len,0.06,1.8),{edge:0.7}));
+  const grid=[], cols=Math.round(len/0.55);
+  for(let i=0;i<=cols;i++){const x=-len/2+i/cols*len; grid.push(x,0.05,-0.9, x,0.05,0.9);}
+  for(let j=0;j<=3;j++){const z=-0.9+j/3*1.8; grid.push(-len/2,0.05,z, len/2,0.05,z);}
+  surf.add(segs(grid,GLOW,0.5));
+  surf.rotation.x=-0.5; surf.position.y=1.25; tbl.add(surf);
+  const post=[], np=Math.round(len/1.8);
+  for(let i=0;i<=np;i++){const x=-len/2+i/np*len; post.push(x,0,0, x,1.25,0);}
+  post.push(-len/2,1.25,0, len/2,1.25,0);  // tubo de torsión (tracker)
+  tbl.add(segs(post,HUD,0.8));
+  tbl.position.set(cx,0,cz); return tbl;
+}
+function mSolar(){ // planta fotovoltaica (campo de mesas + estación inversora)
+  clearSpin(); const g=new THREE.Group();
+  [-5.4,-1.8,1.8,5.4].forEach(z=> g.add(solarTable(0,z,11)) );
+  const inv=holo(new THREE.BoxGeometry(1.8,1.3,1.3)); inv.position.set(7.5,0.65,0); g.add(inv);   // inversor/transformador
+  g.add(segs([6.6,1.3,0, 6.6,2.0,0, 8.4,1.3,0, 8.4,2.0,0],GLOW,0.5));
+  g.add(ring(9,0.05,HUD,0.3,80));
+  return g;
+}
+function building(cx,cz,w,d,floors,fh){ // edificio con losas de piso y ventanas (mullions)
+  const b=new THREE.Group(); const H=floors*fh;
+  b.add(holo(new THREE.BoxGeometry(w,H,d),{edge:0.6,fill:0.05}).translateX(cx).translateY(H/2).translateZ(cz));
+  const s=[];
+  for(let f=1;f<floors;f++){const y=f*fh;                               // losas de piso
+    s.push(cx-w/2,y,cz+d/2, cx+w/2,y,cz+d/2);  s.push(cx-w/2,y,cz-d/2, cx+w/2,y,cz-d/2);
+    s.push(cx-w/2,y,cz-d/2, cx-w/2,y,cz+d/2);  s.push(cx+w/2,y,cz-d/2, cx+w/2,y,cz+d/2);}
+  const cw=Math.round(w/0.7); for(let i=1;i<cw;i++){const x=cx-w/2+i/cw*w;  // mullions frente/atrás
+    s.push(x,0,cz+d/2, x,H,cz+d/2);  s.push(x,0,cz-d/2, x,H,cz-d/2);}
+  const cd=Math.round(d/0.7); for(let i=1;i<cd;i++){const z=cz-d/2+i/cd*d; // mullions laterales
+    s.push(cx-w/2,0,z, cx-w/2,H,z);  s.push(cx+w/2,0,z, cx+w/2,H,z);}
+  b.add(segs(s,HUD,0.55));
+  return {grp:b,H:H};
+}
+function mEdificio(){ // oficinas CFE (torre + ala baja + azotea)
+  clearSpin(); const g=new THREE.Group();
+  const main=building(0,0,3.4,3.0,7,0.95); g.add(main.grp);
+  g.add(holo(new THREE.BoxGeometry(1.9,0.9,1.7),{edge:0.6}).translateY(main.H+0.45));        // núcleo azotea
+  g.add(holo(new THREE.BoxGeometry(0.7,0.45,0.7)).translateX(0.8).translateY(main.H+0.22).translateZ(-0.5)); // HVAC
+  g.add(segs([-0.8,main.H+0.9,0.4, -0.8,main.H+2.3,0.4],GLOW,0.7));                            // antena
+  const wing=building(3.9,0.5,2.4,2.6,3,0.95); g.add(wing.grp);                                // ala baja
+  g.add(holo(new THREE.BoxGeometry(1.8,0.5,0.7)).translateY(0.25).translateZ(1.7));            // marquesina entrada
+  g.add(ring(6,0.05,HUD,0.35,80));
+  return g;
+}
+function mAlmacenes(){ // almacén logístico CFE: nave industrial (techo plano + andenes)
+  clearSpin(); const g=new THREE.Group();
+  const w=9, d=5.5, h=3.0, pp=h+0.4;
+  g.add(holo(new THREE.BoxGeometry(w,h,d),{edge:0.6,fill:0.05}).translateY(h/2));   // cuerpo largo y bajo
+  const s=[];
+  // parapeto (azotea plana con borde sobresaliente)
+  [d/2,-d/2].forEach(z=>{ s.push(-w/2,h,z, -w/2,pp,z); s.push(w/2,h,z, w/2,pp,z); s.push(-w/2,pp,z, w/2,pp,z); });
+  s.push(-w/2,pp,d/2,-w/2,pp,-d/2);  s.push(w/2,pp,d/2, w/2,pp,-d/2);
+  // banda de fachada + costillas del recubrimiento sobre las puertas
+  s.push(-w/2,h*0.55,d/2, w/2,h*0.55,d/2);
+  const cols=Math.round(w/1.1); for(let i=1;i<cols;i++){const x=-w/2+i/cols*w; s.push(x,h*0.55,d/2, x,h,d/2);}
+  g.add(segs(s,HUD,0.65));
+  // andenes de carga (varias puertas) en el frente
+  const bays=6, zf=d/2+0.02, dw=1.0, dh=h*0.5, dy=0.1, door=[];
+  for(let b=0;b<bays;b++){const xc=-w/2+(b+0.5)*w/bays;
+    door.push(xc-dw/2,dy,zf, xc-dw/2,dh,zf);  door.push(xc+dw/2,dy,zf, xc+dw/2,dh,zf);
+    door.push(xc-dw/2,dh,zf, xc+dw/2,dh,zf);  door.push(xc-dw/2,dy,zf, xc+dw/2,dy,zf);
+    for(let k=1;k<3;k++) door.push(xc-dw/2,dy+(dh-dy)*k/3,zf, xc+dw/2,dy+(dh-dy)*k/3,zf);}
+  g.add(segs(door,GLOW,0.6));
+  // marquesina (canopy) sobre el andén
+  const can=[], cy=h*0.6, cz2=d/2+1.1;
+  can.push(-w/2,cy,d/2, w/2,cy,d/2);  can.push(-w/2,cy,cz2, w/2,cy,cz2);
+  can.push(-w/2,cy,d/2,-w/2,cy,cz2);  can.push(w/2,cy,d/2, w/2,cy,cz2);
+  for(let b=0;b<=bays;b++){const xc=-w/2+b*w/bays; can.push(xc,0,cz2, xc,cy,cz2);}
+  g.add(segs(can,HUD,0.55));
+  // unidades de azotea (HVAC) + tragaluces
+  [[-2.6,0.6],[0,-0.8],[2.6,0.8]].forEach(([x,z])=> g.add(holo(new THREE.BoxGeometry(0.9,0.45,0.9)).translateX(x).translateY(pp+0.22).translateZ(z)) );
+  const sky=[]; for(let i=-2;i<=2;i++) sky.push(i*1.6,pp+0.02,-d/2+0.7, i*1.6,pp+0.02,d/2-0.7); g.add(segs(sky,GLOW,0.35));
+  // un tráiler en el andén (logística)
+  g.add(holo(new THREE.BoxGeometry(2.8,1.4,1.1)).translateX(-w/2+1.4).translateY(0.7).translateZ(cz2+0.95));   // caja
+  g.add(holo(new THREE.BoxGeometry(0.75,0.95,1.0)).translateX(-w/2+3.05).translateY(0.48).translateZ(cz2+0.95)); // tractor
+  g.add(ring(8.5,0.05,HUD,0.3,84));
+  return g;
+}
+function mPresa(){ // hidroeléctrica: muro de gravedad macizo + embalse + torres de toma + vertedero + casa de máquinas
+  clearSpin(); const g=new THREE.Group();
+  const Hd=6, W=6.5, nx=18, ny=8, curve=1.7;
+  const zMid=x=>curve*(1-(x/W)*(x/W));     // corona bombeada hacia el agua (+Z)
+  const zU=x=>zMid(x)+0.3;                  // cara aguas arriba (casi vertical)
+  const thick=y=>0.5+2.2*(1-y/Hd);          // grosor: delgado en la corona, ancho en la base
+  const zD=(x,y)=>zMid(x)-thick(y);         // cara aguas abajo (talud inclinado)
+  const X=i=>-W+i/nx*2*W, Y=j=>j/ny*Hd;
+  const up=[], dn=[], cr=[], side=[];
+  for(let i=0;i<=nx;i++){const x=X(i); up.push(x,0,zU(x), x,Hd,zU(x));}
+  for(let j=0;j<=ny;j++){const y=Y(j); for(let i=0;i<nx;i++) up.push(X(i),y,zU(X(i)), X(i+1),y,zU(X(i+1)));}
+  for(let i=0;i<=nx;i++){const x=X(i); for(let j=0;j<ny;j++) dn.push(x,Y(j),zD(x,Y(j)), x,Y(j+1),zD(x,Y(j+1)));}
+  for(let j=0;j<=ny;j++){const y=Y(j); for(let i=0;i<nx;i++) dn.push(X(i),y,zD(X(i),y), X(i+1),y,zD(X(i+1),y));}
+  for(let i=0;i<=nx;i++){const x=X(i); cr.push(x,Hd,zU(x), x,Hd,zD(x,Hd)); cr.push(x,0,zU(x), x,0,zD(x,0));}
+  for(let j=0;j<=ny;j++){[0,nx].forEach(i=>{const x=X(i); side.push(x,Y(j),zU(x), x,Y(j),zD(x,Y(j)));});}
+  g.add(segs(up,HUD,0.75)); g.add(segs(dn,HUD,0.7)); g.add(segs(cr,GLOW,0.6)); g.add(segs(side,HUD,0.7));
+  // vertedero: agua desbordando por el centro y cayendo por el talud
+  const fall=[]; for(let s=0;s<11;s++){const x=-1.6+s/10*3.2;
+    for(let j=ny;j>0;j--){const y0=Y(j),y1=Y(j-1); fall.push(x,y0,zD(x,y0)-0.05, x,y1,zD(x,y1)-0.05);} }
+  g.add(segs(fall,GLOW,0.45));
+  g.add(addSteam(0,0.4, zD(0,0)-0.4, 3.4, 80));        // espuma al pie del vertedero
+  // embalse (lago) aguas arriba, cerca de la corona
+  const water=holo(new THREE.PlaneGeometry(26,15),{fill:0.07,edge:0,color:GLOW});
+  water.rotation.x=-Math.PI/2; water.position.set(0,Hd-0.4, zU(0)+7.5); g.add(water);
+  const wg=[]; for(let i=-6;i<=6;i++){ wg.push(i*2,Hd-0.4,zU(0)+0.6, i*2,Hd-0.4,zU(0)+15);
+    wg.push(-12,Hd-0.4,zU(0)+0.6+(i+6)*1.2, 12,Hd-0.4,zU(0)+0.6+(i+6)*1.2); }
+  g.add(segs(wg,0x0e6b85,0.3));
+  // torres de toma cilíndricas en el embalse, con puente a la corona
+  [-3.2,3.2].forEach(x=>{ const th=Hd+0.9;
+    g.add(holo(new THREE.CylinderGeometry(0.42,0.42,th,16),{fill:0.05,edge:0.5}).translateX(x).translateY(th/2).translateZ(zU(x)+1.4));
+    const rr=ring(0.58,0,GLOW,0.55,18); rr.position.set(x,th,zU(x)+1.4); g.add(rr);
+    g.add(segs([x,Hd,zU(x)+1.4, x,Hd,zU(x)],GLOW,0.55)); });
+  // casa de máquinas al pie (aguas abajo)
+  const ph=holo(new THREE.BoxGeometry(9,1.6,2.4)); ph.position.set(0,0.8, zD(0,0)-1.6); g.add(ph);
+  const phr=[]; for(let i=1;i<6;i++){const x=-4.5+i*1.5; phr.push(x,0,zD(0,0)-2.8, x,1.6,zD(0,0)-2.8);} g.add(segs(phr,GLOW,0.4));
+  g.add(ring(12,0.05,HUD,0.3,90));
+  return g;
+}
+function mNuclear(){ // edificio de contención (cilindro+cúpula) + nave de turbinas + torre de enfriamiento
+  clearSpin(); const g=new THREE.Group();
+  const R=2.6, ch=3.4, cx=-4.0;
+  // cuerpo cilíndrico de contención (relleno + nervaduras)
+  g.add(holo(new THREE.CylinderGeometry(R,R,ch,44),{fill:0.05,edge:0}).translateX(cx).translateY(ch/2));
+  const ribs=[], MER=24;
+  for(let m=0;m<MER;m++){const a=m/MER*Math.PI*2, x=Math.cos(a)*R, z=Math.sin(a)*R; ribs.push(cx+x,0,z, cx+x,ch,z);}
+  g.add(segs(ribs,HUD,0.45));
+  for(let i=0;i<=4;i++) g.add(ring(R,i/4*ch,HUD,0.4,44).translateX(cx));
+  // cúpula hemisférica
+  g.add(holo(new THREE.SphereGeometry(R,44,22,0,Math.PI*2,0,Math.PI/2),{fill:0.06,edge:0}).translateX(cx).translateY(ch));
+  const dr=[]; for(let m=0;m<MER;m++){const a=m/MER*Math.PI*2, ca=Math.cos(a), sa=Math.sin(a);
+    for(let i=0;i<8;i++){const p0=i/8*Math.PI/2, p1=(i+1)/8*Math.PI/2;
+      dr.push(cx+ca*R*Math.cos(p0),ch+R*Math.sin(p0),sa*R*Math.cos(p0), cx+ca*R*Math.cos(p1),ch+R*Math.sin(p1),sa*R*Math.cos(p1));}}
+  g.add(segs(dr,GLOW,0.35));
+  // nave de turbinas (edificio rectangular largo anexo)
+  const hall=holo(new THREE.BoxGeometry(4.5,2.4,2.8)); hall.position.set(0.6,1.2,2.4); g.add(hall);
+  const hr=[]; for(let i=1;i<6;i++){const x=-1.65+i*0.66; hr.push(x+0.6,0,3.8, x+0.6,2.4,3.8);} g.add(segs(hr,HUD,0.4));
+  // torre de enfriamiento con vapor (a la derecha)
+  const ct=mTorreEnfriamiento(); ct.scale.setScalar(0.62); ct.position.set(5.2,0,-1.2); g.add(ct);
+  return g;
+}
+
+const MODELS={
+  aerogenerador:{f:mAerogenerador,name:"Aerogenerador",type:"Central Eólica",glb:"aerogenerador.glb"},
+  transmision:{f:mTorreTransmision,name:"Torre de Transmisión",type:"Líneas / Pilón",glb:"torre-transmision.glb"},
+  enfriamiento:{f:mTorreEnfriamiento,name:"Torre de Enfriamiento",type:"Termoeléctrica",glb:"torre-enfriamiento.glb"},
+  subestacion:{f:mSubestacion,name:"Subestación",type:"Transformación",glb:"subestacion.glb"},
+  solar:{f:mSolar,name:"Planta Solar",type:"Fotovoltaica",glb:"planta-solar.glb"},
+  presa:{f:mPresa,name:"Presa / Hidroeléctrica",type:"Generación Hidráulica",glb:"presa.glb"},
+  edificio:{f:mEdificio,name:"Oficinas CFE",type:"Administrativo",glb:"oficinas.glb"},
+  almacen:{f:mAlmacenes,name:"Almacenes",type:"Logística / Bodegas",glb:"almacenes.glb"},
+  nuclear:{f:mNuclear,name:"Central Nuclear",type:"Reactor + Enfriamiento",glb:"central-nuclear.glb"},
+};
+
+// Convierte cualquier modelo 3D real en holograma cian (wireframe + relleno aditivo)
+function applyHolo(obj){
+  obj.traverse(o=>{ if(o.isMesh){
+    o.material=new THREE.MeshBasicMaterial({color:HUD,wireframe:true,transparent:true,opacity:0.55});
+  }});
+}
+// Escala y centra el modelo para que mida ~target de alto y se apoye en y=0
+function fitModel(obj,target){
+  let box=new THREE.Box3().setFromObject(obj); const size=new THREE.Vector3(); box.getSize(size);
+  const s=target/Math.max(size.y,0.001); obj.scale.setScalar(s);
+  box=new THREE.Box3().setFromObject(obj); const c=new THREE.Vector3(); box.getCenter(c);
+  obj.position.x-=c.x; obj.position.z-=c.z; obj.position.y-=box.min.y;
+}
+
+let current=null, loadToken=0;
+function setCurrent(obj){ if(current) scene.remove(current); current=obj; scene.add(obj); }
+function setActive(key){ [...document.querySelectorAll('#picker button')].forEach(b=>b.classList.toggle('active',b.dataset.k===key)); }
+function updateCard(key){
+  document.getElementById('cName').textContent=MODELS[key].name;
+  document.getElementById('cType').textContent=MODELS[key].type+" · CFE";
+  const carga=40+Math.floor(Math.random()*60);
+  document.getElementById('cCarga').textContent=carga+"%"; document.getElementById('cBar').style.width=carga+"%";
+}
+function show(key){
+  const m=MODELS[key]; const token=++loadToken; clearSpin();
+  setCurrent(m.f());          // respaldo a código: aparece al instante
+  updateCard(key); setActive(key);
+  // si hay un modelo 3D REAL disponible, lo carga y reemplaza (efecto holográfico)
+  if(m.glb && THREE.GLTFLoader){
+    new THREE.GLTFLoader().load('models3d/'+m.glb,
+      (gltf)=>{ if(token!==loadToken) return; clearSpin();
+        const obj=gltf.scene; applyHolo(obj); fitModel(obj,9); setCurrent(obj); },
+      undefined,
+      ()=>{ /* no existe el .glb -> se queda el modelo a código */ });
+  }
+}
+// Botones
+const picker=document.getElementById('picker');
+Object.entries(MODELS).forEach(([k,v])=>{
+  const b=document.createElement('button'); b.textContent=v.name; b.dataset.k=k;
+  b.onclick=()=>show(k); picker.appendChild(b);
+});
+show('aerogenerador');
+
+// ---------- Animación ----------
+function animate(){
+  requestAnimationFrame(animate);
+  const t=performance.now()*0.001;
+  spin.forEach(s=>{ s.obj.rotation[s.axis]+=s.speed*0.016; });
+  steam.forEach(s=>{ const p=s.m.geometry.attributes.position;
+    for(let i=0;i<p.count;i++){let y=p.getY(i)+0.03; if(y>s.top)y=s.baseY; p.setY(i,y);} p.needsUpdate=true; });
+  baseRings.rotation.y=t*0.15;
+  // motes ascienden
+  const pos=motes.geometry.attributes.position;
+  for(let i=0;i<pos.count;i++){let y=pos.getY(i)+0.02; if(y>12)y=-2; pos.setY(i,y);} pos.needsUpdate=true;
+  controls.update(); renderer.render(scene,camera);
+}
+animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script>
+</body>
+</html>

@@ -11,6 +11,8 @@ models/*.bin
 *.bin
 *.onnx
 *.pt
+*.glb
+*.gltf
 
 # Python
 __pycache__/

@@ -1,0 +1,1 @@
+# Mantiene la carpeta models3d/ en git. Los .glb NO se versionan (ver .gitignore).
