@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>FALCON // MEC — Infraestructura CFE (México)</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 <style>
   :root{
     --bg:#070b14; --panel:#0c1320; --hud:#22d3ee; --glow:#67e8f9; --hud-dk:#0e7490;
@@ -12,53 +13,48 @@
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
     font-family:'Consolas','Courier New',monospace;overflow:hidden;}
-  #app{position:fixed;inset:0;}
-  canvas{display:block;}
+  #map{position:fixed;inset:0;background:#070b14;}
+  .maplibregl-ctrl-attrib{font-size:9px;opacity:.6;}
 
   /* Barra superior */
-  #topbar{position:fixed;top:0;left:0;right:0;height:44px;z-index:10;
+  #topbar{position:fixed;top:0;left:0;right:0;height:44px;z-index:10;pointer-events:none;
     display:flex;align-items:center;gap:14px;padding:0 16px;
-    background:linear-gradient(180deg,#0a1a28,rgba(12,19,32,.6));
-    border-bottom:1px solid var(--hud-dk);backdrop-filter:blur(4px);}
+    background:linear-gradient(180deg,#0a1a28,rgba(12,19,32,.4));
+    border-bottom:1px solid var(--hud-dk);}
   #topbar .logo{color:var(--good);font-weight:900;font-style:italic;font-size:16px;letter-spacing:1px;}
-  #topbar .mark{color:var(--glow);font-weight:900;font-size:15px;letter-spacing:3px;
-    text-shadow:0 0 8px var(--hud);}
+  #topbar .mark{color:var(--glow);font-weight:900;font-size:15px;letter-spacing:3px;text-shadow:0 0 8px var(--hud);}
   #topbar .sub{color:var(--hud);font-size:11px;letter-spacing:2px;}
   #topbar .spacer{flex:1;}
   #topbar .dot{color:var(--good);font-size:11px;font-weight:bold;letter-spacing:1px;}
   #topbar .count{color:var(--muted);font-size:11px;}
 
-  /* Instrucciones */
-  #help{position:fixed;top:54px;right:14px;z-index:10;text-align:right;
+  #help{position:fixed;top:54px;right:14px;z-index:10;text-align:right;pointer-events:none;
     color:var(--muted);font-size:11px;line-height:1.7;text-shadow:0 0 6px #000;}
   #help b{color:var(--hud);}
 
-  /* Leyenda */
-  #legend{position:fixed;bottom:14px;left:14px;z-index:10;background:rgba(9,24,36,.7);
-    border:1px solid var(--hud-dk);border-radius:6px;padding:10px 12px;font-size:11px;}
+  #legend{position:fixed;bottom:14px;left:14px;z-index:10;pointer-events:none;
+    background:rgba(9,24,36,.75);border:1px solid var(--hud-dk);border-radius:6px;padding:10px 12px;font-size:11px;}
   #legend h4{margin:0 0 6px;color:var(--hud);letter-spacing:1px;font-size:11px;}
   #legend .row{display:flex;align-items:center;gap:8px;margin:3px 0;color:var(--muted);}
-  #legend .swatch{width:10px;height:10px;border-radius:2px;box-shadow:0 0 6px currentColor;}
+  #legend .swatch{width:10px;height:10px;border-radius:50%;box-shadow:0 0 6px currentColor;}
 
-  /* Panel flotante de MEC (esquina inferior derecha) */
-  #panel{position:fixed;bottom:14px;right:14px;width:340px;max-height:78vh;overflow:auto;z-index:20;
-    background:rgba(9,24,36,.92);border:1px solid var(--hud);border-radius:8px;
+  /* Panel flotante MEC */
+  #panel{position:fixed;bottom:14px;right:14px;width:340px;max-height:80vh;overflow:auto;z-index:20;
+    background:rgba(9,24,36,.95);border:1px solid var(--hud);border-radius:8px;
     box-shadow:0 0 24px rgba(34,211,238,.25);display:none;}
   #panel .corner{position:absolute;width:14px;height:14px;border-color:var(--glow);}
   #panel .c-tl{top:-1px;left:-1px;border-top:2px solid;border-left:2px solid;}
   #panel .c-tr{top:-1px;right:-1px;border-top:2px solid;border-right:2px solid;}
   #panel .c-bl{bottom:-1px;left:-1px;border-bottom:2px solid;border-left:2px solid;}
   #panel .c-br{bottom:-1px;right:-1px;border-bottom:2px solid;border-right:2px solid;}
-  #panel .head{padding:10px 12px;border-bottom:1px solid var(--hud-dk);
-    display:flex;align-items:center;justify-content:space-between;}
+  #panel .head{padding:10px 12px;border-bottom:1px solid var(--hud-dk);display:flex;align-items:center;justify-content:space-between;}
   #panel .title{color:var(--glow);font-weight:bold;letter-spacing:1px;font-size:12px;}
   #panel .close{cursor:pointer;color:var(--muted);font-weight:bold;padding:0 6px;}
   #panel .close:hover{color:var(--crit);}
   #panel .body{padding:10px 12px;font-size:12px;line-height:1.5;}
   #panel .asset{color:var(--text);font-weight:bold;font-size:13px;}
   #panel .meta{color:var(--muted);font-size:11px;margin-bottom:8px;}
-  #panel .cond{display:inline-block;padding:3px 10px;border-radius:4px;font-weight:bold;
-    letter-spacing:1px;margin:6px 0;font-size:12px;}
+  #panel .cond{display:inline-block;padding:3px 10px;border-radius:4px;font-weight:bold;letter-spacing:1px;margin:6px 0;font-size:12px;}
   #panel table{width:100%;border-collapse:collapse;margin-top:6px;}
   #panel td{padding:2px 0;font-size:11px;}
   #panel td.k{color:var(--muted);}
@@ -66,13 +62,12 @@
   #panel .flag{font-size:11px;margin-top:6px;}
   #panel .err{color:var(--crit);}
   #panel .warn{color:var(--warn);}
-  #panel .mec{margin-top:10px;padding-top:8px;border-top:1px solid var(--hud-dk);
-    color:var(--text);font-size:11px;}
+  #panel .mec{margin-top:10px;padding-top:8px;border-top:1px solid var(--hud-dk);color:var(--text);font-size:11px;}
   #panel .mec b{color:var(--glow);}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="map"></div>
 
 <div id="topbar">
   <span class="logo">CFE</span>
@@ -84,75 +79,29 @@
 </div>
 
 <div id="help">
-  <div><b>Arrastra</b> para rotar · <b>rueda</b> zoom · <b>clic derecho</b> mover</div>
-  <div><b>Clic</b> en una estructura para monitorear</div>
+  <div><b>Arrastra</b> para mover · <b>rueda</b> zoom · <b>clic</b> en un activo para monitorear</div>
   <div style="color:#5a6b7a">control con la mano: próximamente 🖐️</div>
 </div>
 
 <div id="legend">
-  <h4>LEYENDA</h4>
-  <div class="row"><span class="swatch" style="color:#22d3ee;background:#22d3ee"></span>Subestación</div>
-  <div class="row"><span class="swatch" style="color:#a855f7;background:#a855f7"></span>Torre / Línea</div>
-  <div class="row"><span class="swatch" style="color:#38bdf8;background:#38bdf8"></span>Hidroeléctrica</div>
-  <div class="row"><span class="swatch" style="color:#10b981;background:#10b981"></span>Eólica</div>
-  <div class="row"><span class="swatch" style="color:#facc15;background:#facc15"></span>Solar</div>
-  <div class="row"><span class="swatch" style="color:#f97316;background:#f97316"></span>Termoeléctrica</div>
-  <div class="row" style="margin-top:6px;color:#5a6b7a">El color del halo = condición del activo</div>
+  <h4>CONDICIÓN DEL ACTIVO</h4>
+  <div class="row"><span class="swatch" style="color:#10b981;background:#10b981"></span>Buenas</div>
+  <div class="row"><span class="swatch" style="color:#facc15;background:#facc15"></span>Regulares</div>
+  <div class="row"><span class="swatch" style="color:#f97316;background:#f97316"></span>Malas</div>
+  <div class="row"><span class="swatch" style="color:#ef4444;background:#ef4444"></span>Pésimas</div>
+  <div class="row" style="margin-top:6px;color:#5a6b7a">Clic en un punto: tipo + monitoreo MEC</div>
 </div>
 
 <div id="panel">
   <span class="corner c-tl"></span><span class="corner c-tr"></span>
   <span class="corner c-bl"></span><span class="corner c-br"></span>
-  <div class="head">
-    <span class="title">◆ MEC // MONITOREO</span>
-    <span class="close" id="panelClose">✕</span>
-  </div>
+  <div class="head"><span class="title">◆ MEC // MONITOREO</span><span class="close" id="panelClose">✕</span></div>
   <div class="body" id="panelBody"></div>
 </div>
 
-<!-- Three.js (UMD) + OrbitControls clásicos, vía CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script>
-// =================== DATOS (muestra) — infraestructura CFE en México ===================
-// Coordenadas aproximadas. En producción se cargan de OpenStreetMap / datos abiertos de CFE.
-const ASSETS = [
-  {name:"S.E. Cerro Gordo",      type:"subestacion",   lon:-99.05, lat:19.72, base:{v:127,i:18,freq:60,pf:0.93,temp:44,vib:1.6,thd:3.8,salud:96}},
-  {name:"S.E. Monterrey Oriente",type:"subestacion",   lon:-100.18,lat:25.70, base:{v:126,i:22,freq:60,pf:0.90,temp:51,vib:2.1,thd:4.6,salud:88}},
-  {name:"S.E. Guadalajara",      type:"subestacion",   lon:-103.35,lat:20.67, base:{v:128,i:19,freq:60,pf:0.91,temp:47,vib:1.9,thd:4.2,salud:90}},
-  {name:"C.H. Malpaso",          type:"hidro",         lon:-93.60, lat:17.18, base:{v:132,i:30,freq:60,pf:0.95,temp:42,vib:1.4,thd:2.9,salud:97}},
-  {name:"C.H. Chicoasén",        type:"hidro",         lon:-93.10, lat:16.93, base:{v:131,i:28,freq:60,pf:0.94,temp:43,vib:1.7,thd:3.1,salud:95}},
-  {name:"C.E. La Venta (Eólica)",type:"eolica",        lon:-94.80, lat:16.60, base:{v:124,i:16,freq:60,pf:0.88,temp:55,vib:3.4,thd:5.8,salud:79}},
-  {name:"C.F.V. Puerto Peñasco", type:"solar",         lon:-113.53,lat:31.30, base:{v:129,i:14,freq:60,pf:0.92,temp:58,vib:1.2,thd:4.0,salud:86}},
-  {name:"C.T. Tula",             type:"termo",         lon:-99.12, lat:20.05, base:{v:121,i:35,freq:59.6,pf:0.83,temp:71,vib:6.2,thd:9.1,salud:48}},
-  {name:"S.E. Hermosillo",       type:"subestacion",   lon:-110.97,lat:29.07, base:{v:127,i:20,freq:60,pf:0.89,temp:62,vib:2.6,thd:5.2,salud:74}},
-];
-// Líneas de transmisión (conexiones entre activos por nombre)
-const LINES = [
-  ["S.E. Monterrey Oriente","S.E. Cerro Gordo"],
-  ["S.E. Cerro Gordo","C.T. Tula"],
-  ["C.H. Malpaso","C.H. Chicoasén"],
-  ["S.E. Guadalajara","S.E. Cerro Gordo"],
-];
-// Contorno simplificado de México (lon,lat) — estilizado para el MVP (se reemplaza por GeoJSON real)
-const MX_MAINLAND = [
-  [-114.8,32.5],[-111.0,31.3],[-108.2,31.8],[-106.5,31.8],[-103.0,29.0],[-101.5,29.8],
-  [-99.5,27.6],[-97.5,25.9],[-97.8,22.3],[-96.1,19.2],[-94.4,18.1],[-92.0,18.5],
-  [-90.5,19.8],[-90.3,21.1],[-87.5,21.5],[-86.8,20.5],[-87.8,18.2],[-89.2,17.8],
-  [-90.4,16.1],[-92.2,14.55],[-94.5,16.3],[-96.5,15.7],[-99.9,16.8],[-101.7,17.6],
-  [-103.5,18.5],[-105.7,20.4],[-105.7,21.5],[-106.4,23.2],[-108.9,25.8],[-110.9,27.9],
-  [-112.8,30.0],[-114.8,31.0],[-114.8,32.5]
-];
-const MX_BAJA = [
-  [-117.0,32.5],[-114.6,31.6],[-113.5,30.5],[-112.0,28.0],[-110.0,24.5],[-109.9,22.9],
-  [-111.7,24.5],[-114.0,28.0],[-116.0,30.5],[-117.1,32.4],[-117.0,32.5]
-];
-
-// =================== Proyección lon/lat -> escena ===================
-const C_LON=-102, C_LAT=23.5, SCALE=1.0;
-function project(lon,lat){ return {x:(lon-C_LON)*SCALE, z:(C_LAT-lat)*SCALE}; }
-
-// =================== Diagnóstico (mismo criterio que el monitoreo MEC) ===================
+// ============ Diagnóstico (mismos criterios del monitoreo MEC) ============
 function diagnose(m){
   const err=[], warn=[];
   if(!(m.v>=110&&m.v<=140)) err.push(`Tensión ${m.v.toFixed(0)} V fuera de rango`);
@@ -168,118 +117,152 @@ function diagnose(m){
   else cond="buenas";
   return {cond,err,warn};
 }
-const COND_COLOR={buenas:0x10b981, regulares:0xfacc15, malas:0xf97316, pesimas:0xef4444};
-const COND_HEX  ={buenas:"#10b981", regulares:"#facc15", malas:"#f97316", pesimas:"#ef4444"};
-const COND_TXT  ={buenas:"🟢 BUENAS", regulares:"🟡 REGULARES", malas:"🟠 MALAS", pesimas:"🔴 PÉSIMAS"};
-const TYPE_COLOR={subestacion:0x22d3ee, hidro:0x38bdf8, eolica:0x10b981, solar:0xfacc15, termo:0xf97316, torre:0xa855f7};
+const COND_HEX={buenas:"#10b981",regulares:"#facc15",malas:"#f97316",pesimas:"#ef4444"};
+const COND_TXT={buenas:"🟢 BUENAS",regulares:"🟡 REGULARES",malas:"🟠 MALAS",pesimas:"🔴 PÉSIMAS"};
+const TYPE_LABEL={subestacion:"Subestación",torre:"Torre / Línea",hidro:"Hidroeléctrica",
+  eolica:"Eólica",solar:"Solar",termo:"Termoeléctrica",oficina:"Oficina CFE"};
+const TYPE_PREFIX={subestacion:"S.E.",torre:"Torre",hidro:"C.H.",eolica:"C.E.",solar:"C.F.V.",termo:"C.T.",oficina:"Oficina CFE"};
+const ESTADOS=["Sonora","Chihuahua","Coahuila","Nuevo León","Tamaulipas","Sinaloa","Durango","Zacatecas",
+  "San Luis Potosí","Jalisco","Nayarit","Aguascalientes","Guanajuato","Querétaro","Hidalgo","Veracruz",
+  "Puebla","México","CDMX","Morelos","Michoacán","Colima","Guerrero","Oaxaca","Tlaxcala","Tabasco",
+  "Chiapas","Campeche","Yucatán","Quintana Roo","Baja California","Baja California Sur"];
 
-// =================== Escena 3D ===================
-const app=document.getElementById('app');
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x070b14);
-scene.fog=new THREE.FogExp2(0x070b14,0.012);
+// ============ Contorno simplificado de México (para distribuir activos dentro) ============
+const MX_MAINLAND=[[-114.8,32.5],[-111.0,31.3],[-108.2,31.8],[-106.5,31.8],[-103.0,29.0],[-101.5,29.8],
+  [-99.5,27.6],[-97.5,25.9],[-97.8,22.3],[-96.1,19.2],[-94.4,18.1],[-92.0,18.5],[-90.5,19.8],[-90.3,21.1],
+  [-87.5,21.5],[-86.8,20.5],[-87.8,18.2],[-89.2,17.8],[-90.4,16.1],[-92.2,14.55],[-94.5,16.3],[-96.5,15.7],
+  [-99.9,16.8],[-101.7,17.6],[-103.5,18.5],[-105.7,20.4],[-105.7,21.5],[-106.4,23.2],[-108.9,25.8],
+  [-110.9,27.9],[-112.8,30.0],[-114.8,31.0],[-114.8,32.5]];
+const MX_BAJA=[[-117.0,32.5],[-114.6,31.6],[-113.5,30.5],[-112.0,28.0],[-110.0,24.5],[-109.9,22.9],
+  [-111.7,24.5],[-114.0,28.0],[-116.0,30.5],[-117.1,32.4],[-117.0,32.5]];
+function inPoly(lon,lat,poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+  const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+  if(((yi>lat)!==(yj>lat))&&(lon<(xj-xi)*(lat-yi)/(yj-yi)+xi))c=!c;}return c;}
+function inMexico(lon,lat){return inPoly(lon,lat,MX_MAINLAND)||inPoly(lon,lat,MX_BAJA);}
 
-const camera=new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 2000);
-camera.position.set(2,26,30);
-
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth,window.innerHeight);
-app.appendChild(renderer.domElement);
-
-const controls=new THREE.OrbitControls(camera,renderer.domElement);
-controls.enableDamping=true; controls.dampingFactor=0.08;
-controls.target.set(0,0,0); controls.maxPolarAngle=Math.PI*0.49;
-
-// Piso holográfico (grid)
-const grid=new THREE.GridHelper(120,60,0x0e7490,0x0d2230);
-grid.material.opacity=0.5; grid.material.transparent=true;
-scene.add(grid);
-
-// Contorno de México (líneas cian con glow)
-function addOutline(coords){
-  const pts=coords.map(([lon,lat])=>{const p=project(lon,lat);return new THREE.Vector3(p.x,0.05,p.z);});
-  const geo=new THREE.BufferGeometry().setFromPoints(pts);
-  scene.add(new THREE.Line(geo,new THREE.LineBasicMaterial({color:0x22d3ee,transparent:true,opacity:0.85})));
-  const geo2=new THREE.BufferGeometry().setFromPoints(pts);
-  const glow=new THREE.Line(geo2,new THREE.LineBasicMaterial({color:0x67e8f9,transparent:true,opacity:0.25}));
-  glow.scale.set(1,1,1); scene.add(glow);
+// ============ Generación de MUCHOS activos CFE (representativos) ============
+// Activos reales destacados:
+const NAMED=[
+  {name:"S.E. Cerro Gordo",type:"subestacion",lon:-99.05,lat:19.72},
+  {name:"S.E. Monterrey Oriente",type:"subestacion",lon:-100.18,lat:25.70},
+  {name:"S.E. Guadalajara",type:"subestacion",lon:-103.35,lat:20.67},
+  {name:"C.H. Malpaso",type:"hidro",lon:-93.60,lat:17.18},
+  {name:"C.H. Chicoasén",type:"hidro",lon:-93.10,lat:16.93},
+  {name:"C.E. La Venta",type:"eolica",lon:-94.80,lat:16.60},
+  {name:"C.F.V. Puerto Peñasco",type:"solar",lon:-113.53,lat:31.30},
+  {name:"C.T. Tula",type:"termo",lon:-99.12,lat:20.05},
+  {name:"S.E. Hermosillo",type:"subestacion",lon:-110.97,lat:29.07},
+];
+function pickType(){const r=Math.random();
+  if(r<0.55)return"subestacion"; if(r<0.80)return"torre"; if(r<0.86)return"solar";
+  if(r<0.91)return"hidro"; if(r<0.95)return"eolica"; if(r<0.98)return"termo"; return"oficina";}
+function genTelemetry(){
+  const roll=Math.random();
+  let temp=42+Math.random()*7,vib=0.8+Math.random()*1.6,thd=2+Math.random()*2.5,pf=0.91+Math.random()*0.07,salud=86+Math.random()*12;
+  if(roll>0.82){temp=50+Math.random()*12;vib=2.8+Math.random()*2;thd=5+Math.random()*3;pf=0.85+Math.random()*0.06;salud=60+Math.random()*22;}
+  if(roll>0.95){temp=66+Math.random()*16;vib=7+Math.random()*4;thd=9+Math.random()*9;pf=0.70+Math.random()*0.12;salud=18+Math.random()*30;}
+  return {v:120+Math.random()*12,i:10+Math.random()*45,freq:59.8+Math.random()*0.4,pf,temp,vib,thd,salud};
 }
-addOutline(MX_MAINLAND); addOutline(MX_BAJA);
-
-// Líneas de transmisión
-const byName={}; ASSETS.forEach(a=>byName[a.name]=a);
-LINES.forEach(([a,b])=>{
-  if(!byName[a]||!byName[b])return;
-  const pa=project(byName[a].lon,byName[a].lat), pb=project(byName[b].lon,byName[b].lat);
-  const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(pa.x,0.4,pa.z),new THREE.Vector3(pb.x,0.4,pb.z)]);
-  scene.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:0xa855f7,transparent:true,opacity:0.55})));
-});
-
-// Marcadores de activos
-const markers=[];
-function makeGeometry(type){
-  switch(type){
-    case "subestacion": return new THREE.BoxGeometry(0.7,0.7,0.7);
-    case "hidro":       return new THREE.CylinderGeometry(0.35,0.45,0.8,12);
-    case "eolica":      return new THREE.ConeGeometry(0.4,1.0,6);
-    case "solar":       return new THREE.BoxGeometry(0.9,0.15,0.9);
-    case "termo":       return new THREE.CylinderGeometry(0.4,0.4,0.9,8);
-    default:            return new THREE.OctahedronGeometry(0.5);
-  }
+const ASSETS=[];
+let id=0;
+NAMED.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:"",t:genTelemetry()}));
+// Distribuir ~520 activos dentro de México
+const TARGET=520; let guard=0;
+while(ASSETS.length<TARGET && guard<40000){
+  guard++;
+  const lon=-117+Math.random()*31, lat=14.5+Math.random()*18.2;
+  if(!inMexico(lon,lat))continue;
+  const type=pickType();
+  const estado=ESTADOS[Math.floor(Math.random()*ESTADOS.length)];
+  const num=100+Math.floor(Math.random()*900);
+  const name=`${TYPE_PREFIX[type]} ${estado} ${num}`;
+  ASSETS.push({id:id++,name,type,lon,lat,estado,t:genTelemetry()});
 }
-ASSETS.forEach(a=>{
-  a.live=Object.assign({},a.base);
-  const p=project(a.lon,a.lat);
-  const g=new THREE.Group(); g.position.set(p.x,0.5,p.z);
-  const mesh=new THREE.Mesh(makeGeometry(a.type), new THREE.MeshBasicMaterial({color:TYPE_COLOR[a.type]||0x22d3ee}));
-  g.add(mesh);
-  // halo (condición)
-  const halo=new THREE.Mesh(new THREE.SphereGeometry(0.95,16,16),
-    new THREE.MeshBasicMaterial({color:0x10b981,transparent:true,opacity:0.18}));
-  g.add(halo);
-  // pilar al piso
-  const pillar=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,1,6),
-    new THREE.MeshBasicMaterial({color:0x22d3ee,transparent:true,opacity:0.4}));
-  pillar.position.y=-0.5; g.add(pillar);
-  g.userData={asset:a, mesh, halo};
-  scene.add(g); markers.push(g);
-});
 document.getElementById('count').textContent = ASSETS.length+" activos";
 
-// =================== Selección (raycaster) ===================
-const raycaster=new THREE.Raycaster(), pointer=new THREE.Vector2();
-let down=null, selected=null;
-renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});
-renderer.domElement.addEventListener('pointerup',e=>{
-  if(!down)return; const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null;
-  if(moved>6)return; // fue un arrastre, no un clic
-  pointer.x=(e.clientX/window.innerWidth)*2-1; pointer.y=-(e.clientY/window.innerHeight)*2+1;
-  raycaster.setFromCamera(pointer,camera);
-  const hits=raycaster.intersectObjects(markers,true);
-  if(hits.length){let o=hits[0].object; while(o && !o.userData.asset) o=o.parent; if(o) select(o);}
-});
-
-function select(group){ selected=group; updatePanel(); }
-
-function jitter(a){ // simula telemetría en vivo alrededor de la base
-  const b=a.base, l=a.live;
-  l.v=b.v+(Math.random()-0.5)*1.5; l.i=b.i+(Math.random()-0.5)*1.2; l.freq=b.freq+(Math.random()-0.5)*0.1;
-  l.pf=Math.min(1,b.pf+(Math.random()-0.5)*0.02); l.temp=b.temp+(Math.random()-0.5)*1.5;
-  l.vib=Math.max(0,b.vib+(Math.random()-0.5)*0.4); l.thd=Math.max(0,b.thd+(Math.random()-0.5)*0.5);
-  l.salud=b.salud+(Math.random()-0.5)*2;
+function featureCollection(){
+  return {type:"FeatureCollection",features:ASSETS.map(a=>{
+    const d=diagnose(a.t);
+    return {type:"Feature",geometry:{type:"Point",coordinates:[a.lon,a.lat]},
+      properties:{id:a.id, color:COND_HEX[d.cond]}};
+  })};
 }
 
-const panel=document.getElementById('panel'), panelBody=document.getElementById('panelBody');
-document.getElementById('panelClose').onclick=()=>{panel.style.display='none'; selected=null;};
+// ============ Mapa (MapLibre, estilo oscuro real tipo ShadowBroker) ============
+const map=new maplibregl.Map({
+  container:'map',
+  style:{
+    version:8,
+    glyphs:"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+    sources:{ carto:{ type:"raster", tileSize:256,
+      tiles:["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+             "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
+             "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
+      attribution:"© OpenStreetMap, © CARTO" } },
+    layers:[{id:"carto",type:"raster",source:"carto"}]
+  },
+  center:[-102,23.6], zoom:4.6, minZoom:4.4, maxZoom:13, maxPitch:0,
+  maxBounds:[[-122,11],[-83,34]]   // no te alejas más que ver todo México
+});
+map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
 
-function updatePanel(){
-  if(!selected){panel.style.display='none';return;}
-  const a=selected.userData.asset, m=a.live, d=diagnose(m);
-  panel.style.display='block';
+map.on('load',()=>{
+  map.addSource('cfe',{type:'geojson', data:featureCollection(), cluster:true, clusterMaxZoom:9, clusterRadius:48});
+
+  // Clusters (cian, tamaño por cantidad) + número
+  map.addLayer({id:'clusters',type:'circle',source:'cfe',filter:['has','point_count'],
+    paint:{'circle-color':'#0e4a5a','circle-opacity':0.85,
+      'circle-stroke-color':'#22d3ee','circle-stroke-width':1.5,
+      'circle-radius':['step',['get','point_count'],14,25,18,100,24,300,30]}});
+  map.addLayer({id:'cluster-count',type:'symbol',source:'cfe',filter:['has','point_count'],
+    layout:{'text-field':['get','point_count_abbreviated'],'text-size':12},
+    paint:{'text-color':'#bdf3ff'}});
+
+  // Puntos individuales (color = condición) con halo
+  map.addLayer({id:'glow',type:'circle',source:'cfe',filter:['!',['has','point_count']],
+    paint:{'circle-color':['get','color'],'circle-opacity':0.18,'circle-radius':10,'circle-blur':1}});
+  map.addLayer({id:'pts',type:'circle',source:'cfe',filter:['!',['has','point_count']],
+    paint:{'circle-color':['get','color'],'circle-radius':4.5,
+      'circle-stroke-color':'#0a1320','circle-stroke-width':1}});
+
+  // Interacción
+  map.on('click','clusters',(e)=>{
+    const f=e.features[0];
+    map.getSource('cfe').getClusterExpansionZoom(f.properties.cluster_id).then(z=>{
+      map.easeTo({center:f.geometry.coordinates,zoom:z});
+    });
+  });
+  map.on('click','pts',(e)=>select(+e.features[0].properties.id));
+  ['clusters','pts'].forEach(l=>{
+    map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
+  });
+
+  // Telemetría "en vivo" (simulada): refresca condición y panel
+  setInterval(()=>{
+    ASSETS.forEach(a=>{ if(Math.random()<0.25) a.t=genTelemetry(); });
+    if(map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
+    if(selectedId!=null) renderPanel();
+  },3000);
+});
+
+// ============ Panel MEC ============
+let selectedId=null;
+const panel=document.getElementById('panel'), panelBody=document.getElementById('panelBody');
+document.getElementById('panelClose').onclick=()=>{panel.style.display='none';selectedId=null;};
+function select(i){selectedId=i;renderPanel();}
+function mecComment(a,d){
+  if(d.cond==="buenas")return `${a.name} opera en condiciones nominales. Sin acciones requeridas.`;
+  if(d.cond==="regulares")return `Vigilancia activa en ${a.name}. Programar revisión preventiva.`;
+  if(d.cond==="malas")return `Atención: ${a.name} con parámetros degradados. Revisar en el próximo turno.`;
+  return `Alerta crítica en ${a.name}. Recomiendo intervención inmediata y verificación en sitio.`;
+}
+function renderPanel(){
+  const a=ASSETS.find(x=>x.id===selectedId); if(!a){panel.style.display='none';return;}
+  const m=a.t,d=diagnose(m); panel.style.display='block';
   panelBody.innerHTML=`
     <div class="asset">${a.name}</div>
-    <div class="meta">${a.type.toUpperCase()} · ${a.lat.toFixed(2)}, ${a.lon.toFixed(2)} · México</div>
+    <div class="meta">${TYPE_LABEL[a.type]} · ${a.estado||"México"} · ${a.lat.toFixed(2)}, ${a.lon.toFixed(2)}</div>
     <span class="cond" style="background:${COND_HEX[d.cond]}22;color:${COND_HEX[d.cond]};border:1px solid ${COND_HEX[d.cond]}">${COND_TXT[d.cond]} · salud ${m.salud.toFixed(0)}%</span>
     <table>
       <tr><td class="k">Tensión</td><td class="v">${m.v.toFixed(1)} V</td></tr>
@@ -292,42 +275,8 @@ function updatePanel(){
     </table>
     ${d.err.length?`<div class="flag err">⚠ ${d.err.join(' · ')}</div>`:''}
     ${d.warn.length?`<div class="flag warn">• ${d.warn.join(' · ')}</div>`:''}
-    <div class="mec"><b>MEC:</b> ${mecComment(a,d)}</div>
-  `;
+    <div class="mec"><b>MEC:</b> ${mecComment(a,d)}</div>`;
 }
-function mecComment(a,d){
-  if(d.cond==="buenas") return `${a.name} opera en condiciones nominales. Sin acciones requeridas.`;
-  if(d.cond==="regulares") return `Vigilancia activa recomendada en ${a.name}. Programar revisión preventiva.`;
-  if(d.cond==="malas") return `Atención: ${a.name} muestra parámetros degradados. Revisar en el próximo turno.`;
-  return `Alerta crítica en ${a.name}. Recomiendo intervención inmediata y verificación en sitio.`;
-}
-
-// Actualiza colores de halo por condición y refresca panel
-function refresh(){
-  markers.forEach(g=>{
-    const a=g.userData.asset; jitter(a);
-    const d=diagnose(a.live);
-    g.userData.halo.material.color.setHex(COND_COLOR[d.cond]);
-    g.userData.halo.material.opacity = (d.cond==="pesimas")?0.30:0.16;
-  });
-  if(selected) updatePanel();
-}
-setInterval(refresh,1500); refresh();
-
-// Animación
-function animate(){
-  requestAnimationFrame(animate);
-  const t=performance.now()*0.001;
-  markers.forEach(g=>{ g.userData.mesh.rotation.y=t*0.6; g.position.y=0.5+Math.sin(t*1.5+g.position.x)*0.05; });
-  controls.update();
-  renderer.render(scene,camera);
-}
-animate();
-
-window.addEventListener('resize',()=>{
-  camera.aspect=window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
-});
 </script>
 </body>
 </html>
