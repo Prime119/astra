@@ -5,11 +5,15 @@ Los modelos viajan DENTRO del programa (carpeta `astra-base/models/`, en la SSD;
 su tamaño). ASTRA detecta el dispositivo y **activa SOLO el mejor modelo que ese equipo soporte**,
 **sin descargar nada de internet**: registra el `.gguf` local en Ollama con `ollama create`.
 
-Si no hay modelos incluidos disponibles, el cerebro cae a los modelos ya descargados en Ollama
-(comportamiento previo).
+La detección del archivo es flexible: acepta el nombre exacto configurado o cualquier `.gguf`
+que coincida con un patrón (insensible a mayúsculas), para que NO tengas que renombrar lo que
+descargas (p. ej. `Qwen2.5-7B-Instruct-Q4_K_M.gguf`).
+
+Si no hay modelos incluidos disponibles, el cerebro cae a los modelos ya descargados en Ollama.
 """
 from __future__ import annotations
 
+import fnmatch
 import subprocess
 import tempfile
 from pathlib import Path
@@ -17,15 +21,33 @@ from pathlib import Path
 from .llm import TIER_ORDER
 
 
-def _best_bundled_for_tier(tier: str, bundled: dict, models_dir: Path) -> tuple[str | None, dict | None]:
+def _find_gguf(models_dir: Path, entry: dict) -> Path | None:
+    """Encuentra el .gguf de un tier: por nombre exacto o por patrón (sin distinguir mayúsculas)."""
+    if not isinstance(entry, dict) or not models_dir.is_dir():
+        return None
+    exact = models_dir / entry.get("gguf", "")
+    if entry.get("gguf") and exact.is_file():
+        return exact
+    pattern = (entry.get("match") or entry.get("gguf") or "").lower()
+    if not pattern:
+        return None
+    for path in sorted(models_dir.glob("*.gguf")):
+        if fnmatch.fnmatch(path.name.lower(), pattern):
+            return path
+    return None
+
+
+def _best_bundled_for_tier(
+    tier: str, bundled: dict, models_dir: Path
+) -> tuple[str | None, dict | None, Path | None]:
     """Mejor modelo incluido que el equipo soporta (≤ tier) y cuyo .gguf existe en disco."""
     idx = TIER_ORDER.index(tier) if tier in TIER_ORDER else 0
     for t in reversed(TIER_ORDER[: idx + 1]):  # del tope permitido hacia el más ligero
         entry = bundled.get(t)
-        if isinstance(entry, dict) and entry.get("gguf"):
-            if (models_dir / entry["gguf"]).is_file():
-                return t, entry
-    return None, None
+        gguf = _find_gguf(models_dir, entry) if isinstance(entry, dict) else None
+        if gguf is not None:
+            return t, entry, gguf
+    return None, None, None
 
 
 def ensure_bundled_model(
@@ -40,8 +62,8 @@ def ensure_bundled_model(
     Asegura que el mejor modelo incluido para este equipo esté activo en Ollama.
     Devuelve (nombre_modelo | None, mensaje).
     """
-    _t, entry = _best_bundled_for_tier(tier, bundled, models_dir)
-    if not entry:
+    _t, entry, gguf = _best_bundled_for_tier(tier, bundled, models_dir)
+    if not entry or gguf is None:
         return None, "sin modelos incluidos disponibles para este equipo"
 
     name = entry["name"]
@@ -50,11 +72,10 @@ def ensure_bundled_model(
     if not reachable:
         return None, "Ollama no está corriendo; no se pudo activar el modelo incluido"
 
-    gguf = (models_dir / entry["gguf"]).resolve()
     try:
         with tempfile.TemporaryDirectory() as td:
             modelfile = Path(td) / "Modelfile"
-            modelfile.write_text(f"FROM {gguf}\n", encoding="utf-8")
+            modelfile.write_text(f"FROM {gguf.resolve()}\n", encoding="utf-8")
             subprocess.run(
                 ["ollama", "create", name, "-f", str(modelfile)],
                 check=True, capture_output=True, text=True, timeout=900,
@@ -71,9 +92,8 @@ def bundled_status(tier: str, bundled: dict, models_dir: Path) -> dict:
     present = {}
     for t in TIER_ORDER:
         entry = bundled.get(t)
-        if isinstance(entry, dict) and entry.get("gguf"):
-            present[t] = (models_dir / entry["gguf"]).is_file()
-    chosen_t, chosen = _best_bundled_for_tier(tier, bundled, models_dir)
+        present[t] = _find_gguf(models_dir, entry) is not None if isinstance(entry, dict) else False
+    chosen_t, chosen, _gguf = _best_bundled_for_tier(tier, bundled, models_dir)
     return {
         "dir": str(models_dir),
         "present": present,

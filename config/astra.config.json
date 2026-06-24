@@ -23,9 +23,9 @@
     "bundled_models_dir": "models",
     "bundled_models": {
       "comment": "Modelos INCLUIDOS con el programa (en astra-base/models/, NO en git por su tamaño). ASTRA activa solo el mejor que el dispositivo soporte, sin descargar de internet.",
-      "ligera":      { "gguf": "qwen2.5-3b-instruct-q4_k_m.gguf",  "name": "astra-qwen2.5:3b" },
-      "recomendada": { "gguf": "qwen2.5-7b-instruct-q4_k_m.gguf",  "name": "astra-qwen2.5:7b" },
-      "potente":     { "gguf": "qwen2.5-14b-instruct-q4_k_m.gguf", "name": "astra-qwen2.5:14b" }
+      "ligera":      { "gguf": "qwen2.5-3b-instruct-q4_k_m.gguf",  "match": "*3b*instruct*q4_k_m*.gguf",  "name": "astra-qwen2.5:3b" },
+      "recomendada": { "gguf": "qwen2.5-7b-instruct-q4_k_m.gguf",  "match": "*7b*instruct*q4_k_m*.gguf",  "name": "astra-qwen2.5:7b" },
+      "potente":     { "gguf": "qwen2.5-14b-instruct-q4_k_m.gguf", "match": "*14b*instruct*q4_k_m*.gguf", "name": "astra-qwen2.5:14b" }
     },
     "cloud_boost": {
       "enabled": false,
