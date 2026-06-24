@@ -187,17 +187,26 @@ function transformer(cx,cz){
   return t;
 }
 
-function bladeLines(){ // aspa con contorno curvo limpio + larguero central (sin "costillas" tipo peine)
-  const L=4.9, N=16, le=[], te=[], s=[];
-  const chord=t=> t<0.14 ? 0.20+(t/0.14)*0.52 : 0.72*Math.pow((1-t)/0.86,0.7)+0.05;
-  for(let i=0;i<=N;i++){const t=i/N, y=t*L, c=chord(t), sweep=0.16*t*t;
-    le.push([-c*0.4+sweep,y]); te.push([c*0.6+sweep,y]);}
-  for(let i=0;i<N;i++){ s.push(le[i][0],le[i][1],0, le[i+1][0],le[i+1][1],0);     // borde de ataque
-    s.push(te[i][0],te[i][1],0, te[i+1][0],te[i+1][1],0); }                        // borde de salida
-  s.push(le[0][0],0,0, te[0][0],0,0);  s.push(le[N][0],L,0, te[N][0],L,0);         // raíz y punta
-  const mid=i=>(le[i][0]+te[i][0])/2;
-  for(let i=0;i<N;i++) s.push(mid(i),i/N*L,0, mid(i+1),(i+1)/N*L,0);               // larguero central
-  return segs(s,HUD,0.85);
+function bladeLines(){ // pala sólida: ancha cerca de la raíz, afinada a la punta, con relleno tenue
+  const L=4.5, N=16, le=[], te=[];
+  const chord=t=> t<0.16 ? 0.18+(t/0.16)*0.9 : 1.05*Math.pow((1-t)/0.84,0.85)+0.05;
+  for(let i=0;i<=N;i++){const t=i/N, y=t*L, c=chord(t), sweep=0.14*t*t;
+    le.push([-c*0.42+sweep,y]); te.push([c*0.58+sweep,y]);}
+  const g=new THREE.Group();
+  // superficie (relleno aditivo tenue) para que se lea como pala y no como línea
+  const shape=new THREE.Shape(); shape.moveTo(le[0][0],le[0][1]);
+  for(let i=1;i<=N;i++) shape.lineTo(le[i][0],le[i][1]);
+  for(let i=N;i>=0;i--) shape.lineTo(te[i][0],te[i][1]);
+  g.add(new THREE.Mesh(new THREE.ShapeGeometry(shape),
+    new THREE.MeshBasicMaterial({color:HUD,transparent:true,opacity:0.09,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})));
+  // contorno + larguero central
+  const s=[];
+  for(let i=0;i<N;i++){ s.push(le[i][0],le[i][1],0, le[i+1][0],le[i+1][1],0);
+    s.push(te[i][0],te[i][1],0, te[i+1][0],te[i+1][1],0); }
+  s.push(le[0][0],le[0][1],0, te[0][0],te[0][1],0);  s.push(le[N][0],le[N][1],0, te[N][0],te[N][1],0);
+  for(let i=0;i<N;i++) s.push((le[i][0]+te[i][0])/2,i/N*L,0, (le[i+1][0]+te[i+1][0])/2,(i+1)/N*L,0);
+  g.add(segs(s,HUD,0.85));
+  return g;
 }
 function makeTurbine(){
   const t=new THREE.Group();
