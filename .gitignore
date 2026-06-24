@@ -1,10 +1,12 @@
 # Perfil escribible del usuario (memoria, aprendizajes) — NUNCA se versiona
 astra-perfil/
+astra-perfil-*/
 profile/
 *.astra-profile
 
-# Modelos de IA (pesados, se descargan aparte)
-models/
+# Modelos de IA (pesados, viajan en la SSD/base, NO en git)
+models/*.gguf
+models/*.bin
 *.gguf
 *.bin
 *.onnx

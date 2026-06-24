@@ -59,6 +59,26 @@ def _print_brain_check(astra) -> None:
     print(f"CPUs            : {hw.cpu_count}")
     print(f"Nivel (tier)    : {hw.tier}  ->  modelo objetivo: {d['model']}")
 
+    # Modelos INCLUIDOS (bundled) detectados en disco
+    try:
+        from pathlib import Path
+        from .brain.provisioner import bundled_status
+        bundled = astra.config.get("brain", "bundled_models", default={}) or {}
+        if isinstance(bundled, dict) and bundled:
+            mdir = Path(astra.config.paths.base_dir) / astra.config.get("brain", "bundled_models_dir", default="models")
+            bs = bundled_status(hw.tier, bundled, mdir)
+            print("\n📦 Modelos incluidos (en el programa)")
+            print("-" * 44)
+            print(f"Carpeta         : {bs['dir']}")
+            for t, ok in bs["present"].items():
+                print(f"  {t:<12}: {'✅ presente' if ok else '— no está'}")
+            if bs["chosen_name"]:
+                print(f"Se activará     : {bs['chosen_name']}  (sin internet)")
+            else:
+                print("Se activará     : (ninguno incluido; usaré modelos de Ollama si los hay)")
+    except Exception:
+        pass
+
     print("\n🧠 Diagnóstico del cerebro (Ollama)")
     print("-" * 44)
     print(f"Endpoint        : {d['endpoint']}")

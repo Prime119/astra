@@ -42,6 +42,15 @@ def _list_ollama_models(endpoint: str, timeout: float = 3.0) -> list[str]:
     return []
 
 
+def _ollama_reachable(endpoint: str, timeout: float = 2.0) -> bool:
+    """True si el servidor de Ollama responde."""
+    try:
+        import httpx  # type: ignore
+        return httpx.get(f"{endpoint}/api/tags", timeout=timeout).status_code == 200
+    except Exception:
+        return False
+
+
 def choose_best(tier: str, available: list[str], table: dict[str, str]) -> str:
     """
     Auto-selección por dispositivo: el MEJOR modelo que (a) el hardware soporta (≤ tier) y
@@ -80,14 +89,36 @@ class Brain:
         auto = bool(cfg.get("brain", "auto_scale_by_hardware", default=True))
         endpoint = cfg.get("brain", "local_endpoint", default="http://127.0.0.1:11434")
         available = _list_ollama_models(endpoint)
-        if auto:
-            # Elige el mejor modelo DESCARGADO que este equipo soporte.
-            local_model = choose_best(tier, available, MODEL_BY_TIER)
-            coder_model = choose_best(tier, available, CODER_BY_TIER)
-        else:
-            local_model = cfg.get("brain", "local_model", default="qwen2.5:3b-instruct")
-            coder_model = cfg.get("brain", "local_coder_model",
-                                  default=CODER_BY_TIER.get(tier, "qwen2.5-coder:7b"))
+        reachable = _ollama_reachable(endpoint)
+
+        local_model: str | None = None
+
+        # 1) Preferir modelos INCLUIDOS con el programa (sin internet).
+        bundled = cfg.get("brain", "bundled_models", default={}) or {}
+        if isinstance(bundled, dict) and bundled:
+            from pathlib import Path
+            from .provisioner import ensure_bundled_model
+            models_dir = Path(cfg.paths.base_dir) / cfg.get("brain", "bundled_models_dir", default="models")
+            name, _msg = ensure_bundled_model(
+                tier=tier, bundled=bundled, models_dir=models_dir,
+                reachable=reachable, available=available,
+            )
+            if name:
+                local_model = name
+                if name not in available:
+                    available = available + [name]
+
+        # 2) Si no hay modelo incluido activable, usar los descargados en Ollama.
+        if not local_model:
+            if auto:
+                local_model = choose_best(tier, available, MODEL_BY_TIER)
+            else:
+                local_model = cfg.get("brain", "local_model", default="qwen2.5:3b-instruct")
+
+        # Modelo de código: el mejor disponible; si no hay, reutiliza el principal.
+        coder_candidate = choose_best(tier, available, CODER_BY_TIER)
+        coder_model = coder_candidate if coder_candidate in available else local_model
+
         bc = BrainConfig(
             local_endpoint=endpoint,
             local_model=local_model or "qwen2.5:3b-instruct",

@@ -1,0 +1,1 @@
+# Mantiene la carpeta models/ en git. Los archivos .gguf NO se versionan (ver .gitignore).

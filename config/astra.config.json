@@ -20,6 +20,13 @@
     "local_endpoint": "http://127.0.0.1:11434",
     "local_model": "qwen2.5:3b-instruct",
     "local_coder_model": "qwen2.5-coder:7b",
+    "bundled_models_dir": "models",
+    "bundled_models": {
+      "comment": "Modelos INCLUIDOS con el programa (en astra-base/models/, NO en git por su tamaño). ASTRA activa solo el mejor que el dispositivo soporte, sin descargar de internet.",
+      "ligera":      { "gguf": "qwen2.5-3b-instruct-q4_k_m.gguf",  "name": "astra-qwen2.5:3b" },
+      "recomendada": { "gguf": "qwen2.5-7b-instruct-q4_k_m.gguf",  "name": "astra-qwen2.5:7b" },
+      "potente":     { "gguf": "qwen2.5-14b-instruct-q4_k_m.gguf", "name": "astra-qwen2.5:14b" }
+    },
     "cloud_boost": {
       "enabled": false,
       "provider": "none",
