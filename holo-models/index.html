@@ -111,7 +111,7 @@ const terrain=new THREE.Group();
   const H=(x,z)=>Math.sin(x*0.25)*0.6+Math.cos(z*0.22)*0.6+Math.sin((x+z)*0.13)*0.5;
   const grid=[];
   for(let i=0;i<=N;i++){grid[i]=[];for(let j=0;j<=N;j++){
-    const x=(i/N-0.5)*S, z=(j/N-0.5)*S, y=H(x,z)-2.5;
+    const x=(i/N-0.5)*S, z=(j/N-0.5)*S, y=H(x,z)-1.8;
     grid[i][j]=new THREE.Vector3(x,y,z); pts.push(x,y,z);
   }}
   for(let i=0;i<=N;i++)for(let j=0;j<=N;j++){
@@ -126,7 +126,7 @@ scene.add(terrain);
 
 // Anillos HUD en la base del modelo
 const baseRings=new THREE.Group();
-baseRings.add(ring(4.2,-1.9,HUD,0.5)); baseRings.add(ring(5.6,-1.9,GLOW,0.25)); baseRings.add(ring(3.1,-1.9,HUD,0.3));
+baseRings.add(ring(4.2,-0.04,HUD,0.5)); baseRings.add(ring(5.6,-0.06,GLOW,0.25)); baseRings.add(ring(3.1,-0.02,HUD,0.35));
 scene.add(baseRings);
 
 // Partículas que ascienden
