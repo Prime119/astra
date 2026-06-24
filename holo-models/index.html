@@ -189,7 +189,7 @@ function transformer(cx,cz){
 
 function bladeLines(){ // pala 3D y delgada: dos contornos (grosor) + relleno tenue
   const L=4.5, N=18, th=0.10, le=[], te=[];
-  const chord=t=> t<0.16 ? 0.12+(t/0.16)*0.72 : 0.84*Math.pow((1-t)/0.84,0.85)+0.04;
+  const chord=t=> t<0.16 ? 0.07+(t/0.16)*0.45 : 0.52*Math.pow((1-t)/0.84,0.85)+0.03;
   for(let i=0;i<=N;i++){const t=i/N, y=t*L, c=chord(t), sweep=0.12*t*t;
     le.push([-c*0.42+sweep,y]); te.push([c*0.58+sweep,y]);}
   const g=new THREE.Group();
