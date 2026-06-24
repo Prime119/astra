@@ -66,11 +66,11 @@
   #panel .mec b{color:var(--glow);}
 
   /* ===== Vista de detalle "Núcleo MEC" (overlay pantalla completa) ===== */
-  #detail{position:fixed;inset:0;z-index:50;display:none;opacity:0;transition:opacity .55s ease;
-    background:radial-gradient(ellipse at 50% 56%, rgba(4,8,16,0.10) 0%, rgba(4,8,16,0.55) 60%, rgba(4,8,16,0.85) 100%);}
+  #detail{position:fixed;inset:0;z-index:50;display:none;opacity:0;transition:opacity .55s ease;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 56%, rgba(4,8,16,0.06) 0%, rgba(4,8,16,0.40) 62%, rgba(4,8,16,0.80) 100%);}
   #detail.open{display:block;}
   #detail.show{opacity:1;}
-  #detailStage{position:absolute;inset:0;}
+  #detailStage{position:absolute;inset:0;pointer-events:none;}
   #detailStage canvas{display:block;}
   #detailBar{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:12px;
     padding:0 16px;z-index:3;pointer-events:none;
@@ -352,7 +352,10 @@ function renderPanel(){
 
 // ============ Vista de detalle "Núcleo MEC" (modelo 3D + gráficas MEC) ============
 const detailEl=document.getElementById('detail');
-let dViewer=null, dAssetId=null, dPhase=0, dRAF=null, dTimer=null;
+let dAssetId=null, dPhase=0, dRAF=null, dTimer=null;
+let holoLayer=null, holoState={scene:null,origin:null,scale:1,baseRings:null,motes:null};
+let dAutoRot=false, dDragging=false;
+const METERS_PER_UNIT=16;
 const DCAP=64;
 const dHist={temp:[],vib:[],salud:[],thd:[]};
 let dLive=null;
@@ -397,45 +400,97 @@ function refreshDetailHeader(){
 function row(k,v){ return `<div class="vr"><span class="k">${k}</span><span class="v">${v}</span></div>`; }
 
 let dShowTO=null, dCloseTO=null, dCamPrev=null;
+
+// Capa 3D personalizada de MapLibre: dibuja el holograma ANCLADO al punto del mapa
+function ensureHoloLayer(){
+  if(holoLayer || !window.Holo || !map.isStyleLoaded()) { return holoLayer; }
+  holoLayer={
+    id:'holo3d', type:'custom', renderingMode:'3d',
+    onAdd:function(m,gl){
+      this.cam=new THREE.Camera();
+      this.scene=new THREE.Scene();
+      this.renderer=new THREE.WebGLRenderer({canvas:m.getCanvas(),context:gl,antialias:true});
+      this.renderer.autoClear=false;
+      holoState.scene=this.scene;
+    },
+    render:function(gl,matrix){
+      if(!detailOpen()||!holoState.origin||!holoState.scene) return;
+      const t=performance.now()*0.001;
+      Holo._spin.forEach(s=>{ s.obj.rotation[s.axis]+=s.speed*0.016; });
+      Holo._steam.forEach(s=>{ const p=s.m.geometry.attributes.position;
+        for(let i=0;i<p.count;i++){let y=p.getY(i)+0.03; if(y>s.top)y=s.baseY; p.setY(i,y);} p.needsUpdate=true; });
+      if(holoState.baseRings) holoState.baseRings.rotation.y=t*0.15;
+      if(holoState.motes){ const pos=holoState.motes.geometry.attributes.position;
+        for(let i=0;i<pos.count;i++){let y=pos.getY(i)+0.02; if(y>12)y=-2; pos.setY(i,y);} pos.needsUpdate=true; }
+      const o=holoState.origin, sc=holoState.scale;
+      const rx=new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1,0,0),Math.PI/2);
+      const m=new THREE.Matrix4().fromArray(matrix);
+      const l=new THREE.Matrix4().makeTranslation(o.x,o.y,o.z).scale(new THREE.Vector3(sc,-sc,sc)).multiply(rx);
+      this.cam.projectionMatrix=m.clone().multiply(l);
+      this.renderer.resetState();
+      this.renderer.render(this.scene,this.cam);
+    }
+  };
+  try{ map.addLayer(holoLayer); }catch(e){ holoLayer=null; }
+  return holoLayer;
+}
+function setHoloModel(a){
+  ensureHoloLayer();
+  if(!holoState.scene) return;
+  const scn=holoState.scene;
+  while(scn.children.length) scn.remove(scn.children[0]);
+  const key=(window.Holo&&Holo.TYPE2MODEL[a.type])||'subestacion';
+  const b=Holo.build(key); scn.add(b.group);
+  holoState.baseRings=Holo.buildBaseRings(); scn.add(holoState.baseRings);
+  holoState.motes=Holo.buildMotes(); scn.add(holoState.motes);
+  const merc=maplibregl.MercatorCoordinate.fromLngLat([a.lon,a.lat],0);
+  holoState.origin={x:merc.x,y:merc.y,z:merc.z};
+  holoState.scale=merc.meterInMercatorCoordinateUnits()*METERS_PER_UNIT;
+}
+// pausar el giro automático mientras el usuario interactúa con el mapa
+map.on('mousedown',()=>{ dDragging=true; });
+addEventListener('mouseup',()=>{ dDragging=false; });
+map.on('touchstart',()=>{ dDragging=true; });
+addEventListener('touchend',()=>{ dDragging=false; });
+
 function openDetail(i){
   const a=ASSETS.find(x=>x.id===i); if(!a)return;
-  dAssetId=i; selectedId=i;
-  panel.style.display='none';
-  // recuerda la vista actual del mapa para regresar al cerrar
+  dAssetId=i; selectedId=i; panel.style.display='none';
   dCamPrev={center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()};
-  // vuelo de aproximación tipo "street view": baja y se inclina hacia el activo
-  try{ map.flyTo({center:[a.lon,a.lat], zoom:16, pitch:68, bearing:(map.getBearing()+35),
-        duration:2400, curve:1.6, essential:true}); }catch(e){}
-  // visor 3D TRANSPARENTE (el piso es el propio mapa que se ve detrás)
-  const stage=document.getElementById('detailStage');
-  if(!dViewer && window.Holo){
-    dViewer=Holo.createViewer(stage,{terrain:false,rings:true,motes:true,fog:false,alpha:true,background:null,
-      autoRotate:true,autoRotateSpeed:0.5,cameraPos:[11,7,15],target:[0,4,0],minDistance:6,maxDistance:46});
-  } else if(dViewer){ dViewer.start(); }
-  if(dViewer){ const key=(window.Holo&&Holo.TYPE2MODEL[a.type])||'subestacion'; dViewer.setModel(key); }
+  detailEl.classList.add('open'); detailEl.classList.remove('show');
+  // ancla el holograma en el punto exacto del mapa (crece al acercarnos)
+  setHoloModel(a);
+  map.triggerRepaint();
+  // vuelo de aproximación tipo "street view": baja, se inclina y centra en el activo
+  dAutoRot=false;
+  try{ map.flyTo({center:[a.lon,a.lat], zoom:17, pitch:65, bearing:(map.getBearing()+20),
+        duration:2600, curve:1.5, essential:true}); }catch(e){}
+  // datos + gráficas
   Object.values(dHist).forEach(arr=>arr.length=0);
   refreshDetailHeader();
   if(dTimer) clearInterval(dTimer);
   dTimer=setInterval(refreshDetailHeader,1000);
   if(!dRAF) dLoop();
-  // muestra el overlay; el fade-in del holograma ocurre a mitad del vuelo (se siente continuo)
   if(dCloseTO){clearTimeout(dCloseTO);dCloseTO=null;}
-  detailEl.classList.add('open'); detailEl.classList.remove('show');
   if(dShowTO) clearTimeout(dShowTO);
-  dShowTO=setTimeout(()=>{ detailEl.classList.add('show'); if(dViewer) dViewer.resize(); }, 1250);
+  dShowTO=setTimeout(()=>{ detailEl.classList.add('show'); }, 1200);
+  // al terminar el vuelo, el espacio empieza a girar alrededor del holograma
+  setTimeout(()=>{ if(detailOpen()) dAutoRot=true; }, 2700);
 }
 function closeDetail(){
-  detailEl.classList.remove('show');                 // fade-out
+  detailEl.classList.remove('show'); dAutoRot=false;
   if(dShowTO){clearTimeout(dShowTO);dShowTO=null;}
   if(dCamPrev){ try{ map.flyTo({center:dCamPrev.center,zoom:dCamPrev.zoom,bearing:dCamPrev.bearing,
         pitch:dCamPrev.pitch,duration:1500,essential:true}); }catch(e){} }
   if(dCloseTO) clearTimeout(dCloseTO);
   dCloseTO=setTimeout(()=>{
     detailEl.classList.remove('open');
-    if(dViewer) dViewer.stop();
     if(dTimer){ clearInterval(dTimer); dTimer=null; }
     if(dRAF){ cancelAnimationFrame(dRAF); dRAF=null; }
+    holoState.origin=null;     // oculta el holograma
+    if(holoState.scene){ while(holoState.scene.children.length) holoState.scene.remove(holoState.scene.children[0]); }
     dAssetId=null; selectedId=null;
+    map.triggerRepaint();
   }, 560);
 }
 // Descarga un reporte (CSV compatible con Excel) del activo seleccionado
@@ -481,7 +536,7 @@ function downloadExcel(){
 document.getElementById('dBack').onclick=closeDetail;
 document.getElementById('dXls').onclick=downloadExcel;
 addEventListener('keydown',e=>{ if(e.key==='Escape'&&detailOpen()) closeDetail(); });
-addEventListener('resize',()=>{ if(dViewer&&detailOpen()) dViewer.resize(); });
+addEventListener('resize',()=>{ if(detailOpen()) map.resize(); });
 
 // ---- motor de gráficas (canvas 2D, estilo holográfico) ----
 function gctx(id){
@@ -545,6 +600,10 @@ function drawTri(){
 function dLoop(){
   dRAF=requestAnimationFrame(dLoop);
   dPhase+=0.06;
+  if(detailOpen()){
+    if(dAutoRot && !dDragging){ map.setBearing(map.getBearing()+0.10); }  // gira el espacio alrededor del holograma
+    map.triggerRepaint();                                                  // mantiene la animación del holograma fluida
+  }
   drawOsc(); drawSpec(); drawTri();
   drawSeries('cvTrend',[{data:dHist.temp,c:'#ef4444',t:'Temp °C',min:30,max:90},{data:dHist.vib,c:'#a855f7',t:'Vib mm/s',min:0,max:12}]);
   drawSeries('cvCond',[{data:dHist.salud,c:'#10b981',t:'Salud %',min:0,max:100},{data:dHist.thd,c:'#f97316',t:'THD %',min:0,max:20}]);
