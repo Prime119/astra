@@ -187,36 +187,43 @@ function transformer(cx,cz){
   return t;
 }
 
-function bladeLines(){ // pala sólida: ancha cerca de la raíz, afinada a la punta, con relleno tenue
-  const L=4.5, N=16, le=[], te=[];
-  const chord=t=> t<0.16 ? 0.18+(t/0.16)*0.9 : 1.05*Math.pow((1-t)/0.84,0.85)+0.05;
-  for(let i=0;i<=N;i++){const t=i/N, y=t*L, c=chord(t), sweep=0.14*t*t;
+function bladeLines(){ // pala 3D y delgada: dos contornos (grosor) + relleno tenue
+  const L=4.5, N=18, th=0.10, le=[], te=[];
+  const chord=t=> t<0.16 ? 0.12+(t/0.16)*0.72 : 0.84*Math.pow((1-t)/0.84,0.85)+0.04;
+  for(let i=0;i<=N;i++){const t=i/N, y=t*L, c=chord(t), sweep=0.12*t*t;
     le.push([-c*0.42+sweep,y]); te.push([c*0.58+sweep,y]);}
   const g=new THREE.Group();
-  // superficie (relleno aditivo tenue) para que se lea como pala y no como línea
   const shape=new THREE.Shape(); shape.moveTo(le[0][0],le[0][1]);
   for(let i=1;i<=N;i++) shape.lineTo(le[i][0],le[i][1]);
   for(let i=N;i>=0;i--) shape.lineTo(te[i][0],te[i][1]);
   g.add(new THREE.Mesh(new THREE.ShapeGeometry(shape),
-    new THREE.MeshBasicMaterial({color:HUD,transparent:true,opacity:0.09,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})));
-  // contorno + larguero central
+    new THREE.MeshBasicMaterial({color:HUD,transparent:true,opacity:0.06,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide})));
   const s=[];
-  for(let i=0;i<N;i++){ s.push(le[i][0],le[i][1],0, le[i+1][0],le[i+1][1],0);
-    s.push(te[i][0],te[i][1],0, te[i+1][0],te[i+1][1],0); }
-  s.push(le[0][0],le[0][1],0, te[0][0],te[0][1],0);  s.push(le[N][0],le[N][1],0, te[N][0],te[N][1],0);
-  for(let i=0;i<N;i++) s.push((le[i][0]+te[i][0])/2,i/N*L,0, (le[i+1][0]+te[i+1][0])/2,(i+1)/N*L,0);
-  g.add(segs(s,HUD,0.85));
+  [th/2,-th/2].forEach(z=>{                                  // contorno en dos planos -> grosor 3D
+    for(let i=0;i<N;i++){ s.push(le[i][0],le[i][1],z, le[i+1][0],le[i+1][1],z);
+      s.push(te[i][0],te[i][1],z, te[i+1][0],te[i+1][1],z); }
+    s.push(le[0][0],le[0][1],z, te[0][0],te[0][1],z);  s.push(le[N][0],le[N][1],z, te[N][0],te[N][1],z); });
+  for(let i=0;i<=N;i+=3){ s.push(le[i][0],le[i][1],th/2, le[i][0],le[i][1],-th/2);   // conectores de grosor
+    s.push(te[i][0],te[i][1],th/2, te[i][0],te[i][1],-th/2); }
+  g.add(segs(s,HUD,0.8));
   return g;
 }
 function makeTurbine(){
   const t=new THREE.Group();
-  const tower=holo(new THREE.CylinderGeometry(0.17,0.36,9,16)); tower.position.y=4.5; t.add(tower);   // torre cónica
+  const tower=holo(new THREE.CylinderGeometry(0.16,0.34,9,16)); tower.position.y=4.5; t.add(tower);   // torre cónica
   const base=holo(new THREE.CylinderGeometry(0.55,0.8,0.45,18)); base.position.y=0.22; t.add(base);   // cimentación
-  const nac=holo(new THREE.BoxGeometry(1.7,0.8,0.95)); nac.position.set(0,9,-0.1); t.add(nac);          // góndola
-  const tail=holo(new THREE.ConeGeometry(0.3,0.7,12)); tail.rotation.x=-Math.PI/2; tail.position.set(0,9,-0.9); t.add(tail); // cola (apex -Z)
-  const hub=new THREE.Group(); hub.position.set(0,9,0.5);
-  const cube=holo(new THREE.CylinderGeometry(0.3,0.34,0.5,16)); cube.rotation.x=Math.PI/2; hub.add(cube);            // cubo del rotor
-  const nose=holo(new THREE.ConeGeometry(0.3,0.55,14)); nose.rotation.x=Math.PI/2; nose.position.z=0.45; hub.add(nose); // nariz (apex +Z)
+  // góndola aerodinámica (cápsula octagonal achatada) - más pequeña y redondeada
+  const nacGrp=new THREE.Group();
+  const nac=holo(new THREE.CylinderGeometry(0.30,0.26,1.5,8),{fill:0.06,edge:0.6});
+  nac.rotation.x=Math.PI/2; nacGrp.add(nac);
+  nacGrp.scale.set(1.25,0.82,1); nacGrp.position.set(0,9,-0.15); t.add(nacGrp);
+  // anemómetro/antena arriba (como la foto)
+  t.add(holo(new THREE.BoxGeometry(0.12,0.12,0.12)).translateY(9.3).translateZ(-0.5));
+  t.add(segs([0,9.3,-0.55, 0,9.75,-0.55],GLOW,0.6));
+  // rotor: cubo + nariz redondeada + aspas
+  const hub=new THREE.Group(); hub.position.set(0,9,0.55);
+  const cube=holo(new THREE.CylinderGeometry(0.26,0.28,0.4,14)); cube.rotation.x=Math.PI/2; hub.add(cube);
+  const nose=holo(new THREE.ConeGeometry(0.27,0.5,16)); nose.rotation.x=Math.PI/2; nose.position.z=0.42; hub.add(nose);
   for(let k=0;k<3;k++){const arm=new THREE.Group(); arm.add(bladeLines()); arm.rotation.z=k*2*Math.PI/3; hub.add(arm);}
   t.add(hub); spin.push({obj:hub,axis:'z',speed:0.8});
   return t;
