@@ -42,25 +42,57 @@ class Hardware:
 
     @staticmethod
     def detect() -> "Hardware":
-        ram_gb = 0.0
+        ram_gb = Hardware._detect_ram_gb()
         cpu_count = os.cpu_count() or 1
-        try:
-            import psutil  # type: ignore
-            ram_gb = round(psutil.virtual_memory().total / (1024 ** 3), 1)
-        except Exception:
-            ram_gb = 0.0
-
         has_gpu = _detect_gpu()
 
-        # Selección de "tier" de modelo según recursos
-        if ram_gb >= 24 and has_gpu:
-            tier = "potente"
-        elif ram_gb >= 12:
-            tier = "recomendada"
+        # Selección de "tier" según RAM y GPU (umbrales conservadores: el modelo debe caber holgado).
+        if (ram_gb >= 30) or (has_gpu and ram_gb >= 24):
+            tier = "potente"      # 14B
+        elif ram_gb >= 15:
+            tier = "recomendada"  # 7B
         else:
-            tier = "ligera"
+            tier = "ligera"       # 3B (p. ej. laptops de 8 GB)
 
         return Hardware(ram_gb=ram_gb, has_gpu=has_gpu, cpu_count=cpu_count, tier=tier)
+
+    @staticmethod
+    def _detect_ram_gb() -> float:
+        """RAM total en GB. Funciona aunque NO esté psutil (Windows via ctypes, Unix via sysconf)."""
+        # 1) psutil (si está)
+        try:
+            import psutil  # type: ignore
+            return round(psutil.virtual_memory().total / (1024 ** 3), 1)
+        except Exception:
+            pass
+        # 2) Windows (ctypes)
+        try:
+            import ctypes
+
+            class _MEMORYSTATUSEX(ctypes.Structure):
+                _fields_ = [
+                    ("dwLength", ctypes.c_ulong),
+                    ("dwMemoryLoad", ctypes.c_ulong),
+                    ("ullTotalPhys", ctypes.c_ulonglong),
+                    ("ullAvailPhys", ctypes.c_ulonglong),
+                    ("ullTotalPageFile", ctypes.c_ulonglong),
+                    ("ullAvailPageFile", ctypes.c_ulonglong),
+                    ("ullTotalVirtual", ctypes.c_ulonglong),
+                    ("ullAvailVirtual", ctypes.c_ulonglong),
+                    ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+                ]
+
+            stat = _MEMORYSTATUSEX()
+            stat.dwLength = ctypes.sizeof(_MEMORYSTATUSEX)
+            ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))  # type: ignore[attr-defined]
+            return round(stat.ullTotalPhys / (1024 ** 3), 1)
+        except Exception:
+            pass
+        # 3) Unix (Linux/Mac)
+        try:
+            return round(os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / (1024 ** 3), 1)
+        except Exception:
+            return 0.0
 
 
 def _detect_gpu() -> bool:

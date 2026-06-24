@@ -25,7 +25,35 @@ CODER_BY_TIER = {
     "potente": "qwen2.5-coder:14b",
 }
 
+TIER_ORDER = ("ligera", "recomendada", "potente")
+
 Message = dict[str, str]  # {"role": "user"|"assistant"|"system", "content": "..."}
+
+
+def _list_ollama_models(endpoint: str, timeout: float = 3.0) -> list[str]:
+    """Lista los modelos descargados en Ollama. [] si no responde o no hay httpx."""
+    try:
+        import httpx  # type: ignore
+        r = httpx.get(f"{endpoint}/api/tags", timeout=timeout)
+        if r.status_code == 200:
+            return [m.get("name", "") for m in r.json().get("models", [])]
+    except Exception:
+        pass
+    return []
+
+
+def choose_best(tier: str, available: list[str], table: dict[str, str]) -> str:
+    """
+    Auto-selección por dispositivo: el MEJOR modelo que (a) el hardware soporta (≤ tier) y
+    (b) está realmente descargado. Si ninguno está descargado, devuelve el ideal del tier
+    (para guiar el `ollama pull`).
+    """
+    idx = TIER_ORDER.index(tier) if tier in TIER_ORDER else 0
+    for t in reversed(TIER_ORDER[: idx + 1]):  # del tope permitido hacia el más ligero
+        tag = table.get(t)
+        if tag and tag in available:
+            return tag
+    return table.get(tier, table.get("ligera", ""))
 
 
 @dataclass
@@ -50,11 +78,20 @@ class Brain:
     def from_app_config(cls, cfg, system_prompt: str) -> "Brain":
         tier = cfg.hardware.tier
         auto = bool(cfg.get("brain", "auto_scale_by_hardware", default=True))
+        endpoint = cfg.get("brain", "local_endpoint", default="http://127.0.0.1:11434")
+        available = _list_ollama_models(endpoint)
+        if auto:
+            # Elige el mejor modelo DESCARGADO que este equipo soporte.
+            local_model = choose_best(tier, available, MODEL_BY_TIER)
+            coder_model = choose_best(tier, available, CODER_BY_TIER)
+        else:
+            local_model = cfg.get("brain", "local_model", default="qwen2.5:3b-instruct")
+            coder_model = cfg.get("brain", "local_coder_model",
+                                  default=CODER_BY_TIER.get(tier, "qwen2.5-coder:7b"))
         bc = BrainConfig(
-            local_endpoint=cfg.get("brain", "local_endpoint", default="http://127.0.0.1:11434"),
-            local_model=(MODEL_BY_TIER.get(tier) if auto else cfg.get("brain", "local_model"))
-            or "qwen2.5:3b-instruct",
-            coder_model=CODER_BY_TIER.get(tier, "qwen2.5-coder:7b"),
+            local_endpoint=endpoint,
+            local_model=local_model or "qwen2.5:3b-instruct",
+            coder_model=coder_model or "qwen2.5-coder:7b",
             temperature=float(cfg.get("brain", "temperature", default=0.3)),
             top_p=float(cfg.get("brain", "top_p", default=0.85)),
             cloud_boost_enabled=bool(cfg.get("brain", "cloud_boost", "enabled", default=False)),

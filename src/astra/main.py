@@ -49,8 +49,16 @@ def _get_say(argv: list[str]) -> str | None:
 
 
 def _print_brain_check(astra) -> None:
-    """Diagnóstico amigable de Ollama: ¿está corriendo? ¿está el modelo?"""
+    """Diagnóstico amigable: hardware detectado + estado de Ollama + modelo elegido."""
+    hw = astra.config.hardware
     d = astra.brain.diagnose()
+    print("\n🖥️  Hardware detectado")
+    print("-" * 44)
+    print(f"RAM             : {hw.ram_gb} GB")
+    print(f"GPU dedicada    : {'sí' if hw.has_gpu else 'no'}")
+    print(f"CPUs            : {hw.cpu_count}")
+    print(f"Nivel (tier)    : {hw.tier}  ->  modelo objetivo: {d['model']}")
+
     print("\n🧠 Diagnóstico del cerebro (Ollama)")
     print("-" * 44)
     print(f"Endpoint        : {d['endpoint']}")
@@ -59,10 +67,14 @@ def _print_brain_check(astra) -> None:
         print("\n⚠️  No detecto Ollama corriendo. Pasos:")
         print("   1) Instala Ollama:  https://ollama.com/download")
         print("   2) Ábrelo (queda en segundo plano en 127.0.0.1:11434).")
-        print(f"   3) Descarga el modelo:  ollama pull {d['model']}")
+        print(f"   3) Descarga el modelo de tu equipo:  ollama pull {d['model']}")
         print("   4) Vuelve a ejecutar:  python -m astra --check")
+        print("\n💡 Para tener los 3 y que cada equipo elija solo:")
+        print("   ollama pull qwen2.5:3b-instruct")
+        print("   ollama pull qwen2.5:7b-instruct")
+        print("   ollama pull qwen2.5:14b-instruct")
         return
-    print(f"Modelo principal: {d['model']}")
+    print(f"Modelo elegido  : {d['model']}  (auto-seleccionado para este equipo)")
     print(f"Modelo de código: {d['coder_model']}")
     print(f"Modelos locales : {', '.join(d['available']) or '(ninguno)'}")
     if d["missing"]:
