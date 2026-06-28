@@ -230,8 +230,8 @@ function diagnose(m){
 const COND_HEX={buenas:"#10b981",regulares:"#facc15",malas:"#f97316",pesimas:"#ef4444"};
 const COND_TXT={buenas:"🟢 BUENAS",regulares:"🟡 REGULARES",malas:"🟠 MALAS",pesimas:"🔴 PÉSIMAS"};
 const TYPE_LABEL={subestacion:"Subestación",torre:"Torre / Línea",hidro:"Hidroeléctrica",
-  eolica:"Eólica",solar:"Solar",termo:"Termoeléctrica",oficina:"Oficina CFE"};
-const TYPE_PREFIX={subestacion:"S.E.",torre:"Torre",hidro:"C.H.",eolica:"C.E.",solar:"C.F.V.",termo:"C.T.",oficina:"Oficina CFE"};
+  eolica:"Eólica",solar:"Solar",termo:"Termoeléctrica",oficina:"Oficina CFE",almacen:"Almacén CFE"};
+const TYPE_PREFIX={subestacion:"S.E.",torre:"Torre",hidro:"C.H.",eolica:"C.E.",solar:"C.F.V.",termo:"C.T.",oficina:"Oficina CFE",almacen:"Almacén"};
 const ESTADOS=["Sonora","Chihuahua","Coahuila","Nuevo León","Tamaulipas","Sinaloa","Durango","Zacatecas",
   "San Luis Potosí","Jalisco","Nayarit","Aguascalientes","Guanajuato","Querétaro","Hidalgo","Veracruz",
   "Puebla","México","CDMX","Morelos","Michoacán","Colima","Guerrero","Oaxaca","Tlaxcala","Tabasco",
@@ -284,6 +284,22 @@ const ASSETS=[];
 let id=0;
 NAMED.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado,t:genTelemetry()}));
 function inRegion(lon,lat){ return REGION.some(r=> lon>=r.lon0&&lon<=r.lon1&&lat>=r.lat0&&lat<=r.lat1); }
+// Ciudades reales de la región -> ahí sembramos oficinas, almacenes y subestaciones (no en el desierto)
+const CITIES=[
+  ["Hermosillo",-110.97,29.07],["Cd. Obregón",-109.93,27.49],["Nogales",-110.94,31.31],
+  ["Guaymas",-110.90,27.92],["Navojoa",-109.44,27.07],["Caborca",-112.16,30.72],
+  ["Culiacán",-107.39,24.80],["Mazatlán",-106.41,23.25],["Los Mochis",-108.99,25.79],
+  ["Guasave",-108.47,25.57],["Chihuahua",-106.07,28.63],["Cd. Juárez",-106.49,31.69],
+  ["Delicias",-105.47,28.19],["Cuauhtémoc",-106.87,28.41],["Parral",-105.66,26.93],
+  ["Mexicali",-115.47,32.62],["Tijuana",-117.01,32.51],["Ensenada",-116.60,31.86],
+  ["La Paz",-110.31,24.14],["San José del Cabo",-109.70,23.06],["Loreto",-111.34,26.01],
+];
+CITIES.forEach(([cn,lon,lat])=>{
+  const j=()=> (Math.random()-0.5)*0.022;
+  ASSETS.push({id:id++,name:'Oficina CFE '+cn,type:'oficina',lon:lon+j(),lat:lat+j(),estado:'',t:genTelemetry()});
+  ASSETS.push({id:id++,name:'Almacén CFE '+cn,type:'almacen',lon:lon+j(),lat:lat+j(),estado:'',t:genTelemetry()});
+  ASSETS.push({id:id++,name:'S.E. '+cn,type:'subestacion',lon:lon+j(),lat:lat+j(),estado:'',t:genTelemetry()});
+});
 function updateCount(){ const el=document.getElementById('count'); if(el) el.textContent=ASSETS.length+" activos"; }
 updateCount();
 
@@ -422,7 +438,23 @@ function loadLines(){
       }});
       txCache.push(q); if(txCache.length>14)txCache.shift();
       map.getSource('txlines').setData({type:'FeatureCollection',features:[...txFeatures.values()]});
+      rebuildTowers();   // genera las torres a lo largo del trazo real
     }).catch(()=>{}).finally(()=>{txBusy=false;});
+}
+// Coloca torres a lo largo de una polilínea cada ~step grados (≈450 m)
+function towersFromLine(coords,step){ const pts=[]; let carry=0;
+  for(let i=0;i<coords.length-1;i++){ const a=coords[i],b=coords[i+1],dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy);
+    if(L===0)continue; let pos=step-carry;
+    while(pos<L){ const t=pos/L; pts.push([a[0]+dx*t,a[1]+dy*t]); pos+=step; }
+    carry=L-(pos-step); if(carry<0)carry=0; }
+  return pts; }
+function rebuildTowers(){
+  if(!map.getSource('txtowers')) return;
+  const tw=[]; let n=0;
+  for(const f of txFeatures.values()){ const cs=f.geometry.coordinates; const pts=towersFromLine(cs,0.0045);
+    for(const p of pts){ tw.push({type:'Feature',geometry:{type:'Point',coordinates:p}}); if(++n>7000)break; }
+    if(n>7000)break; }
+  map.getSource('txtowers').setData({type:'FeatureCollection',features:tw});
 }
 function loadTowers(){
   if(twBusy || !map.getSource('txtowers') || map.getZoom()<12) return;
@@ -436,7 +468,7 @@ function loadTowers(){
       map.getSource('txtowers').setData({type:'FeatureCollection',features:[...twFeatures.values()]});
     }).catch(()=>{}).finally(()=>{twBusy=false;});
 }
-function schedulePower(){ if(powerTimer)clearTimeout(powerTimer); powerTimer=setTimeout(()=>{ loadLines(); loadTowers(); },500); }
+function schedulePower(){ if(powerTimer)clearTimeout(powerTimer); powerTimer=setTimeout(()=>{ loadLines(); },500); }
 map.on('moveend',schedulePower);
 map.on('load',schedulePower);
 
@@ -471,7 +503,13 @@ map.on('click','txlines-l',(e)=>{ const c=e.lngLat;
   map.on('mouseleave',l,()=>map.getCanvas().style.cursor=''); });
 
 // ===== Modo OFFLINE (descarga de zonas, estilo Maps) =====
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+if('serviceWorker' in navigator){
+  let _swReloaded=false;
+  if(navigator.serviceWorker.controller){
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!_swReloaded){_swReloaded=true; location.reload();} });
+  }
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 const offEl=document.getElementById('offline'); let offDetail=12, offBusy=false;
 document.getElementById('dlBtn').onclick=()=>{ offEl.classList.toggle('open'); renderZones(); };
 document.getElementById('offClose').onclick=()=>offEl.classList.remove('open');

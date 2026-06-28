@@ -2,9 +2,9 @@
    Estrategia:
    - Mosaicos (cartocdn) y datos (overpass): cache-first (sirven sin internet si ya se descargaron).
    - App + librerías: network-first con respaldo a caché (siempre fresco online, funciona offline). */
-const APP_CACHE  = 'falcon-app-v1';
-const TILE_CACHE = 'falcon-tiles-v1';
-const DATA_CACHE = 'falcon-data-v1';
+const APP_CACHE  = 'falcon-app-v2';
+const TILE_CACHE = 'falcon-tiles-v2';
+const DATA_CACHE = 'falcon-data-v2';
 const APP_ASSETS = [
   './', './index.html', './holo-lib.js',
   'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css',
@@ -18,7 +18,12 @@ self.addEventListener('install', e=>{
   self.skipWaiting();
   e.waitUntil(caches.open(APP_CACHE).then(c=>Promise.all(APP_ASSETS.map(u=>c.add(u).catch(()=>{})))));
 });
-self.addEventListener('activate', e=>{ e.waitUntil(self.clients.claim()); });
+self.addEventListener('activate', e=>{
+  e.waitUntil(
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>!/-v2$/.test(k)).map(k=>caches.delete(k))))
+      .then(()=>self.clients.claim())
+  );
+});
 
 self.addEventListener('fetch', e=>{
   if(e.request.method!=='GET') return;
