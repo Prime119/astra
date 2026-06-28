@@ -472,12 +472,14 @@ function schedulePower(){ if(powerTimer)clearTimeout(powerTimer); powerTimer=set
 map.on('moveend',schedulePower);
 map.on('load',schedulePower);
 
-// Activos REALES desde OpenStreetMap (subestaciones y centrales) en su ubicación verdadera
+// Activos REALES desde OpenStreetMap (subestaciones y centrales) — por área visible (rápido y confiable)
+let raCache=[], raBusy=false;
 function loadRealAssets(){
-  const W=-117.6,S=22.4,E=-103.2,N=32.9;
-  const q=`[out:json][timeout:90];(node["power"="substation"](${S},${W},${N},${E});way["power"="substation"](${S},${W},${N},${E});node["power"="plant"](${S},${W},${N},${E});way["power"="plant"](${S},${W},${N},${E}););out center tags;`;
-  _overpass(q).then(data=>{
-    const seen=new Set(ASSETS.map(a=>a.osm).filter(Boolean));
+  if(raBusy || !map.getSource('cfe') || map.getZoom()<7) return;
+  const q=_bbox(0.2); if(_covered(raCache,q)) return; raBusy=true;
+  const query=`[out:json][timeout:40];(node["power"="substation"](${q[0]},${q[1]},${q[2]},${q[3]});way["power"="substation"](${q[0]},${q[1]},${q[2]},${q[3]});node["power"="plant"](${q[0]},${q[1]},${q[2]},${q[3]});way["power"="plant"](${q[0]},${q[1]},${q[2]},${q[3]}););out center tags;`;
+  _overpass(query).then(data=>{
+    const seen=new Set(ASSETS.map(a=>a.osm).filter(Boolean)); let added=0;
     (data.elements||[]).forEach(e=>{
       const lon=e.lon!=null?e.lon:(e.center&&e.center.lon), lat=e.lat!=null?e.lat:(e.center&&e.center.lat);
       if(lon==null||lat==null||!inRegion(lon,lat)) return;
@@ -486,12 +488,14 @@ function loadRealAssets(){
       if(tg.power==='plant'){ const src=((tg['plant:source']||tg['generator:source']||'')+'').toLowerCase();
         type=src.indexOf('hydro')>=0?'hidro':src.indexOf('solar')>=0?'solar':src.indexOf('wind')>=0?'eolica':'termo'; }
       const name=tg.name||(TYPE_PREFIX[type]+' '+(100+e.id%9000));
-      ASSETS.push({id:id++,osm:key,name,type,lon,lat,estado:'',t:genTelemetry()});
+      ASSETS.push({id:id++,osm:key,name,type,lon,lat,estado:'',t:genTelemetry()}); added++;
     });
-    if(map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
+    raCache.push(q); if(raCache.length>16)raCache.shift();
+    if(added && map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
     updateCount();
-  }).catch(()=>{});
+  }).catch(()=>{}).finally(()=>{raBusy=false;});
 }
+map.on('moveend',loadRealAssets);
 map.on('load',loadRealAssets);
 
 // Clic en torre/línea REAL -> abrir Núcleo MEC de esa estructura
