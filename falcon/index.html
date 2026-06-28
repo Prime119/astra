@@ -27,6 +27,30 @@
   #topbar .spacer{flex:1;}
   #topbar .dot{color:var(--good);font-size:11px;font-weight:bold;letter-spacing:1px;}
   #topbar .count{color:var(--muted);font-size:11px;}
+  #topbar #dlBtn{pointer-events:auto;cursor:pointer;background:#0a1c2b;border:1px solid var(--hud-dk);
+    color:var(--glow);font-family:inherit;font-size:10.5px;letter-spacing:1px;padding:5px 9px;border-radius:5px;}
+  #topbar #dlBtn:hover{border-color:var(--hud);}
+  /* Panel de descarga offline */
+  #offline{position:fixed;top:52px;left:14px;z-index:30;width:286px;display:none;
+    background:rgba(7,20,32,.94);border:1px solid var(--hud-dk);border-radius:8px;padding:12px 13px;
+    color:var(--text);box-shadow:0 0 22px rgba(34,211,238,.18);font-size:12px;}
+  #offline.open{display:block;}
+  #offline h4{margin:0 0 6px;color:var(--glow);font-size:12px;letter-spacing:1px;}
+  #offline p{margin:0 0 9px;color:var(--muted);font-size:10.5px;line-height:1.45;}
+  #offline .seg{display:flex;gap:6px;margin-bottom:9px;}
+  #offline .seg button{flex:1;background:#0a1c2b;border:1px solid var(--hud-dk);color:var(--muted);
+    padding:6px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:11px;}
+  #offline .seg button.on{background:var(--hud);color:#04121b;border-color:var(--glow);font-weight:bold;}
+  #offline .dl{width:100%;background:#0a2018;border:1px solid var(--good);color:var(--good);
+    padding:8px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;letter-spacing:1px;}
+  #offline .dl:hover{background:var(--good);color:#04121b;font-weight:bold;}
+  #offline .bar{height:6px;background:#0c2230;border-radius:3px;margin-top:9px;overflow:hidden;display:none;}
+  #offline .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0e7490,#22d3ee);}
+  #offline .msg{margin-top:6px;font-size:10.5px;color:var(--muted);min-height:14px;}
+  #offline .zlist{margin-top:9px;border-top:1px solid var(--hud-dk);padding-top:7px;max-height:120px;overflow:auto;}
+  #offline .zitem{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--muted);margin:3px 0;}
+  #offline .zitem b{color:var(--text);}
+  #offline .x{position:absolute;top:9px;right:11px;color:var(--muted);cursor:pointer;font-size:13px;}
 
   #help{position:fixed;top:54px;right:14px;z-index:10;text-align:right;pointer-events:none;
     color:var(--muted);font-size:11px;line-height:1.7;text-shadow:0 0 6px #000;}
@@ -117,7 +141,22 @@
   <span class="sub">// MEC — INFRAESTRUCTURA CFE · MÉXICO</span>
   <span class="spacer"></span>
   <span class="count" id="count">— activos</span>
-  <span class="dot">● EN LÍNEA</span>
+  <button id="dlBtn" title="Descargar esta zona para usar sin internet">⬇ OFFLINE</button>
+  <span class="dot" id="netState">● EN LÍNEA</span>
+</div>
+
+<div id="offline">
+  <span class="x" id="offClose">✕</span>
+  <h4>DESCARGA OFFLINE</h4>
+  <p>Acércate a la zona que quieras monitorear y descárgala. Se guardan los mosaicos del mapa y las líneas reales de esa área para usarlas <b>sin internet</b>.</p>
+  <div class="seg">
+    <button data-z="12" class="on">Media · z12</button>
+    <button data-z="13">Alta · z13</button>
+  </div>
+  <button class="dl" id="offDl">⬇ Descargar esta zona</button>
+  <div class="bar" id="offBar"><i></i></div>
+  <div class="msg" id="offMsg"></div>
+  <div class="zlist" id="offZones"></div>
 </div>
 
 <div id="help">
@@ -274,9 +313,7 @@ const map=new maplibregl.Map({
     version:8,
     glyphs:"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
     sources:{ carto:{ type:"raster", tileSize:256,
-      tiles:["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-             "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-             "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
+      tiles:["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
       attribution:"© OpenStreetMap, © CARTO" } },
     layers:[{id:"carto",type:"raster",source:"carto"}]
   },
@@ -381,7 +418,7 @@ function _bbox(exp){ const b=map.getBounds(); const dy=(b.getNorth()-b.getSouth(
   return [b.getSouth()-dy,b.getWest()-dx,b.getNorth()+dy,b.getEast()+dx]; }
 function _covered(cache,q){ return cache.some(c=> q[0]>=c[0]&&q[1]>=c[1]&&q[2]<=c[2]&&q[3]<=c[3]); }
 function _overpass(query){
-  return fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(query)})
+  return fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query))
     .then(r=>{ if(!r.ok) throw new Error('overpass '+r.status); return r.json(); });
 }
 function loadLines(){
@@ -412,6 +449,54 @@ function loadTowers(){
 function schedulePower(){ if(powerTimer)clearTimeout(powerTimer); powerTimer=setTimeout(()=>{ loadLines(); loadTowers(); },500); }
 map.on('moveend',schedulePower);
 map.on('load',schedulePower);
+
+// ===== Modo OFFLINE (descarga de zonas, estilo Maps) =====
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+const offEl=document.getElementById('offline'); let offDetail=12, offBusy=false;
+document.getElementById('dlBtn').onclick=()=>{ offEl.classList.toggle('open'); renderZones(); };
+document.getElementById('offClose').onclick=()=>offEl.classList.remove('open');
+[...document.querySelectorAll('#offline .seg button')].forEach(b=>b.onclick=()=>{
+  offDetail=+b.dataset.z; document.querySelectorAll('#offline .seg button').forEach(x=>x.classList.toggle('on',x===b)); });
+document.getElementById('offDl').onclick=()=>downloadZone(offDetail);
+function offMsg(t){ document.getElementById('offMsg').textContent=t; }
+function offProgress(done,total){ const bar=document.getElementById('offBar'); bar.style.display='block';
+  bar.querySelector('i').style.width=Math.round(done/total*100)+'%'; if(done>=total) setTimeout(()=>bar.style.display='none',1400); }
+function tileX(lon,z){ return Math.floor((lon+180)/360*Math.pow(2,z)); }
+function tileY(lat,z){ const r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); }
+function tileList(b,zmin,zmax){ const list=[];
+  for(let z=zmin;z<=zmax;z++){ const x0=tileX(b.getWest(),z),x1=tileX(b.getEast(),z),y0=tileY(b.getNorth(),z),y1=tileY(b.getSouth(),z);
+    for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++) list.push(`https://a.basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`); }
+  return list; }
+async function downloadZone(maxDetail){
+  if(offBusy) return;
+  const b=map.getBounds(), zmin=Math.max(5,Math.floor(map.getZoom()));
+  if(zmin>maxDetail){ offMsg('Aléjate un poco o sube el nivel de detalle.'); return; }
+  const tiles=tileList(b,zmin,maxDetail);
+  if(tiles.length>4000){ offMsg(`Demasiados mosaicos (${tiles.length}). Acércate más a la zona.`); return; }
+  const q=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()];
+  const data=[
+    'https://overpass-api.de/api/interpreter?data='+encodeURIComponent(`[out:json][timeout:25];(way["power"="line"](${q[0]},${q[1]},${q[2]},${q[3]});way["power"="minor_line"](${q[0]},${q[1]},${q[2]},${q[3]}););out geom;`),
+    'https://overpass-api.de/api/interpreter?data='+encodeURIComponent(`[out:json][timeout:25];node["power"="tower"](${q[0]},${q[1]},${q[2]},${q[3]});out;`)
+  ];
+  const all=tiles.concat(data); let done=0, idx=0; offBusy=true; offMsg('Descargando '+tiles.length+' mosaicos + líneas...');
+  async function worker(){ while(idx<all.length){ const u=all[idx++]; try{ await fetch(u,{cache:'reload'}); }catch(e){} done++; offProgress(done,all.length); } }
+  await Promise.all(Array.from({length:6},()=>worker()));
+  offBusy=false; offMsg('✔ Zona lista para usar sin internet.');
+  const zones=JSON.parse(localStorage.getItem('falconZones')||'[]');
+  zones.unshift({c:[(b.getWest()+b.getEast())/2,(b.getNorth()+b.getSouth())/2], tiles:tiles.length, z:maxDetail, date:new Date().toLocaleDateString('es-MX')});
+  localStorage.setItem('falconZones',JSON.stringify(zones.slice(0,12)));
+  renderZones();
+}
+function renderZones(){
+  const zones=JSON.parse(localStorage.getItem('falconZones')||'[]');
+  document.getElementById('offZones').innerHTML = zones.length
+    ? '<div style="color:var(--glow);font-size:10px;letter-spacing:1px;margin-bottom:3px;">ZONAS DESCARGADAS</div>'+
+      zones.map(z=>`<div class="zitem"><b>${z.c[1].toFixed(2)}, ${z.c[0].toFixed(2)}</b><span>${z.tiles} mos · z${z.z} · ${z.date}</span></div>`).join('')
+    : '<div class="zitem"><span>Aún no hay zonas descargadas.</span></div>';
+}
+function updateNet(){ const el=document.getElementById('netState'); const on=navigator.onLine;
+  el.textContent= on?'● EN LÍNEA':'● OFFLINE'; el.style.color= on?'var(--good)':'#f59e0b'; }
+addEventListener('online',updateNet); addEventListener('offline',updateNet); updateNet();
 
 // ============ Vista de detalle "Núcleo MEC" (modelo 3D + gráficas MEC) ============
 const detailEl=document.getElementById('detail');
