@@ -283,20 +283,9 @@ const REGION=[
 const ASSETS=[];
 let id=0;
 NAMED.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado,t:genTelemetry()}));
-// Distribuir activos SOLO dentro de los 7 estados del noroeste
-const TARGET=150; let guard=0;
-while(ASSETS.length<TARGET && guard<60000){
-  guard++;
-  const r=REGION[Math.floor(Math.random()*REGION.length)];
-  const lon=r.lon0+Math.random()*(r.lon1-r.lon0), lat=r.lat0+Math.random()*(r.lat1-r.lat0);
-  const ok = r.baja ? inPoly(lon,lat,MX_BAJA) : inPoly(lon,lat,MX_MAINLAND);   // sólo tierra
-  if(!ok) continue;
-  const type=pickType();
-  const num=100+Math.floor(Math.random()*900);
-  const name=`${TYPE_PREFIX[type]} ${r.estado} ${num}`;
-  ASSETS.push({id:id++,name,type,lon,lat,estado:r.estado,t:genTelemetry()});
-}
-document.getElementById('count').textContent = ASSETS.length+" activos";
+function inRegion(lon,lat){ return REGION.some(r=> lon>=r.lon0&&lon<=r.lon1&&lat>=r.lat0&&lat<=r.lat1); }
+function updateCount(){ const el=document.getElementById('count'); if(el) el.textContent=ASSETS.length+" activos"; }
+updateCount();
 
 function featureCollection(){
   return {type:"FeatureCollection",features:ASSETS.map(a=>{
@@ -353,8 +342,9 @@ map.on('load',()=>{
       'line-width':['interpolate',['linear'],['zoom'],8,['step',['get','v'],0.8,161000,1.3,345000,2],14,['step',['get','v'],1.6,161000,2.6,345000,4]],
       'line-opacity':0.85}},'clusters');
   map.addSource('txtowers',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-  map.addLayer({id:'txtowers-l',type:'circle',source:'txtowers',minzoom:13,
-    paint:{'circle-radius':['interpolate',['linear'],['zoom'],13,1.4,17,3],'circle-color':'#67e8f9','circle-opacity':0.85}},'clusters');
+  map.addLayer({id:'txtowers-l',type:'circle',source:'txtowers',minzoom:12,
+    paint:{'circle-radius':['interpolate',['linear'],['zoom'],12,1.4,17,3.2],'circle-color':'#67e8f9','circle-opacity':0.9,
+      'circle-stroke-color':'#0a1320','circle-stroke-width':0.6}},'clusters');
 
 
   // Interacción
@@ -435,7 +425,7 @@ function loadLines(){
     }).catch(()=>{}).finally(()=>{txBusy=false;});
 }
 function loadTowers(){
-  if(twBusy || !map.getSource('txtowers') || map.getZoom()<13) return;
+  if(twBusy || !map.getSource('txtowers') || map.getZoom()<12) return;
   const q=_bbox(0.1); if(_covered(twCache,q)) return; twBusy=true;
   _overpass(`[out:json][timeout:25];node["power"="tower"](${q[0]},${q[1]},${q[2]},${q[3]});out;`)
     .then(data=>{ if(twFeatures.size>9000){twFeatures.clear();twCache=[];}
@@ -449,6 +439,36 @@ function loadTowers(){
 function schedulePower(){ if(powerTimer)clearTimeout(powerTimer); powerTimer=setTimeout(()=>{ loadLines(); loadTowers(); },500); }
 map.on('moveend',schedulePower);
 map.on('load',schedulePower);
+
+// Activos REALES desde OpenStreetMap (subestaciones y centrales) en su ubicación verdadera
+function loadRealAssets(){
+  const W=-117.6,S=22.4,E=-103.2,N=32.9;
+  const q=`[out:json][timeout:90];(node["power"="substation"](${S},${W},${N},${E});way["power"="substation"](${S},${W},${N},${E});node["power"="plant"](${S},${W},${N},${E});way["power"="plant"](${S},${W},${N},${E}););out center tags;`;
+  _overpass(q).then(data=>{
+    const seen=new Set(ASSETS.map(a=>a.osm).filter(Boolean));
+    (data.elements||[]).forEach(e=>{
+      const lon=e.lon!=null?e.lon:(e.center&&e.center.lon), lat=e.lat!=null?e.lat:(e.center&&e.center.lat);
+      if(lon==null||lat==null||!inRegion(lon,lat)) return;
+      const key=e.type+'/'+e.id; if(seen.has(key))return; seen.add(key);
+      const tg=e.tags||{}; let type='subestacion';
+      if(tg.power==='plant'){ const src=((tg['plant:source']||tg['generator:source']||'')+'').toLowerCase();
+        type=src.indexOf('hydro')>=0?'hidro':src.indexOf('solar')>=0?'solar':src.indexOf('wind')>=0?'eolica':'termo'; }
+      const name=tg.name||(TYPE_PREFIX[type]+' '+(100+e.id%9000));
+      ASSETS.push({id:id++,osm:key,name,type,lon,lat,estado:'',t:genTelemetry()});
+    });
+    if(map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
+    updateCount();
+  }).catch(()=>{});
+}
+map.on('load',loadRealAssets);
+
+// Clic en torre/línea REAL -> abrir Núcleo MEC de esa estructura
+map.on('click','txtowers-l',(e)=>{ const c=e.features[0].geometry.coordinates;
+  openDetail({id:'torre@'+c.join(','), name:'Torre de Transmisión', type:'torre', lon:c[0], lat:c[1], estado:'', t:genTelemetry()}); });
+map.on('click','txlines-l',(e)=>{ const c=e.lngLat;
+  openDetail({id:'linea@'+c.lng.toFixed(4), name:'Línea de Transmisión', type:'torre', lon:c.lng, lat:c.lat, estado:'', t:genTelemetry()}); });
+['txtowers-l','txlines-l'].forEach(l=>{ map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave',l,()=>map.getCanvas().style.cursor=''); });
 
 // ===== Modo OFFLINE (descarga de zonas, estilo Maps) =====
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
@@ -500,7 +520,7 @@ addEventListener('online',updateNet); addEventListener('offline',updateNet); upd
 
 // ============ Vista de detalle "Núcleo MEC" (modelo 3D + gráficas MEC) ============
 const detailEl=document.getElementById('detail');
-let dAssetId=null, dPhase=0, dRAF=null, dTimer=null;
+let dAsset=null, dPhase=0, dRAF=null, dTimer=null;
 let holoLayer=null, holoState={scene:null,origin:null,scale:1,baseRings:null,motes:null};
 let dAutoRot=false, dDragging=false;
 const METERS_PER_UNIT=11;
@@ -528,7 +548,7 @@ function mecDetail(a,d){
   return `Alerta seria en ${n}: ${(d.err.join('; ')||'condiciones críticas').toLowerCase()}. Hay que intervenir de inmediato y mandar verificación en sitio.`;
 }
 function refreshDetailHeader(){
-  const a=ASSETS.find(x=>x.id===dAssetId); if(!a)return;
+  const a=dAsset; if(!a)return;
   sampleLive(a); pushHist();
   const d=diagnose(a.t), col=COND_HEX[d.cond];
   document.getElementById('dName').textContent=a.name;
@@ -602,8 +622,8 @@ map.on('touchstart',()=>{ dDragging=true; });
 addEventListener('touchend',()=>{ dDragging=false; });
 
 function openDetail(i){
-  const a=ASSETS.find(x=>x.id===i); if(!a)return;
-  dAssetId=i; selectedId=i; panel.style.display='none';
+  const a=(i&&typeof i==='object')? i : ASSETS.find(x=>x.id===i); if(!a)return;
+  dAsset=a; selectedId=(a.id!=null?a.id:null); panel.style.display='none';
   dCamPrev={center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()};
   detailEl.classList.add('open'); detailEl.classList.remove('show');
   // ancla el holograma en el punto exacto del mapa (crece al acercarnos)
@@ -637,13 +657,13 @@ function closeDetail(){
     if(dRAF){ cancelAnimationFrame(dRAF); dRAF=null; }
     holoState.origin=null;     // oculta el holograma
     if(holoState.scene){ while(holoState.scene.children.length) holoState.scene.remove(holoState.scene.children[0]); }
-    dAssetId=null; selectedId=null;
+    dAsset=null; selectedId=null;
     map.triggerRepaint();
   }, 560);
 }
 // Descarga un reporte (CSV compatible con Excel) del activo seleccionado
 function downloadExcel(){
-  const a=ASSETS.find(x=>x.id===dAssetId); if(!a||!dLive)return;
+  const a=dAsset; if(!a||!dLive)return;
   const d=diagnose(a.t), m=dLive, sep=';', nl='\r\n';
   const esc=v=>{ const s=String(v); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
   const r=(...c)=>c.map(esc).join(sep);
