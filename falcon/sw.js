@@ -2,9 +2,9 @@
    Estrategia:
    - Mosaicos (cartocdn) y datos (overpass): cache-first (sirven sin internet si ya se descargaron).
    - App + librerías: network-first con respaldo a caché (siempre fresco online, funciona offline). */
-const APP_CACHE  = 'falcon-app-v2';
-const TILE_CACHE = 'falcon-tiles-v2';
-const DATA_CACHE = 'falcon-data-v2';
+const APP_CACHE  = 'falcon-app-v3';
+const TILE_CACHE = 'falcon-tiles-v3';
+const DATA_CACHE = 'falcon-data-v3';
 const APP_ASSETS = [
   './', './index.html', './holo-lib.js',
   'https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css',
@@ -20,7 +20,7 @@ self.addEventListener('install', e=>{
 });
 self.addEventListener('activate', e=>{
   e.waitUntil(
-    caches.keys().then(keys=>Promise.all(keys.filter(k=>!/-v2$/.test(k)).map(k=>caches.delete(k))))
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>!/-v3$/.test(k)).map(k=>caches.delete(k))))
       .then(()=>self.clients.claim())
   );
 });
@@ -28,8 +28,8 @@ self.addEventListener('activate', e=>{
 self.addEventListener('fetch', e=>{
   if(e.request.method!=='GET') return;
   const url=e.request.url;
-  // Mosaicos del mapa -> cache-first
-  if(/basemaps\.cartocdn\.com/.test(url)){
+  // Mosaicos del mapa (carto oscuro + satélite Esri) -> cache-first
+  if(/basemaps\.cartocdn\.com|server\.arcgisonline\.com/.test(url)){
     e.respondWith(caches.open(TILE_CACHE).then(c=>c.match(e.request).then(hit=>
       hit || fetch(e.request).then(r=>{ if(r&&r.ok) c.put(e.request,r.clone()); return r; }))));
     return;

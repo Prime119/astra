@@ -27,9 +27,10 @@
   #topbar .spacer{flex:1;}
   #topbar .dot{color:var(--good);font-size:11px;font-weight:bold;letter-spacing:1px;}
   #topbar .count{color:var(--muted);font-size:11px;}
-  #topbar #dlBtn{pointer-events:auto;cursor:pointer;background:#0a1c2b;border:1px solid var(--hud-dk);
+  #topbar button{pointer-events:auto;cursor:pointer;background:#0a1c2b;border:1px solid var(--hud-dk);
     color:var(--glow);font-family:inherit;font-size:10.5px;letter-spacing:1px;padding:5px 9px;border-radius:5px;}
-  #topbar #dlBtn:hover{border-color:var(--hud);}
+  #topbar button:hover{border-color:var(--hud);}
+  #topbar button.on{background:var(--hud);color:#04121b;font-weight:bold;border-color:var(--glow);}
   /* Panel de descarga offline */
   #offline{position:fixed;top:52px;left:14px;z-index:30;width:286px;display:none;
     background:rgba(7,20,32,.94);border:1px solid var(--hud-dk);border-radius:8px;padding:12px 13px;
@@ -141,6 +142,7 @@
   <span class="sub">// MEC — INFRAESTRUCTURA CFE · MÉXICO</span>
   <span class="spacer"></span>
   <span class="count" id="count">— activos</span>
+  <button id="satBtn" title="Ver imagen satelital real">🛰 SATÉLITE</button>
   <button id="dlBtn" title="Descargar esta zona para usar sin internet">⬇ OFFLINE</button>
   <span class="dot" id="netState">● EN LÍNEA</span>
 </div>
@@ -328,6 +330,12 @@ map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-rig
 
 map.on('load',()=>{
   map.addSource('cfe',{type:'geojson', data:featureCollection(), cluster:true, clusterMaxZoom:9, clusterRadius:48});
+
+  // Capa SATELITAL (Esri World Imagery) — oculta por defecto, debajo de los datos
+  map.addSource('sat',{type:'raster',tileSize:256,
+    tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+    attribution:'© Esri, Maxar, Earthstar Geographics'});
+  map.addLayer({id:'sat',type:'raster',source:'sat',layout:{visibility:'none'}});
 
   // Clusters (cian, tamaño por cantidad) + número
   map.addLayer({id:'clusters',type:'circle',source:'cfe',filter:['has','point_count'],
@@ -527,9 +535,13 @@ function offProgress(done,total){ const bar=document.getElementById('offBar'); b
   bar.querySelector('i').style.width=Math.round(done/total*100)+'%'; if(done>=total) setTimeout(()=>bar.style.display='none',1400); }
 function tileX(lon,z){ return Math.floor((lon+180)/360*Math.pow(2,z)); }
 function tileY(lat,z){ const r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); }
+// URL del mosaico según el mapa base activo (carto oscuro o satélite Esri)
+function tileUrl(z,x,y){ return satOn
+  ? `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`
+  : `https://a.basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`; }
 function tileList(b,zmin,zmax){ const list=[];
   for(let z=zmin;z<=zmax;z++){ const x0=tileX(b.getWest(),z),x1=tileX(b.getEast(),z),y0=tileY(b.getNorth(),z),y1=tileY(b.getSouth(),z);
-    for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++) list.push(`https://a.basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`); }
+    for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++) list.push(tileUrl(z,x,y)); }
   return list; }
 async function downloadZone(maxDetail){
   if(offBusy) return;
@@ -561,6 +573,16 @@ function renderZones(){
 function updateNet(){ const el=document.getElementById('netState'); const on=navigator.onLine;
   el.textContent= on?'● EN LÍNEA':'● OFFLINE'; el.style.color= on?'var(--good)':'#f59e0b'; }
 addEventListener('online',updateNet); addEventListener('offline',updateNet); updateNet();
+
+// ===== Interruptor Mapa / Satélite =====
+let satOn=false;
+document.getElementById('satBtn').onclick=()=>{
+  satOn=!satOn;
+  if(map.getLayer('sat')) map.setLayoutProperty('sat','visibility', satOn?'visible':'none');
+  if(map.getLayer('carto')) map.setLayoutProperty('carto','visibility', satOn?'none':'visible');
+  document.getElementById('satBtn').classList.toggle('on',satOn);
+  schedulePower();
+};
 
 // ============ Vista de detalle "Núcleo MEC" (modelo 3D + gráficas MEC) ============
 const detailEl=document.getElementById('detail');
