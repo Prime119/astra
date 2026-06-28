@@ -295,10 +295,9 @@ const CITIES=[
   ["La Paz",-110.31,24.14],["San José del Cabo",-109.70,23.06],["Loreto",-111.34,26.01],
 ];
 CITIES.forEach(([cn,lon,lat])=>{
-  const j=()=> (Math.random()-0.5)*0.022;
+  const j=()=> (Math.random()-0.5)*0.01;   // ~500 m: se quedan dentro de la ciudad
   ASSETS.push({id:id++,name:'Oficina CFE '+cn,type:'oficina',lon:lon+j(),lat:lat+j(),estado:'',t:genTelemetry()});
   ASSETS.push({id:id++,name:'Almacén CFE '+cn,type:'almacen',lon:lon+j(),lat:lat+j(),estado:'',t:genTelemetry()});
-  ASSETS.push({id:id++,name:'S.E. '+cn,type:'subestacion',lon:lon+j(),lat:lat+j(),estado:'',t:genTelemetry()});
 });
 function updateCount(){ const el=document.getElementById('count'); if(el) el.textContent=ASSETS.length+" activos"; }
 updateCount();
@@ -472,31 +471,34 @@ function schedulePower(){ if(powerTimer)clearTimeout(powerTimer); powerTimer=set
 map.on('moveend',schedulePower);
 map.on('load',schedulePower);
 
-// Activos REALES desde OpenStreetMap (subestaciones y centrales) — por área visible (rápido y confiable)
-let raCache=[], raBusy=false;
-function loadRealAssets(){
-  if(raBusy || !map.getSource('cfe') || map.getZoom()<7) return;
-  const q=_bbox(0.2); if(_covered(raCache,q)) return; raBusy=true;
-  const query=`[out:json][timeout:40];(node["power"="substation"](${q[0]},${q[1]},${q[2]},${q[3]});way["power"="substation"](${q[0]},${q[1]},${q[2]},${q[3]});node["power"="plant"](${q[0]},${q[1]},${q[2]},${q[3]});way["power"="plant"](${q[0]},${q[1]},${q[2]},${q[3]}););out center tags;`;
-  _overpass(query).then(data=>{
-    const seen=new Set(ASSETS.map(a=>a.osm).filter(Boolean)); let added=0;
-    (data.elements||[]).forEach(e=>{
-      const lon=e.lon!=null?e.lon:(e.center&&e.center.lon), lat=e.lat!=null?e.lat:(e.center&&e.center.lat);
-      if(lon==null||lat==null||!inRegion(lon,lat)) return;
-      const key=e.type+'/'+e.id; if(seen.has(key))return; seen.add(key);
-      const tg=e.tags||{}; let type='subestacion';
-      if(tg.power==='plant'){ const src=((tg['plant:source']||tg['generator:source']||'')+'').toLowerCase();
-        type=src.indexOf('hydro')>=0?'hidro':src.indexOf('solar')>=0?'solar':src.indexOf('wind')>=0?'eolica':'termo'; }
-      const name=tg.name||(TYPE_PREFIX[type]+' '+(100+e.id%9000));
-      ASSETS.push({id:id++,osm:key,name,type,lon,lat,estado:'',t:genTelemetry()}); added++;
-    });
-    raCache.push(q); if(raCache.length>16)raCache.shift();
-    if(added && map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
-    updateCount();
-  }).catch(()=>{}).finally(()=>{raBusy=false;});
+// Carga TODAS las subestaciones y centrales REALES de la región (OSM), en bloques (confiable)
+const REGION_BBOX={W:-117.6,S:22.4,E:-103.2,N:32.9};
+function classify(tg){ let type='subestacion';
+  if(tg.power==='plant'){ const src=((tg['plant:source']||tg['generator:source']||'')+'').toLowerCase();
+    type=src.indexOf('hydro')>=0?'hidro':src.indexOf('solar')>=0?'solar':src.indexOf('wind')>=0?'eolica':'termo'; }
+  return type; }
+function mergeRealAssets(data){
+  const seen=new Set(ASSETS.map(a=>a.osm).filter(Boolean)); let added=0;
+  (data.elements||[]).forEach(e=>{
+    const lon=e.lon!=null?e.lon:(e.center&&e.center.lon), lat=e.lat!=null?e.lat:(e.center&&e.center.lat);
+    if(lon==null||lat==null||!inRegion(lon,lat)) return;
+    const key=e.type+'/'+e.id; if(seen.has(key))return; seen.add(key);
+    const tg=e.tags||{}, type=classify(tg);
+    const name=tg.name||(TYPE_PREFIX[type]+' '+(100+e.id%9000));
+    ASSETS.push({id:id++,osm:key,name,type,lon,lat,estado:'',t:genTelemetry()}); added++;
+  });
+  if(added && map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
+  updateCount();
 }
-map.on('moveend',loadRealAssets);
-map.on('load',loadRealAssets);
+async function loadAllSubstations(){
+  const cols=3, rows=2, B=REGION_BBOX, dx=(B.E-B.W)/cols, dy=(B.N-B.S)/rows;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const w=B.W+c*dx, e=w+dx, s=B.S+r*dy, n=s+dy;
+    try{ const data=await _overpass(`[out:json][timeout:50];(node["power"="substation"](${s},${w},${n},${e});way["power"="substation"](${s},${w},${n},${e});node["power"="plant"](${s},${w},${n},${e});way["power"="plant"](${s},${w},${n},${e}););out center tags;`);
+      mergeRealAssets(data); }catch(err){}
+  }
+}
+map.on('load',loadAllSubstations);
 
 // Clic en torre/línea REAL -> abrir Núcleo MEC de esa estructura
 map.on('click','txtowers-l',(e)=>{ const c=e.features[0].geometry.coordinates;
