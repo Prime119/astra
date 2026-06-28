@@ -222,8 +222,6 @@ const NAMED=[
   {name:"S.E. Chihuahua Industrial",type:"subestacion",lon:-106.07,lat:28.63,estado:"Chihuahua"},
   {name:"S.E. Mexicali",type:"subestacion",lon:-115.47,lat:32.62,estado:"Baja California"},
   {name:"S.E. La Paz",type:"subestacion",lon:-110.31,lat:24.14,estado:"Baja California Sur"},
-  {name:"S.E. Torreón",type:"subestacion",lon:-103.41,lat:25.54,estado:"Coahuila"},
-  {name:"S.E. Durango",type:"subestacion",lon:-104.65,lat:24.02,estado:"Durango"},
 ];
 function pickType(){const r=Math.random();
   if(r<0.55)return"subestacion"; if(r<0.80)return"torre"; if(r<0.86)return"solar";
@@ -242,14 +240,12 @@ const REGION=[
   {estado:"Sonora",                         lon0:-113.6,lon1:-108.5, lat0:26.50,lat1:32.40},
   {estado:"Sinaloa",                        lon0:-109.2,lon1:-105.5, lat0:22.60,lat1:27.00},
   {estado:"Chihuahua",                      lon0:-108.8,lon1:-103.4, lat0:25.60,lat1:31.60},
-  {estado:"Durango",                        lon0:-107.0,lon1:-102.6, lat0:22.50,lat1:26.80},
-  {estado:"Coahuila",                       lon0:-103.8,lon1:-100.2, lat0:24.60,lat1:29.70},
 ];
 const ASSETS=[];
 let id=0;
 NAMED.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado,t:genTelemetry()}));
 // Distribuir activos SOLO dentro de los 7 estados del noroeste
-const TARGET=200; let guard=0;
+const TARGET=150; let guard=0;
 while(ASSETS.length<TARGET && guard<60000){
   guard++;
   const r=REGION[Math.floor(Math.random()*REGION.length)];
@@ -284,7 +280,7 @@ const map=new maplibregl.Map({
       attribution:"© OpenStreetMap, © CARTO" } },
     layers:[{id:"carto",type:"raster",source:"carto"}]
   },
-  center:[-109,27.6], zoom:5.7, minZoom:5.5, maxZoom:18, maxPitch:70,
+  center:[-110.5,27.6], zoom:5.7, minZoom:5.5, maxZoom:18, maxPitch:70,
   maxBounds:[[-126,18],[-94,36]]   // no te alejas más que ver la región noroeste
 });
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
@@ -307,6 +303,22 @@ map.on('load',()=>{
   map.addLayer({id:'pts',type:'circle',source:'cfe',filter:['!',['has','point_count']],
     paint:{'circle-color':['get','color'],'circle-radius':4.5,
       'circle-stroke-color':'#0a1320','circle-stroke-width':1}});
+
+  // ---- Líneas de transmisión REALES (OpenStreetMap) — sólo visibles al acercarse ----
+  map.addSource('txlines',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'txglow',type:'line',source:'txlines',minzoom:7.5,
+    layout:{'line-cap':'round','line-join':'round'},
+    paint:{'line-color':['step',['get','v'],'#0e7490',161000,'#22d3ee',345000,'#a5f3fc'],
+      'line-width':['step',['get','v'],3,161000,5,345000,8],'line-opacity':0.14,'line-blur':3}},'clusters');
+  map.addLayer({id:'txlines-l',type:'line',source:'txlines',minzoom:7.5,
+    layout:{'line-cap':'round','line-join':'round'},
+    paint:{'line-color':['step',['get','v'],'#0e7490',161000,'#22d3ee',345000,'#a5f3fc'],
+      'line-width':['interpolate',['linear'],['zoom'],8,['step',['get','v'],0.8,161000,1.3,345000,2],14,['step',['get','v'],1.6,161000,2.6,345000,4]],
+      'line-opacity':0.85}},'clusters');
+  map.addSource('txtowers',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'txtowers-l',type:'circle',source:'txtowers',minzoom:13,
+    paint:{'circle-radius':['interpolate',['linear'],['zoom'],13,1.4,17,3],'circle-color':'#67e8f9','circle-opacity':0.85}},'clusters');
+
 
   // Interacción
   map.on('click','clusters',(e)=>{
@@ -361,6 +373,45 @@ function renderPanel(){
     ${d.warn.length?`<div class="flag warn">• ${d.warn.join(' · ')}</div>`:''}
     <div class="mec"><b>MEC:</b> ${mecComment(a,d)}</div>`;
 }
+
+// ===== Líneas de transmisión REALES (OpenStreetMap / Overpass) =====
+let txCache=[], twCache=[], txBusy=false, twBusy=false, powerTimer=null;
+const txFeatures=new Map(), twFeatures=new Map();
+function _bbox(exp){ const b=map.getBounds(); const dy=(b.getNorth()-b.getSouth())*exp, dx=(b.getEast()-b.getWest())*exp;
+  return [b.getSouth()-dy,b.getWest()-dx,b.getNorth()+dy,b.getEast()+dx]; }
+function _covered(cache,q){ return cache.some(c=> q[0]>=c[0]&&q[1]>=c[1]&&q[2]<=c[2]&&q[3]<=c[3]); }
+function _overpass(query){
+  return fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(query)})
+    .then(r=>{ if(!r.ok) throw new Error('overpass '+r.status); return r.json(); });
+}
+function loadLines(){
+  if(txBusy || !map.getSource('txlines') || map.getZoom()<8) return;
+  const q=_bbox(0.15); if(_covered(txCache,q)) return; txBusy=true;
+  _overpass(`[out:json][timeout:25];(way["power"="line"](${q[0]},${q[1]},${q[2]},${q[3]});way["power"="minor_line"](${q[0]},${q[1]},${q[2]},${q[3]}););out geom;`)
+    .then(data=>{ if(txFeatures.size>6000){txFeatures.clear();txCache=[];}
+      (data.elements||[]).forEach(e=>{ if(e.type==='way'&&e.geometry&&e.geometry.length>1){
+        const v=parseInt(((e.tags&&e.tags.voltage)||'0').split(';')[0])||0;
+        txFeatures.set(e.id,{type:'Feature',properties:{v},geometry:{type:'LineString',coordinates:e.geometry.map(p=>[p.lon,p.lat])}});
+      }});
+      txCache.push(q); if(txCache.length>14)txCache.shift();
+      map.getSource('txlines').setData({type:'FeatureCollection',features:[...txFeatures.values()]});
+    }).catch(()=>{}).finally(()=>{txBusy=false;});
+}
+function loadTowers(){
+  if(twBusy || !map.getSource('txtowers') || map.getZoom()<13) return;
+  const q=_bbox(0.1); if(_covered(twCache,q)) return; twBusy=true;
+  _overpass(`[out:json][timeout:25];node["power"="tower"](${q[0]},${q[1]},${q[2]},${q[3]});out;`)
+    .then(data=>{ if(twFeatures.size>9000){twFeatures.clear();twCache=[];}
+      (data.elements||[]).forEach(e=>{ if(e.type==='node'){
+        twFeatures.set(e.id,{type:'Feature',properties:{},geometry:{type:'Point',coordinates:[e.lon,e.lat]}});
+      }});
+      twCache.push(q); if(twCache.length>18)twCache.shift();
+      map.getSource('txtowers').setData({type:'FeatureCollection',features:[...twFeatures.values()]});
+    }).catch(()=>{}).finally(()=>{twBusy=false;});
+}
+function schedulePower(){ if(powerTimer)clearTimeout(powerTimer); powerTimer=setTimeout(()=>{ loadLines(); loadTowers(); },500); }
+map.on('moveend',schedulePower);
+map.on('load',schedulePower);
 
 // ============ Vista de detalle "Núcleo MEC" (modelo 3D + gráficas MEC) ============
 const detailEl=document.getElementById('detail');
