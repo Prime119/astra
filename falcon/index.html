@@ -286,6 +286,14 @@ const ASSETS=[];
 let id=0;
 NAMED.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado,t:genTelemetry()}));
 function inRegion(lon,lat){ return REGION.some(r=> lon>=r.lon0&&lon<=r.lon1&&lat>=r.lat0&&lat<=r.lat1); }
+// Frontera México–EE.UU. aproximada (para NO meter estructuras de Estados Unidos)
+function borderLat(lon){
+  if(lon<=-114.72) return 32.66;                                  // línea California–Baja (incluye Mexicali)
+  if(lon<=-111.07) return 32.62 + ((lon+114.72)/3.65)*(31.333-32.62); // baja hacia la línea de Sonora
+  if(lon<=-108.2)  return 31.34;                                  // línea recta Sonora–Arizona
+  return 31.80;                                                   // Chihuahua–Nuevo México
+}
+function enMexicoNorte(lon,lat){ return inRegion(lon,lat) && lat<=borderLat(lon); }
 // Ciudades reales de la región -> ahí sembramos oficinas, almacenes y subestaciones (no en el desierto)
 const CITIES=[
   ["Hermosillo",-110.97,29.07],["Cd. Obregón",-109.93,27.49],["Nogales",-110.94,31.31],
@@ -489,7 +497,7 @@ function mergeRealAssets(data){
   const seen=new Set(ASSETS.map(a=>a.osm).filter(Boolean)); let added=0;
   (data.elements||[]).forEach(e=>{
     const lon=e.lon!=null?e.lon:(e.center&&e.center.lon), lat=e.lat!=null?e.lat:(e.center&&e.center.lat);
-    if(lon==null||lat==null||!inRegion(lon,lat)) return;
+    if(lon==null||lat==null||!enMexicoNorte(lon,lat)) return;
     const key=e.type+'/'+e.id; if(seen.has(key))return; seen.add(key);
     const tg=e.tags||{}, type=classify(tg);
     const name=tg.name||(TYPE_PREFIX[type]+' '+(100+e.id%9000));
