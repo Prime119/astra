@@ -1,0 +1,8 @@
+Nombre;Tipo;Estado;Voltaje;Operador;Lat;Lon
+S.E. Ejemplo Norte;Subestación;Sonora;115000;CFE;29.0729;-110.9559
+C.T. Ejemplo;Termoeléctrica;Sonora;;CFE;29.9100;-112.6800
+C.F.V. Ejemplo Solar;Solar;Chihuahua;;CFE;28.6300;-106.0700
+C.H. Ejemplo;Hidroeléctrica;Sinaloa;;CFE;24.8200;-107.1300
+Oficina CFE Ejemplo;Oficina;Baja California;;CFE;32.6245;-115.4523
+Almacén CFE Ejemplo;Almacén;Baja California Sur;;CFE;24.1426;-110.3128
+Torre Línea Ejemplo;Torre;Sonora;230000;CFE;27.4900;-109.9300

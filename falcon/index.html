@@ -142,6 +142,8 @@
   <span class="sub">// MEC — INFRAESTRUCTURA CFE · MÉXICO</span>
   <span class="spacer"></span>
   <span class="count" id="count">— activos</span>
+  <button id="invBtn" title="Cargar inventario oficial de CFE (CSV)">📂 INVENTARIO</button>
+  <input type="file" id="invFile" accept=".csv,text/csv,text/plain" style="display:none">
   <button id="satBtn" title="Ver imagen satelital real">🛰 SATÉLITE</button>
   <button id="dlBtn" title="Descargar esta zona para usar sin internet">⬇ OFFLINE</button>
   <span class="dot" id="netState">● EN LÍNEA</span>
@@ -310,6 +312,14 @@ CITIES.forEach(([cn,lon,lat])=>{
   ASSETS.push({id:id++,name:'Almacén CFE '+cn,type:'almacen',lon:lon+j(),lat:lat+j(),estado:'',t:genTelemetry()});
 });
 function updateCount(){ const el=document.getElementById('count'); if(el) el.textContent=ASSETS.length+" activos"; }
+// Si hay un inventario OFICIAL de CFE cargado, se usa ESE (no OSM)
+let INVENTORY_MODE=false;
+(function(){ try{ const raw=localStorage.getItem('falconInventory');
+  if(raw){ const list=JSON.parse(raw);
+    if(list && list.length){ ASSETS.length=0; id=0;
+      list.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado||'',t:genTelemetry()}));
+      INVENTORY_MODE=true; } }
+}catch(e){} })();
 updateCount();
 
 function featureCollection(){
@@ -514,7 +524,7 @@ function loadStateSeq(i){
   const q=`[out:json][timeout:80];area["name"="${st}"]["admin_level"="4"]["boundary"="administrative"]->.a;(node["power"="substation"](area.a);way["power"="substation"](area.a);node["power"="plant"](area.a);way["power"="plant"](area.a););out center tags;`;
   _overpass(q).then(data=>mergeRealAssets(data,st)).catch(()=>{}).finally(()=>{ setTimeout(()=>loadStateSeq(i+1),800); });
 }
-function loadAllSubstations(){ loadStateSeq(0); }
+function loadAllSubstations(){ if(INVENTORY_MODE) return; loadStateSeq(0); }
 map.on('load',loadAllSubstations);
 
 // Clic en torre/línea REAL -> abrir Núcleo MEC de esa estructura
@@ -592,6 +602,68 @@ document.getElementById('satBtn').onclick=()=>{
   document.getElementById('satBtn').classList.toggle('on',satOn);
   schedulePower();
 };
+
+// ===== Inventario OFICIAL de CFE (cargar CSV / volver a OSM) =====
+function splitCSVLine(line,delim){ const res=[]; let cur='', q=false;
+  for(let i=0;i<line.length;i++){ const ch=line[i];
+    if(ch==='"'){ if(q && line[i+1]==='"'){cur+='"';i++;} else q=!q; }
+    else if(ch===delim && !q){ res.push(cur); cur=''; }
+    else cur+=ch; }
+  res.push(cur); return res; }
+function mapTipo(s){ s=(s||'').toString().toLowerCase().trim();
+  if(s.indexOf('subestac')>=0||s==='se'||s==='s.e.') return 'subestacion';
+  if(s.indexOf('torre')>=0||s.indexOf('linea')>=0||s.indexOf('línea')>=0) return 'torre';
+  if(s.indexOf('hidro')>=0) return 'hidro';
+  if(s.indexOf('eolic')>=0||s.indexOf('eólic')>=0) return 'eolica';
+  if(s.indexOf('solar')>=0||s.indexOf('fotovolt')>=0) return 'solar';
+  if(s.indexOf('termo')>=0) return 'termo';
+  if(s.indexOf('oficina')>=0) return 'oficina';
+  if(s.indexOf('almac')>=0) return 'almacen';
+  if(['subestacion','torre','hidro','eolica','solar','termo','oficina','almacen'].indexOf(s)>=0) return s;
+  return 'subestacion'; }
+function parseInventory(text){
+  text=text.replace(/^\uFEFF/,''); const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2) return [];
+  const delim = (lines[0].split(';').length > lines[0].split(',').length) ? ';' : ',';
+  const head=splitCSVLine(lines[0],delim).map(h=>h.trim().toLowerCase());
+  const idx=names=>{ for(const n of names){ const i=head.indexOf(n); if(i>=0) return i; } return -1; };
+  const iName=idx(['nombre','name']), iTipo=idx(['tipo','type','categoria']), iEst=idx(['estado','state','entidad']),
+        iLat=idx(['lat','latitud','latitude','y']), iLon=idx(['lon','lng','long','longitud','longitude','x']);
+  if(iLat<0||iLon<0) return [];
+  const out=[];
+  for(let k=1;k<lines.length;k++){ const c=splitCSVLine(lines[k],delim);
+    const lat=parseFloat((c[iLat]||'').replace(',','.')), lon=parseFloat((c[iLon]||'').replace(',','.'));
+    if(isNaN(lat)||isNaN(lon)) continue;
+    out.push({ name:(iName>=0?(c[iName]||'').trim():'Estructura')||'Estructura',
+      type:mapTipo(iTipo>=0?c[iTipo]:''), estado:(iEst>=0?(c[iEst]||'').trim():''), lat, lon }); }
+  return out; }
+function applyInventory(list){
+  ASSETS.length=0; id=0;
+  list.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado||'',t:genTelemetry()}));
+  INVENTORY_MODE=true;
+  if(map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
+  updateCount();
+  document.getElementById('invBtn').classList.add('on');
+}
+if(INVENTORY_MODE) document.getElementById('invBtn').classList.add('on');
+document.getElementById('invBtn').onclick=()=>{
+  if(INVENTORY_MODE){
+    if(confirm('Ya hay un inventario CFE cargado ('+ASSETS.length+' estructuras).\n\nAceptar = cargar OTRO archivo.\nCancelar = volver a los datos de OpenStreetMap.'))
+      document.getElementById('invFile').click();
+    else { localStorage.removeItem('falconInventory'); location.reload(); }
+  } else document.getElementById('invFile').click();
+};
+document.getElementById('invFile').addEventListener('change',ev=>{
+  const f=ev.target.files[0]; if(!f) return; const rd=new FileReader();
+  rd.onload=()=>{ try{
+    const list=parseInventory(rd.result);
+    if(!list.length){ alert('No se reconocieron filas válidas.\nEl CSV debe tener encabezados con al menos: Nombre, Tipo, Estado, Lat, Lon.'); return; }
+    localStorage.setItem('falconInventory', JSON.stringify(list));
+    applyInventory(list);
+    alert('✔ Inventario CFE cargado: '+list.length+' estructuras.\nSe usará este inventario (no OSM). Para volver a OSM, pulsa de nuevo INVENTARIO y elige Cancelar.');
+  }catch(e){ alert('Error leyendo el CSV: '+e.message); } };
+  rd.readAsText(f,'UTF-8'); ev.target.value='';
+});
 
 // ============ Vista de detalle "Núcleo MEC" (modelo 3D + gráficas MEC) ============
 const detailEl=document.getElementById('detail');
