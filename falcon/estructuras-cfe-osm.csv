@@ -1,19 +1,10 @@
 ﻿Nombre;Tipo;Estado;Voltaje;Operador;Lat;Lon
 Parque Eólico La Rumorosa;Eólica;Baja California;;;32.56655;-116.08329
 Cerro Prieto;Solar;Baja California;;Comisión Federal de Electricidad;32.4161;-115.23493
-Jacumba Photovoltaic Solar Field;Solar;Baja California;;AEP Renewables;32.62049;-116.13098
 Rumorosa Solar;Solar;Baja California;;Ienova;32.57388;-115.90765
-San Ysidro School District Solar Farm;Solar;Baja California;;San Ysidro School District;32.56473;-117.04
-Solar 2265;Solar;Baja California;;;32.65382;-117.01727
 Solar 2525;Solar;Baja California;;;31.43448;-116.51582
-Solar 3853;Solar;Baja California;;;32.55858;-117.09534
-Solar 4708;Solar;Baja California;;;32.58311;-116.92547
-Solar 5447;Solar;Baja California;;;32.57321;-117.09382
-Solar 5448;Solar;Baja California;;;32.57313;-117.09382
-Baja Substation;Subestación;Baja California;69000;;32.49543;-114.71712
-Bay Boulevard Substation;Subestación;Baja California;"230000;69000";San Diego Gas & Electric;32.60816;-117.09458
+Aeropuerto Dos;Subestación;Baja California;230000;;32.66246;-115.42857
 CFE;Subestación;Baja California;;Comisión Federal de Electricidad;32.49196;-116.94477
-CFE Subestación Eléctrica Parque Industrial;Subestación;Baja California;230000;;32.43606;-114.71148
 CFE Tijuana I;Subestación;Baja California;;Comisión Federal de Electricidad;32.52848;-117.01388
 Centro;Subestación;Baja California;"230000;161000;34500;13800";;32.64495;-115.47733
 Cerro Prieto 1;Subestación;Baja California;161000;Comisión Federal de Electricidad;32.39902;-115.23836
@@ -24,25 +15,20 @@ Cetys;Subestación;Baja California;"230000;161000";;32.63934;-115.39819
 Chapultepec;Subestación;Baja California;"230000;34500";;32.36197;-115.06074
 Ciprés;Subestación;Baja California;"230000;115000";;31.77693;-116.5856
 El Rubi;Subestación;Baja California;"230000;115000";;32.47595;-117.0722
-Electric Substation;Subestación;Baja California;;;32.56219;-117.02669
 Gonzáles Ortega;Subestación;Baja California;"161000;34500;13800";;32.57972;-115.33321
 Herradura;Subestación;Baja California;"230000;115000";;32.52394;-116.74937
 La Rosita;Subestación;Baja California;230000;;32.59688;-115.67649
-Laguna Substation;Subestación;Baja California;69000;;32.60053;-114.73605
 Lomas;Subestación;Baja California;"230000;115000;69000";CFE;31.87442;-116.56015
 Maneadero;Subestación;Baja California;115000;;31.7183;-116.5716
 Metropoli;Subestación;Baja California;"230000;115000";;32.44503;-116.87817
 Mexicali 2;Subestación;Baja California;"230000;161000";;32.60501;-115.45929
 Mexicali Oriente;Subestación;Baja California;"161000;34500;13800";Comisión Federal de Electricidad;32.65421;-115.35721
 Nacozari;Subestación;Baja California;"161000;13800";;32.64008;-115.45436
-Otay Substation;Subestación;Baja California;69000;San Diego Gas & Electric;32.59534;-117.0577
-Puerto Peñasco;Subestación;Baja California;;;31.30662;-113.27058
 Ruiz Cortinez;Subestación;Baja California;"230000;161000";Comisión Federal de Electricidad;32.50099;-114.83754
 Rumurosa;Subestación;Baja California;"230000;69000";;32.56843;-115.93938
-San Luis Substation;Subestación;Baja California;"69000;34500";;32.49745;-114.76039
+Río Nuevo;Subestación;Baja California;"161000;13800";;32.66105;-115.49588
 San Vicente;Subestación;Baja California;115000;;31.32413;-116.24885
 Santa Isabel;Subestación;Baja California;"230000;161000";;32.63206;-115.56903
-Seaward Substation;Subestación;Baja California;;;32.55683;-117.0453
 Skyworks;Subestación;Baja California;161000;;32.63458;-115.41833
 Subestacion 20 de Noviembre;Subestación;Baja California;;Comisión Federal de Electricidad;32.51502;-116.99393
 Subestacion CFE Cuahutemoc Sur;Subestación;Baja California;;;32.65951;-115.43713
@@ -56,10 +42,7 @@ Subestación 1844;Subestación;Baja California;;;32.6213;-115.39578
 Subestación 1848;Subestación;Baja California;;;32.62145;-115.39673
 Subestación 186;Subestación;Baja California;;;32.5359;-116.9231
 Subestación 188;Subestación;Baja California;;;32.5038;-116.92688
-Subestación 1888;Subestación;Baja California;;;32.63165;-117.09968
-Subestación 195;Subestación;Baja California;;SDG&E;32.61935;-116.9494
 Subestación 2061;Subestación;Baja California;;;32.57145;-115.91517
-Subestación 2273;Subestación;Baja California;;;32.57167;-116.91099
 Subestación 2436;Subestación;Baja California;;;32.45417;-116.98768
 Subestación 2439;Subestación;Baja California;;;32.45703;-116.98842
 Subestación 2457;Subestación;Baja California;230000;;32.60136;-115.62932
@@ -71,7 +54,6 @@ Subestación 2489;Subestación;Baja California;230000;;32.60021;-115.66268
 Subestación 2604;Subestación;Baja California;115000;;31.02782;-114.84794
 Subestación 2831;Subestación;Baja California;115000;;32.29522;-117.03737
 Subestación 2927;Subestación;Baja California;230000;;32.58825;-115.42161
-Subestación 3102;Subestación;Baja California;"138000;34500";;32.62416;-116.12728
 Subestación 3110;Subestación;Baja California;;;32.59532;-115.94582
 Subestación 3112;Subestación;Baja California;;;32.52148;-116.69308
 Subestación 3116;Subestación;Baja California;69000;;32.59193;-116.00464
@@ -95,20 +77,14 @@ Subestación 4077;Subestación;Baja California;230000;;32.56869;-115.41483
 Subestación 4083;Subestación;Baja California;230000;;32.58463;-115.40946
 Subestación 4113;Subestación;Baja California;115000;;32.47768;-117.10914
 Subestación 4297;Subestación;Baja California;;;28.05675;-115.19031
-Subestación 4337;Subestación;Baja California;;;32.59709;-116.92771
 Subestación 4594;Subestación;Baja California;230000;;32.45066;-116.86344
 Subestación 4621;Subestación;Baja California;230000;;32.50323;-116.71652
-Subestación 4731;Subestación;Baja California;230000;;32.57382;-116.91137
 Subestación 4856;Subestación;Baja California;;;32.54889;-116.90975
 Subestación 4859;Subestación;Baja California;;;32.53799;-116.91468
-Subestación 4962;Subestación;Baja California;69000;;32.47995;-114.58794
-Subestación 4967;Subestación;Baja California;;;32.55378;-114.67535
-Subestación 5050;Subestación;Baja California;;;32.6581;-117.03047
 Subestación 507;Subestación;Baja California;115000;;30.49975;-115.92225
 Subestación 5133;Subestación;Baja California;161000;;32.56569;-115.28953
 Subestación 5135;Subestación;Baja California;161000;;32.57071;-115.28805
 Subestación 5145;Subestación;Baja California;;;32.54434;-116.76285
-Subestación 5318;Subestación;Baja California;230000;;32.41412;-114.80492
 Subestación 5329;Subestación;Baja California;115000;;32.24717;-116.93505
 Subestación 5338;Subestación;Baja California;115000;;32.47257;-116.78373
 Subestación 5375;Subestación;Baja California;115000;;32.47341;-116.85863
@@ -129,8 +105,6 @@ Subestación 5889;Subestación;Baja California;;;32.61989;-115.39846
 Subestación 5890;Subestación;Baja California;;;32.61976;-115.39661
 Subestación 5891;Subestación;Baja California;;;32.62094;-115.39863
 Subestación 590;Subestación;Baja California;230000;;32.5569;-116.54384
-Subestación 6017;Subestación;Baja California;115000;;31.309;-113.29541
-Subestación 6238;Subestación;Baja California;;;32.58331;-117.09726
 Subestación 6291;Subestación;Baja California;;;32.58978;-115.40981
 Subestación 6294;Subestación;Baja California;230000;;32.59049;-115.41255
 Subestación 6297;Subestación;Baja California;115000;CFE;31.87934;-116.61517
@@ -149,14 +123,11 @@ Subestación 7277;Subestación;Baja California;115000;;31.22326;-116.1617
 Subestación 7300;Subestación;Baja California;115000;;32.54185;-116.62772
 Subestación 7301;Subestación;Baja California;;;32.47795;-116.79867
 Subestación 7388;Subestación;Baja California;;;31.86934;-116.66728
-Subestación 7478;Subestación;Baja California;69000;;32.65324;-116.48814
 Subestación 7530;Subestación;Baja California;115000;;32.48731;-116.84115
 Subestación 7550;Subestación;Baja California;230000;;32.59786;-115.37166
-Subestación 7577;Subestación;Baja California;;;32.56624;-116.94441
 Subestación 765;Subestación;Baja California;230000;;32.56941;-115.48635
 Subestación 775;Subestación;Baja California;115000;;32.10028;-116.87457
 Subestación 7774;Subestación;Baja California;230000;;31.99464;-116.8484
-Subestación 7775;Subestación;Baja California;138000;;32.63785;-117.0162
 Subestación 7836;Subestación;Baja California;115000;;31.52072;-116.62364
 Subestación 7911;Subestación;Baja California;115000;;32.09857;-116.80968
 Subestación 8017;Subestación;Baja California;115000;;32.02395;-116.86099
@@ -164,29 +135,19 @@ Subestación 8154;Subestación;Baja California;115000;CFE;32.42707;-116.94114
 Subestación 871;Subestación;Baja California;;CFE;32.52177;-116.9499
 Subestación 8754;Subestación;Baja California;115000;Comisión Federal de Electricidad;32.57104;-116.63562
 Subestación 8778;Subestación;Baja California;115000;;32.44532;-116.86592
-Subestación 8786;Subestación;Baja California;;;32.56679;-116.9439
-Subestación 8787;Subestación;Baja California;;;32.5668;-116.94452
 Subestación 8865;Subestación;Baja California;115000;;32.44587;-116.99192
 Subestación 8989;Subestación;Baja California;;;32.6251;-115.44684
 Subestación 904;Subestación;Baja California;;;32.53643;-117.03636
 Subestación Cucapáh;Subestación;Baja California;"400000;230000";Comisión Federal de Electricidad;32.53352;-115.51138
-Subestación Golfo de Santa Clara;Subestación;Baja California;400000;Comisión Federal de Electricidad;31.76462;-114.46016
-Subestación Hidalgo;Subestación;Baja California;"161000;13800";Comisión Federal de Electricidad;32.47914;-114.77813
-Subestación Peñasco Fotovoltaico;Subestación;Baja California;"400000;35000";Comisión Federal de Electricidad;31.33117;-113.21674
 Subestación Presidente Juárez;Subestación;Baja California;"230000;115000";;32.36965;-117.06649
-Subestación Puerto Peñasco;Subestación;Baja California;"115000;13800";Comisión Federal de Electricidad;31.31121;-113.52097
 Subestación San Quintin;Subestación;Baja California;115000;;30.71544;-115.98731
 Subestación Siderúrgica;Subestación;Baja California;230000;;32.51426;-115.34788
-Subestación maniobras combustión interna;Subestación;Baja California;230000;Comisión Federal de Electricidad;32.41856;-114.71597
 Substacion Orizaba;Subestación;Baja California;230000;;32.62964;-115.52072
-Sweetwater Substation;Subestación;Baja California;69000;San Diego Gas & Electric;32.65832;-117.09169
 Tijuana 1;Subestación;Baja California;"230000;115000";Comisión Federal de Electricidad;32.51544;-116.88353
 Trinidad;Subestación;Baja California;115000;;31.35851;-115.74647
 Wisteria;Subestación;Baja California;"230000;13800";;32.60294;-115.52157
 Xochimilco;Subestación;Baja California;"230000;13800";;32.60142;-115.48502
 Area restringida;Termoeléctrica;Baja California;;Renewable Energy Systems;32.53394;-116.96833
-CFE Subestación Eléctrica Central de Combustión Interna;Termoeléctrica;Baja California;;Comisión Federal de Electricidad;32.4181;-114.71471
-CalPeak Border Power Plant;Termoeléctrica;Baja California;;CalPeak Power, LLC;32.56253;-116.94349
 Central Termoeléctrica Presidente Juárez;Termoeléctrica;Baja California;;Comisión Federal de Electricidad;32.36863;-117.06859
 Central Turbogas González Ortega;Termoeléctrica;Baja California;;;32.56604;-115.28941
 Central Turbogas Mexicali;Termoeléctrica;Baja California;;;32.60511;-115.46126
@@ -196,75 +157,35 @@ Central geotémoeléctrica Cerro Prieto 1;Termoeléctrica;Baja California;;Comis
 Central geotémoeléctrica Cerro Prieto 2;Termoeléctrica;Baja California;;Comisión Federal de Electricidad;32.39191;-115.22528
 Central geotémoeléctrica Cerro Prieto 3;Termoeléctrica;Baja California;;Comisión Federal de Electricidad;32.41277;-115.24324
 Central geotémoeléctrica Cerro Prieto 4;Termoeléctrica;Baja California;;Comisión Federal de Electricidad;32.40491;-115.21156
-Chula Vista Energy Center;Termoeléctrica;Baja California;;Wellhead Services, Inc;32.59176;-117.05868
-EnerSmart Chula Vista Sub Station;Termoeléctrica;Baja California;;EnerSmart Chula Vista Sub Station;32.59443;-117.05072
-Gateway Energy Storage;Termoeléctrica;Baja California;;LS Power Development;32.57068;-116.91098
 La Central de Combustión Interna Mexicali Oriente;Termoeléctrica;Baja California;;Comisión Federal de Electricidad (CFE);32.56403;-115.28802
-Larkspur Energy Facility;Termoeléctrica;Baja California;;Diamond Generating Corporation;32.567;-116.94425
-Pio Pico Energy Center;Termoeléctrica;Baja California;;Southwest Gas;32.57379;-116.91784
 Planta de energía geotérmica Cerro Prieto;Termoeléctrica;Baja California;;Comisión Federal de Electricidad;32.39173;-115.22821
 Termoeléctrica de Mexicali;Termoeléctrica;Baja California;;Termoeléctrica de Mexicali;32.60053;-115.65992
 Turbogas Ciprés;Termoeléctrica;Baja California;;;31.77601;-116.58685
 Parque eólico Coromuel;Eólica;Baja California Sur;;Eurus Energy;24.11398;-110.60936
-Central Hidroeléctrica Álvaro Obregón;Hidroeléctrica;Baja California Sur;;Comision Federal de Electricidad;27.82075;-109.89899
 Aura III;Solar;Baja California Sur;;Grupotec Tecnologia Solar Sl;24.04546;-110.33472
 Aura Solar;Solar;Baja California Sur;;Gauss Energia;24.06158;-110.32579
-Bluemex Power 1;Solar;Baja California Sur;;EDF Renewables Mexico;27.99793;-110.69916
 Central Fotovoltaica Santa Rosalía;Solar;Baja California Sur;;CFE;27.40707;-112.5275
 Luis Echeverría Álvarez;Solar;Baja California Sur;;wikidata=Q1114680;26.82236;-113.14829
-Planta Solar Yoreme;Solar;Baja California Sur;;;27.23731;-109.65626
 Coromuel;Subestación;Baja California Sur;230000;;24.19756;-110.25439
 El Palmar;Subestación;Baja California Sur;"230000;115000";;23.02013;-109.81794
-Empalme ciclo combinado;Subestación;Baja California Sur;"400000;230000";Comisión Federal de Electricidad;27.9303;-110.7808
-Guaymas CERESO;Subestación;Baja California Sur;"230000;115000";Comisión Federal de Electricidad;27.99005;-110.89535
 Insurgentes;Subestación;Baja California Sur;115000;;25.19799;-111.7505
 Loreto;Subestación;Baja California Sur;115000;;25.96044;-111.36878
 Olas Altas;Subestación;Baja California Sur;"230000;115000";;24.03494;-110.33727
-Planta Guaymas 2;Subestación;Baja California Sur;"230000;115000";;27.93749;-110.86358
 Punta Prieta I;Subestación;Baja California Sur;;;24.22177;-110.30939
 Punta Prieta II;Subestación;Baja California Sur;115000;;24.22338;-110.30854
 SE Recreo Mvar;Subestación;Baja California Sur;115000;;24.10489;-110.33889
 Santiago;Subestación;Baja California Sur;115000;;23.4725;-109.69482
 Santo Domingo;Subestación;Baja California Sur;115000;;25.42245;-111.85447
-Subestación 1221;Subestación;Baja California Sur;115000;;27.93786;-110.87473
-Subestación 1254;Subestación;Baja California Sur;115000;;27.98077;-111.02996
 Subestación 1297;Subestación;Baja California Sur;115000;;23.15529;-109.71438
 Subestación 1322;Subestación;Baja California Sur;115000;;27.35369;-112.2714
 Subestación 1323;Subestación;Baja California Sur;115000;;27.37571;-112.4089
 Subestación 1628;Subestación;Baja California Sur;115000;;22.92638;-109.83217
 Subestación 1693;Subestación;Baja California Sur;115000;;24.22667;-110.29413
-Subestación 1711;Subestación;Baja California Sur;115000;;27.45935;-109.89218
-Subestación 1712;Subestación;Baja California Sur;115000;;27.45958;-109.89303
-Subestación 1857;Subestación;Baja California Sur;;;27.39761;-109.82138
 Subestación 2335;Subestación;Baja California Sur;"230000;115000";;22.97237;-110.02038
-Subestación 2408;Subestación;Baja California Sur;115000;;27.95243;-110.79692
-Subestación 2412;Subestación;Baja California Sur;115000;;27.9477;-110.93285
-Subestación 2668;Subestación;Baja California Sur;115000;Comisión Federal de Electricidad;26.85409;-109.63804
 Subestación 2830;Subestación;Baja California Sur;115000;;23.06427;-109.70449
-Subestación 2900;Subestación;Baja California Sur;115000;;27.87741;-110.91271
-Subestación 2997;Subestación;Baja California Sur;115000;;27.11381;-109.46506
-Subestación 3193;Subestación;Baja California Sur;115000;;26.96314;-109.6646
-Subestación 3202;Subestación;Baja California Sur;115000;;27.00909;-109.43045
-Subestación 3211;Subestación;Baja California Sur;115000;;27.07272;-109.41003
-Subestación 3212;Subestación;Baja California Sur;115000;;27.11966;-109.76971
-Subestación 3214;Subestación;Baja California Sur;;;27.19252;-109.55645
-Subestación 3216;Subestación;Baja California Sur;115000;;27.25655;-109.63898
-Subestación 3246;Subestación;Baja California Sur;115000;;27.4677;-109.90682
-Subestación 3250;Subestación;Baja California Sur;115000;;27.49131;-109.90136
-Subestación 3259;Subestación;Baja California Sur;115000;;27.45733;-109.95503
-Subestación 3262;Subestación;Baja California Sur;115000;;27.48474;-109.9275
-Subestación 3263;Subestación;Baja California Sur;115000;;27.56068;-109.94817
-Subestación 3264;Subestación;Baja California Sur;115000;;27.56182;-109.95507
-Subestación 3266;Subestación;Baja California Sur;115000;;27.51538;-109.95249
-Subestación 3285;Subestación;Baja California Sur;115000;;28.01587;-110.71015
-Subestación 3864;Subestación;Baja California Sur;115000;;27.99733;-110.71305
-Subestación 3865;Subestación;Baja California Sur;115000;;27.99754;-110.71378
-Subestación 4418;Subestación;Baja California Sur;115000;;27.6376;-110.29494
 Subestación 5398;Subestación;Baja California Sur;115000;;27.50697;-112.55752
 Subestación 5399;Subestación;Baja California Sur;115000;;27.50603;-112.56038
-Subestación 5450;Subestación;Baja California Sur;115000;;27.82084;-109.89833
 Subestación 6159;Subestación;Baja California Sur;;;27.69932;-114.89594
-Subestación 6651;Subestación;Baja California Sur;115000;;27.24608;-110.11762
 Subestación 6775;Subestación;Baja California Sur;115000;;24.27253;-110.32508
 Subestación 7127;Subestación;Baja California Sur;115000;;23.7854;-110.12208
 Subestación 7218;Subestación;Baja California Sur;;;27.97514;-114.03621
@@ -277,12 +198,7 @@ Subestación 7544;Subestación;Baja California Sur;115000;;27.15114;-114.29025
 Subestación 7545;Subestación;Baja California Sur;115000;;27.64135;-113.41458
 Subestación 7907;Subestación;Baja California Sur;115000;;23.01171;-109.72601
 Subestación 7943;Subestación;Baja California Sur;115000;;22.98033;-109.77481
-Subestación 8078;Subestación;Baja California Sur;;Comisión Federal de Electricidad;27.48899;-109.97441
-Subestación 8093;Subestación;Baja California Sur;115000;;27.26328;-109.93326
-Subestación 8094;Subestación;Baja California Sur;115000;;27.35607;-109.89135
 Subestación 8117;Subestación;Baja California Sur;115000;;25.8015;-111.32864
-Subestación 8333;Subestación;Baja California Sur;115000;;27.36384;-109.77064
-Subestación 8335;Subestación;Baja California Sur;115000;;27.36201;-109.77046
 Subestación 8537;Subestación;Baja California Sur;115000;;25.19932;-111.75215
 Subestación 8538;Subestación;Baja California Sur;115000;;25.19702;-111.75098
 Subestación 8549;Subestación;Baja California Sur;115000;;24.08856;-110.62898
@@ -292,113 +208,68 @@ Subestación 8556;Subestación;Baja California Sur;115000;;24.04207;-110.33821
 Subestación 861;Subestación;Baja California Sur;115000;;23.13218;-109.71188
 Subestación 8646;Subestación;Baja California Sur;115000;;24.46973;-111.23231
 Subestación 866;Subestación;Baja California Sur;115000;;23.11553;-109.73114
-Subestación Bacum;Subestación;Baja California Sur;"400000;230000;115000";;27.51654;-110.0739
 Subestación Cabo Falso;Subestación;Baja California Sur;115000;;22.91673;-109.96325
-Subestación Ciudad Obregón 3;Subestación;Baja California Sur;"230000;115000;13800";Comisión Federal de Electricidad;27.52389;-109.92517
-Subestación Ciudad Obregón 4;Subestación;Baja California Sur;"230000;115000;13800";Comisión Federal de Electricidad;27.42881;-109.93401
-Subestación Navojoa;Subestación;Baja California Sur;115000;Comisión Federal de Electricidad;27.04958;-109.43909
 Villa Constitución;Subestación;Baja California Sur;115000;;25.01995;-111.66686
 Central Combustión Interna Agustín Olachea Avilés;Termoeléctrica;Baja California Sur;;;24.81481;-112.09245
 Central Diesel Santa Rosalia;Termoeléctrica;Baja California Sur;;CFE;27.35302;-112.27129
-Central Empalme I y II;Termoeléctrica;Baja California Sur;;CFE;27.92329;-110.7815
 Central Geotérmica Tres Vírgenes;Termoeléctrica;Baja California Sur;;CFE;27.50669;-112.55868
 Central Turbogas Los Cabos;Termoeléctrica;Baja California Sur;;;22.97317;-110.02135
 Central Turbogas Villa Constitución;Termoeléctrica;Baja California Sur;;Comision Federal de Electricidad;25.02025;-111.66675
 Central de Combustión Interna Baja California Sur;Termoeléctrica;Baja California Sur;;Comisión Federal de Electricidad;24.19878;-110.25543
-Planta Guaymas II;Termoeléctrica;Baja California Sur;;;27.93684;-110.86468
 Punta Prieta Power Plant;Termoeléctrica;Baja California Sur;;;24.22302;-110.30934
 Termoeléctrica 525;Termoeléctrica;Baja California Sur;;;27.64013;-113.41339
 Termoeléctrica 6776;Termoeléctrica;Baja California Sur;;;24.27283;-110.32516
 Boquilla;Hidroeléctrica;Chihuahua;;;27.54531;-105.41422
-Acacia Solar;Solar;Chihuahua;;;29.59098;-104.33041
 Avant Energías Renovables Solar Farm;Solar;Chihuahua;;Balam Fund;27.64487;-105.14801
 Border Solar;Solar;Chihuahua;;;31.53613;-106.53283
 Camargo solar farm;Solar;Chihuahua;;Balam Fund;27.65173;-105.07552
 Delicias Solar PV Plant;Solar;Chihuahua;;SDC Energreen-Aljaval;28.17545;-105.41404
 Fotovoltaico Las Ahumadas;Solar;Chihuahua;;;30.19055;-106.48206
+Kaixo Solar;Solar;Chihuahua;;El Rollo Solar & Juarez Renovables;31.61561;-106.83557
 Parque Fotovoltáico Los Santos;Solar;Chihuahua;;;30.18744;-106.44769
 Parque Fotovoltáico Villa Ahumada;Solar;Chihuahua;;BNB Renewables;30.16578;-106.46198
 Santa Maria;Solar;Chihuahua;;Zuma;30.19533;-107.62852
-SolaireHolman 1;Solar;Chihuahua;;Solairedirect;30.45653;-103.48096
 Solar 530;Solar;Chihuahua;;;27.32209;-104.83777
+Solar 6507;Solar;Chihuahua;;;31.65037;-106.48481
 Trece Solar;Solar;Chihuahua;;;28.63314;-104.45521
-Acacia Substation;Subestación;Chihuahua;69000;;29.59295;-104.33445
-Alpine Substation;Subestación;Chihuahua;69000;American Electric Power;30.35561;-103.66325
-Alpine Substation;Subestación;Chihuahua;69000;Rio Grande Electric Cooperative;30.38947;-103.52475
-Altuda Substation;Subestación;Chihuahua;69000;Rio Grande Electric Cooperative;30.23579;-103.43801
+1442 S.E. Libertad;Subestación;Chihuahua;115000;;31.69175;-106.45234
 Ascención 2;Subestación;Chihuahua;"230000;115000";Comisión Federal de Electricidad;31.04517;-107.96891
-Barrilla Draw Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.25744;-103.43074
-Barstow Northwest Substation;Subestación;Chihuahua;138000;Oncor;31.49732;-103.47195
-Birds of Prey Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.3741;-103.42679
-Birds of Prey Tap;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.378;-103.42373
 Bismark;Subestación;Chihuahua;115000;;31.23734;-107.59155
-Bone Springs Tap;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.54465;-103.41085
-Bronco Substation;Subestación;Chihuahua;69000;American Electric Power;30.49295;-103.45376
-Bryant Ranch Substation;Subestación;Chihuahua;69000;American Electric Power;30.02521;-104.19601
+CFE;Subestación;Chihuahua;115000;Comisión Federal de Electricidad;31.69971;-106.3943
 CFE Distribucion Subestación Menonita;Subestación;Chihuahua;115000;Comisión Federal de Electricidad;29.16768;-107.04627
 Cahuisori potencia;Subestación;Chihuahua;"230000;115000";;28.21667;-108.22862
 Cereso;Subestación;Chihuahua;115000;;31.49724;-106.4715
 Cereso Juárez;Subestación;Chihuahua;115000;;31.49561;-106.45526
-Cherry Creek Substation;Subestación;Chihuahua;69000;American Electric Power;31.11442;-103.66664
 Chihuahua Norte;Subestación;Chihuahua;"230000;115000";;28.72979;-106.13352
-Chinati Substation;Subestación;Chihuahua;69000;American Electric Power;29.90742;-104.2762
 Chuviscar;Subestación;Chihuahua;"230000;115000";;28.63983;-105.95004
-Cinega Substation;Subestación;Chihuahua;69000;Rio Grande Electric Cooperative;30.02483;-104.19667
-Cochise Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.51395;-103.45207
-Collie Field Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.41466;-103.46939
-Collie Field Tap;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.38264;-103.46201
-Coral Substation;Subestación;Chihuahua;138000;;31.03754;-103.72266
-Cryo Substation;Subestación;Chihuahua;138000;American Electric Power;31.0468;-103.72069
+Conejos Medanos;Subestación;Chihuahua;115000;;31.60627;-106.7842
 Cuadro de Maniobras Cementos;Subestación;Chihuahua;115000;;31.42196;-106.46629
 Cuadro de maniobras Bismark;Subestación;Chihuahua;115000;;31.26004;-107.8311
 Cuahutémhoc 2;Subestación;Chihuahua;"230000;115000";;28.44633;-106.81337
 División del Norte;Subestación;Chihuahua;"230000;115000";;28.58573;-106.16417
-Eagle Claw Midstream Substation;Subestación;Chihuahua;138000;;31.33282;-103.50379
 El Encino II;Subestación;Chihuahua;230000;;28.4433;-105.91432
 El encino;Subestación;Chihuahua;"400000;230000";Comisión Federal de Electricidad;28.44712;-105.91796
-Elcor Substation;Subestación;Chihuahua;;;31.35436;-104.39397
-Espy Wells Substation;Subestación;Chihuahua;"69000;7200";American Electric Power;30.52241;-103.92692
-Fabens;Subestación;Chihuahua;;;31.50509;-106.15987
-Faulkner Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.26103;-103.79318
-Fort Davis Substation;Subestación;Chihuahua;"69000;12500";American Electric Power;30.58521;-103.89855
-Gonzales Substation;Subestación;Chihuahua;69000;American Electric Power;29.56624;-104.35576
-Hoefs Road Substation;Subestación;Chihuahua;69000;American Electric Power;31.03181;-103.45842
-IH 20 Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.39987;-103.49085
 Janos;Subestación;Chihuahua;115000;;30.87936;-108.17908
-Kennedy Ponder Tap;Subestación;Chihuahua;"69000;12500";American Electric Power;30.467;-103.94858
-Lasso Substation;Subestación;Chihuahua;"69000;34500";Solairedirect;30.465;-103.47533
 Maniobras Border Solar;Subestación;Chihuahua;230000;;31.53543;-106.48636
-Marfa Alamito Creek Substation;Subestación;Chihuahua;"138000;69000";American Electric Power;30.31629;-104.00885
-Marfa Substation;Subestación;Chihuahua;69000;American Electric Power;30.31232;-104.0168
-Mcllvain Substation;Subestación;Chihuahua;138000;;31.50868;-103.6165
-Mi Vida Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.51528;-103.45103
 Norte Cereso;Subestación;Chihuahua;230000;;31.4776;-106.47207
 Nuevo casas grandes;Subestación;Chihuahua;"230000;115000";Comisión Federal de Electricidad;30.52529;-107.89964
-Paisano Camp Substation;Subestación;Chihuahua;69000;American Electric Power;30.30701;-103.8017
-Pecone Substation;Subestación;Chihuahua;138000;;31.50967;-103.51736
-Pecos;Subestación;Chihuahua;;;31.42888;-103.4987
-Pecos Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.42951;-103.4987
-Pecos Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.42744;-103.49945
-Reeves County #4 Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.39646;-103.62565
+Paso del Norte;Subestación;Chihuahua;"230000;115000";;31.73152;-106.53752
 Reforma;Subestación;Chihuahua;"230000;115000";;31.58656;-106.4629
 Robinson;Subestación;Chihuahua;"115000;23000";;28.65403;-106.05202
 S.E. Quevedo;Subestación;Chihuahua;"230000;115000";;29.03654;-107.42016
-Salt Draw Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.33815;-103.50294
 Samalayuca Sur;Subestación;Chihuahua;230000;;31.31001;-106.49336
 Samalayuca y Samalayuca 2;Subestación;Chihuahua;230000;;31.33016;-106.48466
 San Pedro potencia;Subestación;Chihuahua;"230000;115000";;28.36317;-107.44787
-Sand Lake Switching Station;Subestación;Chihuahua;"345000;138000";Oncor;31.5105;-103.4645
 Santa María solar;Subestación;Chihuahua;230000;;30.19863;-107.63169
-Saragosa Substation;Subestación;Chihuahua;"138000;69000";American Electric Power;31.04202;-103.65301
-Shafter Mine Substation;Subestación;Chihuahua;69000;American Electric Power;29.82155;-104.325
-Stafford Boulevard Substation;Subestación;Chihuahua;138000;Texas-New Mexico Power;31.39999;-103.49415
 Subesatción Francisco Villa;Subestación;Chihuahua;"230000;115000";;28.16638;-105.4451
+Subestacion Chamizal;Subestación;Chihuahua;"115000;138000";Comisión Federal de Electricidad;31.74914;-106.47415
 Subestación 1057;Subestación;Chihuahua;230000;;31.33265;-106.48753
-Subestación 1095;Subestación;Chihuahua;69000;;31.03077;-104.83221
-Subestación 1378;Subestación;Chihuahua;69000;;30.49538;-103.45156
+Subestación 1082;Subestación;Chihuahua;115000;Comisión Federal de Electricidad;31.64519;-106.45446
 Subestación 1404;Subestación;Chihuahua;115000;;30.07337;-105.94477
 Subestación 1409;Subestación;Chihuahua;;;30.10314;-106.32787
 Subestación 1411;Subestación;Chihuahua;;;30.19;-106.44384
+Subestación 1494;Subestación;Chihuahua;115000;;31.76789;-106.68212
+Subestación 151;Subestación;Chihuahua;115000;;31.64862;-106.45522
 Subestación 1700;Subestación;Chihuahua;115000;Comisión Federal de Electricidad;31.55051;-106.34908
 Subestación 1777;Subestación;Chihuahua;115000;;28.71168;-106.12742
 Subestación 1778;Subestación;Chihuahua;115000;;28.71439;-106.12313
@@ -408,18 +279,19 @@ Subestación 1854;Subestación;Chihuahua;115000;;28.7157;-106.12137
 Subestación 1862;Subestación;Chihuahua;115000;;28.65574;-106.12152
 Subestación 1868;Subestación;Chihuahua;115000;;28.67949;-106.13103
 Subestación 1869;Subestación;Chihuahua;115000;;28.71454;-106.12489
-Subestación 1872;Subestación;Chihuahua;115000;;25.9562;-105.35885
 Subestación 1873;Subestación;Chihuahua;115000;;28.71339;-106.11912
+Subestación 1874;Subestación;Chihuahua;115000;;26.84629;-105.61022
 Subestación 1912;Subestación;Chihuahua;115000;;28.47612;-107.31324
-Subestación 2035;Subestación;Chihuahua;115000;;25.70649;-103.64306
-Subestación 2066;Subestación;Chihuahua;;;25.72359;-103.61529
-Subestación 2177;Subestación;Chihuahua;138000;;31.53438;-103.8048
+Subestación 2102;Subestación;Chihuahua;115000;;31.67398;-106.45769
+Subestación 2121;Subestación;Chihuahua;115000;;31.73396;-106.52378
+Subestación 2123;Subestación;Chihuahua;115000;Comisión Federal de Electricidad;31.60542;-106.36792
+Subestación 2129;Subestación;Chihuahua;115000;Comisión Federal de Electricidad;31.62334;-106.44856
 Subestación 2178;Subestación;Chihuahua;115000;;27.77296;-107.64006
-Subestación 2209;Subestación;Chihuahua;115000;;25.90464;-103.62315
-Subestación 2212;Subestación;Chihuahua;115000;;26.54014;-104.14101
-Subestación 2216;Subestación;Chihuahua;230000;;26.55525;-104.14125
 Subestación 2224;Subestación;Chihuahua;115000;;26.74666;-104.33261
 Subestación 2368;Subestación;Chihuahua;115000;Comisión Federal de Electricidad;31.56328;-106.38836
+Subestación 2463;Subestación;Chihuahua;115000;;31.7501;-106.41805
+Subestación 2512;Subestación;Chihuahua;115000;;31.60482;-106.83116
+Subestación 2598;Subestación;Chihuahua;;;26.81624;-105.81616
 Subestación 2729;Subestación;Chihuahua;115000;;28.65098;-105.97969
 Subestación 2730;Subestación;Chihuahua;115000;;28.65128;-105.97916
 Subestación 2731;Subestación;Chihuahua;115000;;28.64868;-105.97214
@@ -437,24 +309,13 @@ Subestación 2754;Subestación;Chihuahua;115000;;28.63948;-106.01486
 Subestación 2755;Subestación;Chihuahua;230000;;28.6416;-105.94937
 Subestación 2757;Subestación;Chihuahua;115000;;28.65663;-106.06312
 Subestación 2775;Subestación;Chihuahua;115000;;28.60192;-106.00435
-Subestación 2849;Subestación;Chihuahua;;;31.51013;-103.51683
-Subestación 2857;Subestación;Chihuahua;138000;;31.48779;-103.52404
-Subestación 2859;Subestación;Chihuahua;;;31.50142;-103.52784
 Subestación 2913;Subestación;Chihuahua;115000;;27.14122;-104.91006
-Subestación 298;Subestación;Chihuahua;69000;;31.51738;-106.1317
-Subestación 3005;Subestación;Chihuahua;115000;;25.65213;-103.42491
-Subestación 3006;Subestación;Chihuahua;115000;;25.606;-103.44414
 Subestación 3242;Subestación;Chihuahua;115000;;27.52373;-107.83763
-Subestación 3243;Subestación;Chihuahua;;;31.14504;-103.5901
+Subestación 3266;Subestación;Chihuahua;115000;;31.73131;-106.43706
 Subestación 3304;Subestación;Chihuahua;;;28.75082;-106.16815
+Subestación 3352;Subestación;Chihuahua;;Comisión Federal de Electricidad;31.60925;-106.42014
 Subestación 3386;Subestación;Chihuahua;115000;;28.26935;-108.3037
-Subestación 3467;Subestación;Chihuahua;138000;;31.36783;-103.67407
-Subestación 3485;Subestación;Chihuahua;138000;;31.35937;-103.68228
-Subestación 3538;Subestación;Chihuahua;138000;;31.50925;-103.51808
-Subestación 3554;Subestación;Chihuahua;138000;;31.45796;-103.59993
-Subestación 3589;Subestación;Chihuahua;138000;;31.54584;-103.82293
-Subestación 3590;Subestación;Chihuahua;138000;;31.54743;-103.8248
-Subestación 3591;Subestación;Chihuahua;138000;;31.54497;-103.82703
+Subestación 3402;Subestación;Chihuahua;;Comisión Federal de Electricidad;31.60858;-106.33935
 Subestación 3600;Subestación;Chihuahua;115000;;30.70799;-107.35911
 Subestación 3602;Subestación;Chihuahua;115000;;31.46541;-107.61951
 Subestación 3879;Subestación;Chihuahua;115000;;28.47874;-106.73006
@@ -463,61 +324,65 @@ Subestación 3885;Subestación;Chihuahua;115000;;28.53495;-106.94629
 Subestación 3891;Subestación;Chihuahua;115000;;28.36077;-106.2639
 Subestación 3894;Subestación;Chihuahua;115000;;28.30531;-106.4908
 Subestación 3898;Subestación;Chihuahua;115000;;28.40045;-106.93361
-Subestación 3927;Subestación;Chihuahua;115000;;25.63322;-103.52224
 Subestación 403;Subestación;Chihuahua;115000;;28.58259;-106.12504
 Subestación 4255;Subestación;Chihuahua;115000;;28.303;-108.20986
-Subestación 4295;Subestación;Chihuahua;;;31.50945;-103.61572
+Subestación 4258;Subestación;Chihuahua;115000;;28.99215;-108.53469
+Subestación 4584;Subestación;Chihuahua;115000;;31.60488;-106.40748
+Subestación 460;Subestación;Chihuahua;115000;;31.62705;-106.41754
+Subestación 4695;Subestación;Chihuahua;115000;;31.66067;-106.35331
 Subestación 4951;Subestación;Chihuahua;115000;;28.71628;-106.91334
 Subestación 4982;Subestación;Chihuahua;;;28.65143;-106.0257
 Subestación 5010;Subestación;Chihuahua;115000;;28.6994;-106.09882
-Subestación 5065;Subestación;Chihuahua;138000;;31.52348;-103.46135
-Subestación 5076;Subestación;Chihuahua;115000;;25.60038;-103.46853
-Subestación 5274;Subestación;Chihuahua;;;31.33434;-103.49846
-Subestación 5276;Subestación;Chihuahua;;;31.33305;-103.49839
-Subestación 5281;Subestación;Chihuahua;;;31.33138;-103.49759
+Subestación 5212;Subestación;Chihuahua;115000;;31.64235;-106.38682
 Subestación 532;Subestación;Chihuahua;115000;;27.32253;-104.84443
 Subestación 533;Subestación;Chihuahua;115000;;27.32228;-104.84516
 Subestación 534;Subestación;Chihuahua;;;27.53402;-104.93815
 Subestación 536;Subestación;Chihuahua;115000;;28.32178;-104.55721
+Subestación 5385;Subestación;Chihuahua;115000;;30.90436;-108.57136
 Subestación 541;Subestación;Chihuahua;115000;;27.65182;-105.17882
-Subestación 5415;Subestación;Chihuahua;69000;;30.98424;-104.81945
-Subestación 5424;Subestación;Chihuahua;69000;;31.18036;-105.35033
-Subestación 5426;Subestación;Chihuahua;69000;;31.17675;-105.36293
-Subestación 5430;Subestación;Chihuahua;69000;;31.40896;-106.03011
-Subestación 5438;Subestación;Chihuahua;69000;;31.58362;-106.25535
-Subestación 5441;Subestación;Chihuahua;69000;;31.51017;-106.15551
 Subestación 545;Subestación;Chihuahua;115000;;27.65494;-105.07044
 Subestación 546;Subestación;Chihuahua;115000;;27.66027;-105.152
 Subestación 5565;Subestación;Chihuahua;115000;;28.63717;-106.08916
 Subestación 5642;Subestación;Chihuahua;;;28.56911;-108.49352
-Subestación 5678;Subestación;Chihuahua;;;31.54608;-103.83041
 Subestación 5733;Subestación;Chihuahua;115000;;28.19702;-108.37468
 Subestación 5738;Subestación;Chihuahua;115000;;28.68728;-106.08706
-Subestación 5790;Subestación;Chihuahua;115000;;26.33312;-103.95126
 Subestación 5897;Subestación;Chihuahua;115000;;27.86918;-105.50468
-Subestación 5940;Subestación;Chihuahua;138000;;31.24071;-103.44527
-Subestación 5945;Subestación;Chihuahua;138000;;31.27578;-103.44644
 Subestación 5955;Subestación;Chihuahua;115000;;31.55468;-106.38238
+Subestación 5961;Subestación;Chihuahua;115000;;31.78184;-106.60624
 Subestación 6014;Subestación;Chihuahua;;;28.71348;-106.1273
-Subestación 6140;Subestación;Chihuahua;;;25.98166;-103.4175
 Subestación 6157;Subestación;Chihuahua;;;28.0784;-105.48744
 Subestación 6177;Subestación;Chihuahua;115000;;31.33532;-106.48861
 Subestación 6178;Subestación;Chihuahua;115000;;31.41738;-106.45129
+Subestación 6184;Subestación;Chihuahua;115000;;31.77845;-106.6899
+Subestación 6205;Subestación;Chihuahua;115000;;26.03318;-106.50253
+Subestación 6207;Subestación;Chihuahua;115000;;26.21348;-106.5831
 Subestación 6211;Subestación;Chihuahua;115000;;29.08801;-107.52495
 Subestación 6215;Subestación;Chihuahua;115000;;28.94049;-107.51175
-Subestación 6255;Subestación;Chihuahua;138000;;31.51284;-103.45013
 Subestación 6298;Subestación;Chihuahua;;;30.60451;-106.52164
 Subestación 6357;Subestación;Chihuahua;115000;;28.65567;-107.03251
+Subestación 6374;Subestación;Chihuahua;115000;;31.60602;-106.37991
+Subestación 6375;Subestación;Chihuahua;115000;;31.60661;-106.3852
 Subestación 6376;Subestación;Chihuahua;115000;;31.34682;-107.99402
+Subestación 6378;Subestación;Chihuahua;115000;;31.60743;-106.37616
+Subestación 6391;Subestación;Chihuahua;115000;;31.64456;-106.38608
 Subestación 6395;Subestación;Chihuahua;115000;;31.24622;-105.87663
 Subestación 6396;Subestación;Chihuahua;115000;;31.56474;-106.38565
 Subestación 6408;Subestación;Chihuahua;115000;;31.37422;-106.00509
 Subestación 6413;Subestación;Chihuahua;115000;;31.55001;-106.48963
 Subestación 6421;Subestación;Chihuahua;115000;Comisión Federal de Electricidad;31.57166;-106.4054
+Subestación 6587;Subestación;Chihuahua;115000;;31.63545;-106.45244
+Subestación 6601;Subestación;Chihuahua;115000;;26.78469;-105.65935
+Subestación 6602;Subestación;Chihuahua;115000;;26.88338;-105.834
+Subestación 6603;Subestación;Chihuahua;115000;;26.92032;-105.68754
+Subestación 6605;Subestación;Chihuahua;115000;;26.92325;-105.68665
+Subestación 6607;Subestación;Chihuahua;115000;;26.94018;-105.67627
 Subestación 6620;Subestación;Chihuahua;115000;;27.33229;-105.1373
+Subestación 6783;Subestación;Chihuahua;115000;;31.72073;-106.47627
+Subestación 682;Subestación;Chihuahua;115000;;31.7068;-106.46592
 Subestación 6984;Subestación;Chihuahua;;;30.61246;-106.51415
-Subestación 7029;Subestación;Chihuahua;230000;;28.05014;-103.76654
+Subestación 720;Subestación;Chihuahua;115000;;31.66836;-106.3805
 Subestación 7268;Subestación;Chihuahua;115000;CFE;28.61907;-106.1107
+Subestación 7281;Subestación;Chihuahua;115000;;31.65766;-106.34002
 Subestación 7304;Subestación;Chihuahua;115000;;27.85247;-105.49744
 Subestación 7305;Subestación;Chihuahua;115000;;27.86078;-105.49814
 Subestación 7311;Subestación;Chihuahua;115000;;28.27626;-105.46923
@@ -527,7 +392,10 @@ Subestación 7314;Subestación;Chihuahua;115000;;28.175;-105.44417
 Subestación 7322;Subestación;Chihuahua;115000;;28.19563;-105.43448
 Subestación 7563;Subestación;Chihuahua;115000;;31.07092;-108.01029
 Subestación 7714;Subestación;Chihuahua;115000;;30.13696;-106.879
-Subestación 7937;Subestación;Chihuahua;;;31.34566;-103.61308
+Subestación 7753;Subestación;Chihuahua;;Comisión Federal de Electricidad;31.62219;-106.35111
+Subestación 7792;Subestación;Chihuahua;115000;;31.75319;-106.4378
+Subestación 7795;Subestación;Chihuahua;115000;;31.75261;-106.43214
+Subestación 7806;Subestación;Chihuahua;;;31.60897;-106.44242
 Subestación 7958;Subestación;Chihuahua;115000;;28.4198;-106.85629
 Subestación 7960;Subestación;Chihuahua;115000;;28.44819;-106.82749
 Subestación 8006;Subestación;Chihuahua;230000;;31.53006;-106.51712
@@ -536,55 +404,51 @@ Subestación 8015;Subestación;Chihuahua;115000;;30.12476;-107.36482
 Subestación 8017;Subestación;Chihuahua;115000;;30.17338;-107.62391
 Subestación 8024;Subestación;Chihuahua;230000;;30.19984;-107.63071
 Subestación 8026;Subestación;Chihuahua;115000;;30.42568;-107.9062
-Subestación 8130;Subestación;Chihuahua;138000;;31.41957;-103.5542
 Subestación 819;Subestación;Chihuahua;;;31.46544;-107.61944
 Subestación 8199;Subestación;Chihuahua;115000;;28.97351;-104.49292
 Subestación 8206;Subestación;Chihuahua;115000;;28.20932;-108.18784
 Subestación 8206;Subestación;Chihuahua;115000;;28.29729;-105.50878
+Subestación 8278;Subestación;Chihuahua;115000;;31.61972;-106.36592
+Subestación 8279;Subestación;Chihuahua;115000;;31.62092;-106.36451
+Subestación 8283;Subestación;Chihuahua;115000;;31.61541;-106.36357
 Subestación 8360;Subestación;Chihuahua;115000;;28.29823;-105.5109
-Subestación 8365;Subestación;Chihuahua;138000;;31.51042;-103.5508
+Subestación 8363;Subestación;Chihuahua;115000;Comisión Federal de Electricidad;31.65415;-106.44488
 Subestación 8511;Subestación;Chihuahua;115000;;28.63562;-104.45923
 Subestación 8512;Subestación;Chihuahua;115000;;28.63561;-104.45996
 Subestación 8527;Subestación;Chihuahua;115000;;28.30028;-108.21394
 Subestación 8749;Subestación;Chihuahua;115000;;28.69114;-104.46406
+Subestación 8767;Subestación;Chihuahua;115000;;26.85799;-105.81409
 Subestación 8901;Subestación;Chihuahua;115000;;28.59569;-106.1042
 Subestación 8903;Subestación;Chihuahua;115000;;29.32633;-107.9263
 Subestación 8957;Subestación;Chihuahua;115000;;29.53501;-104.4264
+Subestación 8984;Subestación;Chihuahua;115000;;31.72981;-106.41383
+Subestación 928;Subestación;Chihuahua;115000;;26.8563;-107.07142
 Subestación 930;Subestación;Chihuahua;;;30.61713;-106.28008
 Subestación CFE Villa López;Subestación;Chihuahua;;;27.02509;-105.00744
 Subestación Camargo 2;Subestación;Chihuahua;"230000;115000";Comisión Federal de Electricidad;27.65801;-105.06354
-Subestación Dinamita;Subestación;Chihuahua;"115000;13800";;25.7049;-103.62253
-Subestación Francisco Zarco Gómez Palacios;Subestación;Chihuahua;"115000;13800";;25.75922;-103.56529
-Subestación Hércules potencia;Subestación;Chihuahua;400000;Comisión Federal de Electricidad;28.04802;-103.83178
-Subestación Maniobras la Lucha;Subestación;Chihuahua;230000;Comisión Federal de Electricidad;26.56011;-104.14535
 Subestación Mesteñas;Subestación;Chihuahua;"230000;115000";Comisión Federal de Electricidad;28.43043;-104.49457
+Subestación Santiago 2;Subestación;Chihuahua;"230000;115000";Comisión Federal de Electricidad;26.86342;-105.80835
 Substacion Medanos;Subestación;Chihuahua;"115000;138000";Comisión Federal de Electricidad;31.57716;-106.37394
 Terranova;Subestación;Chihuahua;"230000;115000";CFE;31.55481;-106.40613
-Valentine Tap;Subestación;Chihuahua;69000;American Electric Power;30.41452;-103.96379
 Valle Esperanza;Subestación;Chihuahua;;Comisión Federal de Electricidad;29.85724;-106.17992
-Verhalen Substation;Subestación;Chihuahua;69000;American Electric Power;31.14456;-103.59005
+Valle de Juárez;Subestación;Chihuahua;"230000;115000";;31.70239;-106.37314
 Ávalos;Subestación;Chihuahua;"230000;115000";;28.61352;-105.99651
-Cedarville (TX);Termoeléctrica;Chihuahua;;HEN Infrastructure, L.L.C.;31.51447;-103.45071
 Central Termoeléctrica Francisco Villa;Termoeléctrica;Chihuahua;;Comisión Federal de Electricidad;28.16646;-105.44292
 Central Termoeléctrica Samalayuca I y II;Termoeléctrica;Chihuahua;;;31.33061;-106.48642
 Central de ciclo combinado Chihuahua II;Termoeléctrica;Chihuahua;;Comision Federal de Electricidad;28.44651;-105.91972
 Central de ciclo combinado Chihuahua III;Termoeléctrica;Chihuahua;;;31.33245;-106.48847
-Central de ciclo combinado La Laguna II;Termoeléctrica;Chihuahua;;Iberdrola;25.60202;-103.46732
 Central de ciclo combinado Norte II;Termoeléctrica;Chihuahua;;;28.44168;-105.91754
 Central de ciclo combinado Norte III;Termoeléctrica;Chihuahua;;;31.47322;-106.4714
-Coyote Springs (TX);Termoeléctrica;Chihuahua;;HEN Infrastructure, L.L.C.;31.39683;-103.62726
 Emerging Energy;Termoeléctrica;Chihuahua;;;28.64201;-105.94891
-Faulkner;Termoeléctrica;Chihuahua;;HEN Infrastructure, L.L.C.;31.26008;-103.79407
-Hoef's Road Storage;Termoeléctrica;Chihuahua;;Anatolian Energy, LLC;31.03213;-103.45912
-House Mountain BESS;Termoeléctrica;Chihuahua;;House Mountain;30.49622;-103.45085
-Saddleback;Termoeléctrica;Chihuahua;;HEN Infrastructure;31.33228;-103.49994
-Sandlake BESS;Termoeléctrica;Chihuahua;;HEN Infrastructure, L.L.C.;31.50858;-103.61734
+Termoeléctrica 166;Termoeléctrica;Chihuahua;;;31.74902;-106.4741
+Termoeléctrica 167;Termoeléctrica;Chihuahua;;;31.74892;-106.4746
+Termoeléctrica 168;Termoeléctrica;Chihuahua;;;31.749;-106.47461
+Termoeléctrica 169;Termoeléctrica;Chihuahua;;;31.74926;-106.47326
 Termoeléctrica 3258;Termoeléctrica;Chihuahua;;;28.48092;-106.72785
-Termoeléctrica 5287;Termoeléctrica;Chihuahua;;;31.33274;-103.49318
-Toyah Power Station;Termoeléctrica;Chihuahua;;HEN Infrastructure, L.L.C.;31.112;-103.66636
 Central Hidroeléctrica Adolfo López Mateos;Hidroeléctrica;Sinaloa;;;25.0973;-107.3914
 Central Hidroeléctrica Gustavo Díaz Ordaz;Hidroeléctrica;Sinaloa;;;25.87363;-107.94314
 Central Hidroeléctrica Luis Donaldo Colosio;Hidroeléctrica;Sinaloa;;;26.84571;-108.37023
+Central Hidroeléctrica Miguel Hidalgo y Costilla;Hidroeléctrica;Sinaloa;;;26.5072;-108.57542
 Central Hidroeléctrica Profesor Raúl Jaime Marsal Córdoba;Hidroeléctrica;Sinaloa;;;24.56898;-106.80971
 Central Hidroeléctrica Salvador Alvarado;Hidroeléctrica;Sinaloa;;;24.813;-107.14979
 Solar 1722;Solar;Sinaloa;;;25.79999;-108.9449
@@ -611,7 +475,6 @@ Choacahui;Subestación;Sinaloa;"400000;230000";Comisión Federal de Electricidad
 Culiacán 3;Subestación;Sinaloa;"230000;115000;13800";Comisión Federal de Electricidad;24.82992;-107.36163
 Culiacán poniente;Subestación;Sinaloa;"400000;115000";Comisión Federal de Electricidad;24.87956;-107.54668
 Culiacán potencia;Subestación;Sinaloa;"230000;115000";Comisión Federal de Electricidad;24.73226;-107.33981
-El Salto;Subestación;Sinaloa;115000;;23.75757;-105.51644
 El habal;Subestación;Sinaloa;"230000;115000";Comisión Federal de Electricidad;23.29159;-106.41068
 Guamúchil 2;Subestación;Sinaloa;"230000;115000";Comisión Federal de Electricidad;25.48694;-108.08172
 La higuera;Subestación;Sinaloa;"400000;230000;115000";Comisión Federal de Electricidad;24.69759;-107.50716
@@ -623,12 +486,10 @@ Subestación 1475;Subestación;Sinaloa;115000;;24.75175;-107.69297
 Subestación 1476;Subestación;Sinaloa;115000;;24.78533;-107.48584
 Subestación 1524;Subestación;Sinaloa;115000;;25.76605;-108.82469
 Subestación 1524;Subestación;Sinaloa;115000;;23.21677;-106.3775
-Subestación 1874;Subestación;Sinaloa;115000;;26.84629;-105.61022
 Subestación 1891;Subestación;Sinaloa;115000;;25.87803;-107.94493
 Subestación 2190;Subestación;Sinaloa;;;23.29506;-106.45835
 Subestación 2532;Subestación;Sinaloa;115000;;25.44488;-108.06852
 Subestación 2535;Subestación;Sinaloa;115000;;24.86218;-107.39173
-Subestación 2598;Subestación;Sinaloa;;;26.81624;-105.81616
 Subestación 2656;Subestación;Sinaloa;115000;;25.5801;-108.47969
 Subestación 3804;Subestación;Sinaloa;;;23.24932;-106.42517
 Subestación 4212;Subestación;Sinaloa;115000;;25.70278;-108.31719
@@ -636,6 +497,7 @@ Subestación 4216;Subestación;Sinaloa;115000;;25.54355;-108.47139
 Subestación 4221;Subestación;Sinaloa;115000;;25.67317;-108.72219
 Subestación 4229;Subestación;Sinaloa;;;24.78776;-107.371
 Subestación 4230;Subestación;Sinaloa;115000;;25.90614;-109.16936
+Subestación 4243;Subestación;Sinaloa;115000;;26.50729;-108.57505
 Subestación 4377;Subestación;Sinaloa;115000;;24.76909;-107.39223
 Subestación 4384;Subestación;Sinaloa;115000;;24.75354;-107.4179
 Subestación 4986;Subestación;Sinaloa;115000;;24.56756;-106.80802
@@ -643,32 +505,21 @@ Subestación 5025;Subestación;Sinaloa;115000;;23.83737;-106.61797
 Subestación 5029;Subestación;Sinaloa;115000;;25.0964;-107.39256
 Subestación 5355;Subestación;Sinaloa;115000;;25.8044;-108.94926
 Subestación 5682;Subestación;Sinaloa;115000;;25.66404;-108.63311
-Subestación 6205;Subestación;Sinaloa;115000;;26.03318;-106.50253
-Subestación 6207;Subestación;Sinaloa;115000;;26.21348;-106.5831
-Subestación 6601;Subestación;Sinaloa;115000;;26.78469;-105.65935
-Subestación 6602;Subestación;Sinaloa;115000;;26.88338;-105.834
-Subestación 6603;Subestación;Sinaloa;115000;;26.92032;-105.68754
-Subestación 6605;Subestación;Sinaloa;115000;;26.92325;-105.68665
-Subestación 6607;Subestación;Sinaloa;115000;;26.94018;-105.67627
+Subestación 6703;Subestación;Sinaloa;;;26.50757;-108.5759
 Subestación 6897;Subestación;Sinaloa;115000;;24.42465;-107.2134
 Subestación 6899;Subestación;Sinaloa;115000;;24.32896;-107.36874
 Subestación 6901;Subestación;Sinaloa;115000;;24.59112;-107.4424
-Subestación 7762;Subestación;Sinaloa;;;25.0186;-105.90536
 Subestación 8053;Subestación;Sinaloa;115000;;25.09085;-107.69614
 Subestación 8104;Subestación;Sinaloa;115000;;23.19485;-106.20813
 Subestación 8105;Subestación;Sinaloa;115000;;23.00509;-105.87178
 Subestación 8106;Subestación;Sinaloa;115000;;22.83823;-105.78738
 Subestación 8600;Subestación;Sinaloa;115000;;26.39921;-109.00998
-Subestación 8767;Subestación;Sinaloa;115000;;26.85799;-105.81409
 Subestación 8797;Subestación;Sinaloa;115000;;24.75495;-107.45213
 Subestación 8799;Subestación;Sinaloa;115000;;24.82217;-107.40572
-Subestación 927;Subestación;Sinaloa;115000;;26.80916;-106.01597
-Subestación 928;Subestación;Sinaloa;115000;;26.8563;-107.07142
 Subestación Los Mochis 2;Subestación;Sinaloa;"230000;115000";Comisión Federal de Electricidad;26.07589;-108.75364
 Subestación Los Mochis Tres;Subestación;Sinaloa;115000;;25.81787;-108.99451
 Subestación Louisiana;Subestación;Sinaloa;"230000;115000";;25.78483;-109.07629
 Subestación Mochis Las Villas;Subestación;Sinaloa;115000;;25.76183;-109.01816
-Subestación Santiago 2;Subestación;Sinaloa;"230000;115000";Comisión Federal de Electricidad;26.86342;-105.80835
 Topolobampo 2;Subestación;Sinaloa;400000;;25.97707;-108.99238
 Topolobampo 3;Subestación;Sinaloa;230000;;25.97511;-108.99546
 Central Termoeléctrica José Aceves Pozos;Termoeléctrica;Sinaloa;;Comision Federal de Electricidad;23.19041;-106.35509
@@ -676,10 +527,11 @@ Central Termoeléctrica Juan de Dios Bátiz Paredes;Termoeléctrica;Sinaloa;;;25
 Central de ciclo combinado Topolobampo II y III;Termoeléctrica;Sinaloa;;Iberdrola;25.97511;-108.99295
 Central Hidroelectrica El Novillo;Hidroeléctrica;Sonora;;CNA/CFE;28.97687;-109.64183
 Central Hidroeléctrica Adolfo Ruiz Cortines;Hidroeléctrica;Sonora;;;27.22351;-109.1069
-Central Hidroeléctrica Miguel Hidalgo y Costilla;Hidroeléctrica;Sonora;;;26.5072;-108.57542
+Central Hidroeléctrica Álvaro Obregón;Hidroeléctrica;Sonora;;Comision Federal de Electricidad;27.82075;-109.89899
 Planta Hidroeléctrica Plutarco Elías Calles;Hidroeléctrica;Sonora;;;28.97729;-109.6418
 AT Solar V;Solar;Sonora;;;29.97189;-112.65613
 Agua Prieta Solar Farm;Solar;Sonora;;Comisión Federal de Electricidad;31.26522;-109.58701
+Bluemex Power 1;Solar;Sonora;;EDF Renewables Mexico;27.99793;-110.69916
 Central Termoeléctrica Agua Prieta-II ISCC;Solar;Sonora;;;31.26473;-109.58914
 Don Diego Solar Farm;Solar;Sonora;;Infraestructura Energética Nova, S.A.B. de C.V. (IEnova);30.15653;-111.08817
 Munisol Solar Park;Solar;Sonora;;;28.96342;-111.24311
@@ -687,12 +539,12 @@ Parque Solar La Orejana;Solar;Sonora;;Zuma;29.17093;-111.73827
 Parque Solar Mi Ranchito Sur;Solar;Sonora;;;28.99878;-111.16476
 Parque Solar Navojoa;Solar;Sonora;;X-Elio;27.03524;-109.33963
 Parque fotovoltaico Hermosillo;Solar;Sonora;;Iberdrola;29.06312;-110.76891
+Planta Solar Yoreme;Solar;Sonora;;;27.23731;-109.65626
 Solar 1344;Solar;Sonora;;;29.81919;-109.1411
 Solar 1969;Solar;Sonora;;;31.10718;-110.44058
 Solar 1970;Solar;Sonora;;;31.10728;-110.43927
 Solar 1971;Solar;Sonora;;;31.10781;-110.44014
 Solar 1972;Solar;Sonora;;;31.10782;-110.43944
-Solar 2278;Solar;Sonora;;;31.33532;-109.57251
 Solar 367;Solar;Sonora;;;31.12739;-110.9412
 Solar 4640;Solar;Sonora;;;28.34387;-111.35304
 Solar 4641;Solar;Sonora;;;28.34603;-111.34487
@@ -705,9 +557,12 @@ Agrícola Sonoyta;Subestación;Sonora;"115000;13800";;31.65602;-112.41404
 Agua Prieta 2;Subestación;Sonora;230000;;31.26383;-109.59347
 Buena Vista;Subestación;Sonora;230000;;31.02382;-110.25663
 CEGEN 43;Subestación;Sonora;230000;;31.25951;-109.59593
+CFE Subestación Eléctrica Parque Industrial;Subestación;Sonora;230000;;32.43606;-114.71148
 Cananea;Subestación;Sonora;"230000;115000;34500";;31.0044;-110.29859
 Cananea Sur;Subestación;Sonora;230000;;30.95454;-110.2692
 El Fresnal;Subestación;Sonora;"230000;115000";;31.22284;-109.61109
+Empalme ciclo combinado;Subestación;Sonora;"400000;230000";Comisión Federal de Electricidad;27.9303;-110.7808
+Guaymas CERESO;Subestación;Sonora;"230000;115000";Comisión Federal de Electricidad;27.99005;-110.89535
 La Caridad Generación;Subestación;Sonora;230000;;30.52095;-109.62061
 La caridad;Subestación;Sonora;230000;;30.34062;-109.54276
 La caridad fundición;Subestación;Sonora;230000;;30.48651;-109.63173
@@ -719,6 +574,8 @@ Mina María;Subestación;Sonora;115000;;31.03353;-110.41265
 Nacozari;Subestación;Sonora;"230000;34500";CFE;30.36932;-109.6786
 Nogales Aeropuerto;Subestación;Sonora;"230000;115000";Comisión Federal de Electricidad;31.1624;-110.97148
 Observatorio;Subestación;Sonora;230000;;31.01669;-110.41398
+Planta Guaymas 2;Subestación;Sonora;"230000;115000";;27.93749;-110.86358
+Puerto Peñasco;Subestación;Sonora;;;31.30662;-113.27058
 Santa Ana;Subestación;Sonora;"230000;115000";Comisión Federal de Electricidad;30.52522;-111.13114
 Seri;Subestación;Sonora;"400000;230000";Comisión Federal de Electricidad;28.9298;-110.95036
 Sonoyta;Subestación;Sonora;"115000;13800";;31.86296;-112.86826
@@ -732,7 +589,9 @@ Subestación 1151;Subestación;Sonora;115000;;29.36824;-111.46405
 Subestación 1153;Subestación;Sonora;115000;;30.70399;-112.11471
 Subestación 1154;Subestación;Sonora;115000;;29.18121;-111.00064
 Subestación 1156;Subestación;Sonora;115000;;30.5864;-111.43429
+Subestación 1221;Subestación;Sonora;115000;;27.93786;-110.87473
 Subestación 1249;Subestación;Sonora;115000;Comisión Federal de Electricidad;31.31131;-110.96013
+Subestación 1254;Subestación;Sonora;115000;;27.98077;-111.02996
 Subestación 1395;Subestación;Sonora;115000;;30.72572;-112.15814
 Subestación 145;Subestación;Sonora;;;30.98131;-110.32367
 Subestación 146;Subestación;Sonora;230000;;30.96975;-110.31521
@@ -740,19 +599,43 @@ Subestación 149;Subestación;Sonora;115000;;30.79121;-112.72588
 Subestación 1579;Subestación;Sonora;230000;;28.93027;-110.82934
 Subestación 1646;Subestación;Sonora;230000;;27.05236;-109.34786
 Subestación 1668;Subestación;Sonora;115000;;31.04479;-112.9345
+Subestación 1711;Subestación;Sonora;115000;;27.45935;-109.89218
+Subestación 1712;Subestación;Sonora;115000;;27.45958;-109.89303
 Subestación 1756;Subestación;Sonora;115000;;30.96915;-112.96989
+Subestación 1857;Subestación;Sonora;;;27.39761;-109.82138
 Subestación 1869;Subestación;Sonora;115000;;27.1026;-109.15493
 Subestación 211;Subestación;Sonora;115000;;27.15947;-109.02343
 Subestación 222;Subestación;Sonora;;Comisión Federal de Electricidad;31.30241;-109.52334
+Subestación 2408;Subestación;Sonora;115000;;27.95243;-110.79692
+Subestación 2412;Subestación;Sonora;115000;;27.9477;-110.93285
 Subestación 2532;Subestación;Sonora;230000;;30.17191;-111.0929
+Subestación 2668;Subestación;Sonora;115000;Comisión Federal de Electricidad;26.85409;-109.63804
 Subestación 2730;Subestación;Sonora;;;28.99398;-110.90155
+Subestación 2900;Subestación;Sonora;115000;;27.87741;-110.91271
+Subestación 2997;Subestación;Sonora;115000;;27.11381;-109.46506
 Subestación 3006;Subestación;Sonora;;;31.02858;-110.38077
 Subestación 3014;Subestación;Sonora;115000;;30.70081;-111.82897
+Subestación 3193;Subestación;Sonora;115000;;26.96314;-109.6646
 Subestación 3196;Subestación;Sonora;115000;;26.88183;-109.36484
+Subestación 3202;Subestación;Sonora;115000;;27.00909;-109.43045
+Subestación 3211;Subestación;Sonora;115000;;27.07272;-109.41003
+Subestación 3212;Subestación;Sonora;115000;;27.11966;-109.76971
+Subestación 3214;Subestación;Sonora;;;27.19252;-109.55645
+Subestación 3216;Subestación;Sonora;115000;;27.25655;-109.63898
+Subestación 3246;Subestación;Sonora;115000;;27.4677;-109.90682
+Subestación 3250;Subestación;Sonora;115000;;27.49131;-109.90136
+Subestación 3259;Subestación;Sonora;115000;;27.45733;-109.95503
+Subestación 3262;Subestación;Sonora;115000;;27.48474;-109.9275
+Subestación 3263;Subestación;Sonora;115000;;27.56068;-109.94817
+Subestación 3264;Subestación;Sonora;115000;;27.56182;-109.95507
+Subestación 3266;Subestación;Sonora;115000;;27.51538;-109.95249
 Subestación 3282;Subestación;Sonora;115000;;28.1443;-110.69046
 Subestación 3283;Subestación;Sonora;115000;;30.56927;-112.25837
 Subestación 3283;Subestación;Sonora;115000;;28.0954;-110.68934
+Subestación 3285;Subestación;Sonora;115000;;28.01587;-110.71015
 Subestación 3612;Subestación;Sonora;;;30.48716;-109.63324
+Subestación 3864;Subestación;Sonora;115000;;27.99733;-110.71305
+Subestación 3865;Subestación;Sonora;115000;;27.99754;-110.71378
 Subestación 3887;Subestación;Sonora;115000;;28.77236;-111.31059
 Subestación 3890;Subestación;Sonora;115000;;28.87927;-111.34665
 Subestación 3902;Subestación;Sonora;115000;;29.0248;-110.86723
@@ -760,10 +643,9 @@ Subestación 3995;Subestación;Sonora;115000;;29.0552;-110.78055
 Subestación 3996;Subestación;Sonora;115000;;29.06054;-110.71903
 Subestación 4024;Subestación;Sonora;115000;Comisión Federal de Electricidad;29.14566;-111.00419
 Subestación 4053;Subestación;Sonora;115000;;29.11055;-110.99824
-Subestación 4243;Subestación;Sonora;115000;;26.50729;-108.57505
 Subestación 4254;Subestación;Sonora;115000;;28.63021;-108.75619
-Subestación 4258;Subestación;Sonora;115000;;28.99215;-108.53469
 Subestación 4262;Subestación;Sonora;230000;;30.99973;-110.34365
+Subestación 4418;Subestación;Sonora;115000;;27.6376;-110.29494
 Subestación 4629;Subestación;Sonora;115000;;28.62374;-111.63217
 Subestación 4631;Subestación;Sonora;115000;;28.51302;-111.63246
 Subestación 4632;Subestación;Sonora;115000;;28.75312;-111.6319
@@ -775,17 +657,19 @@ Subestación 4647;Subestación;Sonora;115000;;28.43916;-111.38426
 Subestación 4663;Subestación;Sonora;115000;Comisión Federal de Electricidad;31.28558;-110.943
 Subestación 5221;Subestación;Sonora;115000;;29.21629;-110.92831
 Subestación 5222;Subestación;Sonora;115000;;30.06173;-111.10097
+Subestación 5318;Subestación;Sonora;230000;;32.41412;-114.80492
 Subestación 5333;Subestación;Sonora;115000;;28.8406;-111.47558
 Subestación 5334;Subestación;Sonora;;;29.05915;-110.95513
 Subestación 5338;Subestación;Sonora;115000;Comisión Federal de Electricidad;29.08199;-110.99663
-Subestación 5385;Subestación;Sonora;115000;;30.90436;-108.57136
+Subestación 5450;Subestación;Sonora;115000;;27.82084;-109.89833
 Subestación 5541;Subestación;Sonora;115000;;29.09761;-111.0919
+Subestación 6017;Subestación;Sonora;115000;;31.309;-113.29541
 Subestación 6119;Subestación;Sonora;115000;;29.03074;-110.91929
 Subestación 6158;Subestación;Sonora;;;30.99624;-112.03232
 Subestación 6191;Subestación;Sonora;115000;;28.9602;-111.24291
 Subestación 6459;Subestación;Sonora;115000;;28.43096;-111.55529
 Subestación 6460;Subestación;Sonora;;;28.41491;-111.48181
-Subestación 6703;Subestación;Sonora;;;26.50757;-108.5759
+Subestación 6651;Subestación;Sonora;115000;;27.24608;-110.11762
 Subestación 6844;Subestación;Sonora;115000;;29.42284;-110.39612
 Subestación 6915;Subestación;Sonora;115000;;29.11274;-110.9718
 Subestación 7226;Subestación;Sonora;115000;;28.83214;-111.60397
@@ -811,26 +695,42 @@ Subestación 7785;Subestación;Sonora;115000;;31.14963;-112.84645
 Subestación 7792;Subestación;Sonora;115000;;30.80965;-112.67746
 Subestación 8043;Subestación;Sonora;115000;;29.18648;-111.00173
 Subestación 8046;Subestación;Sonora;115000;;29.18946;-111.00411
+Subestación 8078;Subestación;Sonora;;Comisión Federal de Electricidad;27.48899;-109.97441
+Subestación 8093;Subestación;Sonora;115000;;27.26328;-109.93326
+Subestación 8094;Subestación;Sonora;115000;;27.35607;-109.89135
+Subestación 8333;Subestación;Sonora;115000;;27.36384;-109.77064
+Subestación 8335;Subestación;Sonora;115000;;27.36201;-109.77046
 Subestación 8575;Subestación;Sonora;115000;;28.93006;-111.7137
 Subestación 8577;Subestación;Sonora;115000;;29.0924;-111.73449
 Subestación 8888;Subestación;Sonora;115000;;29.0523;-110.94186
 Subestación 9074;Subestación;Sonora;115000;;28.56826;-111.47306
 Subestación 9098;Subestación;Sonora;115000;;27.03205;-108.95522
 Subestación 959;Subestación;Sonora;115000;Comisión Federal de Electricidad;31.2575;-110.971
+Subestación Bacum;Subestación;Sonora;"400000;230000;115000";;27.51654;-110.0739
+Subestación Ciudad Obregón 3;Subestación;Sonora;"230000;115000;13800";Comisión Federal de Electricidad;27.52389;-109.92517
+Subestación Ciudad Obregón 4;Subestación;Sonora;"230000;115000;13800";Comisión Federal de Electricidad;27.42881;-109.93401
 Subestación Don Diego Solar;Subestación;Sonora;230000;;30.17106;-111.09599
 Subestación El Mayo;Subestación;Sonora;"230000;115000";Comisión Federal de Electricidad;26.8643;-109.37871
 Subestación Electrica Agua Prieta;Subestación;Sonora;115000;Comisión Federal de Electricidad;31.30919;-109.55965
 Subestación Electrica Llano Blanco;Subestación;Sonora;115000;;30.63019;-111.91795
 Subestación Esperanza;Subestación;Sonora;"230000;115000";Comisión Federal de Electricidad;28.82448;-111.47555
+Subestación Golfo de Santa Clara;Subestación;Sonora;400000;Comisión Federal de Electricidad;31.76462;-114.46016
 Subestación Hermosillo 3;Subestación;Sonora;"230000;115000";;29.17593;-110.88642
 Subestación Hermosillo 4;Subestación;Sonora;"230000;115000";Comisión Federal de Electricidad;29.08065;-111.02479
 Subestación Hermosillo Aeropuerto;Subestación;Sonora;230000;;29.09722;-111.09721
 Subestación Hermosillo Loma;Subestación;Sonora;"230000;115000";Comisión Federal de Electricidad;29.20129;-111.00454
 Subestación Hermosillo Siete;Subestación;Sonora;115000;;29.10891;-110.91714
+Subestación Hidalgo;Subestación;Sonora;"161000;13800";Comisión Federal de Electricidad;32.47914;-114.77813
+Subestación Navojoa;Subestación;Sonora;115000;Comisión Federal de Electricidad;27.04958;-109.43909
+Subestación Peñasco Fotovoltaico;Subestación;Sonora;"400000;35000";Comisión Federal de Electricidad;31.33117;-113.21674
 Subestación Pueblo Nuevo;Subestación;Sonora;"230000;115000";Comisión Federal de Electricidad;27.07017;-109.3739
 Subestación Puerto Libertad;Subestación;Sonora;230000;;29.9087;-112.69216
+Subestación Puerto Peñasco;Subestación;Sonora;"115000;13800";Comisión Federal de Electricidad;31.31121;-113.52097
 Subestación Seis de Abril;Subestación;Sonora;"230000;115000;13800";Comisión Federal de Electricidad;30.80257;-112.67771
 Subestación de Maniobras;Subestación;Sonora;230000;;29.95597;-112.6539
+Subestación maniobras combustión interna;Subestación;Sonora;230000;Comisión Federal de Electricidad;32.41856;-114.71597
+CFE Subestación Eléctrica Central de Combustión Interna;Termoeléctrica;Sonora;;Comisión Federal de Electricidad;32.4181;-114.71471
+Central Empalme I y II;Termoeléctrica;Sonora;;CFE;27.92329;-110.7815
 Central Termoeléctrica El Fresnal;Termoeléctrica;Sonora;;;31.22348;-109.61009
 Central Termoeléctrica Puerto Libertad;Termoeléctrica;Sonora;;CFE;29.90878;-112.69187
 Central Turbogas Caborca;Termoeléctrica;Sonora;;;30.71129;-112.20733
@@ -838,4 +738,5 @@ Central de ciclo combinado Fuerza y energía Hermosillo;Termoeléctrica;Sonora;;
 Central de ciclo combinado Hermosillo;Termoeléctrica;Sonora;;;29.03459;-110.83458
 Fundicion Mina La Caridad;Termoeléctrica;Sonora;;;30.49412;-109.63555
 Planta Generadora La Caridad;Termoeléctrica;Sonora;;;30.52216;-109.61969
+Planta Guaymas II;Termoeléctrica;Sonora;;;27.93684;-110.86468
 Termoeléctrica 2123;Termoeléctrica;Sonora;;;31.2651;-109.59192
