@@ -89,10 +89,20 @@ class Guardian:
 
     def owner_present(self) -> bool:
         """
-        ¿Está el dueño presente y verificado?
-        FUTURO (Fase 5/7): coincidencia por RECONOCIMIENTO FACIAL en vivo (cámara).
-        HOY (sin cámara): marcador local de sesión de dueño (variable de entorno ASTRA_OWNER=1).
+        ¿Está el dueño/creador presente y verificado?
+        1) RECONOCIMIENTO FACIAL en vivo (si hay cámara + modelo + rostro enrolado).
+        2) Respaldo: llave/sesión de dueño (variable de entorno ASTRA_OWNER=1).
         """
+        try:
+            from ..vision.face_id import FaceID
+            fid = FaceID(self.owner_path)
+            if fid.available() and fid.enrolled():
+                res = fid.verify()
+                if res is True:
+                    return True
+                # res False/None -> cae al respaldo por llave
+        except Exception:
+            pass
         import os
         return os.environ.get("ASTRA_OWNER") == "1"
 

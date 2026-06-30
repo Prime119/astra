@@ -136,6 +136,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n🛡️  Integridad del código: {'✅ OK' if ok else '❌ ALTERADO'} — {reason}")
         return 0
 
+    if "--enroll-face" in argv:
+        from .vision.face_id import FaceID
+        fid = FaceID(astra.guardian.owner_path)
+        print("\n" + fid.enroll(samples=8))
+        return 0
+
+    if "--verify-face" in argv:
+        from .vision.face_id import FaceID
+        fid = FaceID(astra.guardian.owner_path)
+        res = fid.verify()
+        if res is None:
+            print("\n👁️  Face ID no disponible. " + fid.note())
+        else:
+            print(f"\n👁️  ¿Eres el creador?: {'✅ SÍ' if res else '❌ NO'}")
+        return 0
+
     say = _get_say(argv)
     if say is not None:
         print(f"\nTú > {say}")

@@ -54,7 +54,7 @@
     "locked": true,
     "status": "en_construccion",
     "unlock_threshold": 1.0,
-    "unlock_phrase": "protocolo falcon prime activar",
+    "unlock_phrase": "reactiva el protocolo falcon",
     "comment": "Sistema FALCON OCULTO/BLOQUEADO. Solo quien conozca la indicación secreta (unlock_phrase) puede desbloquearlo; una vez desbloqueado, MEC lo abre siempre. Cámbiala por una frase que solo tú sepas.",
     "catalog_blueprint": [
       "subestacion", "transformador", "medidor", "central_hidro", "central_termo",
