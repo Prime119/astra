@@ -481,8 +481,8 @@ function rebuildTowers(){
   if(!map.getSource('txtowers')) return;
   const tw=[]; let n=0;
   for(const f of txFeatures.values()){ const cs=f.geometry.coordinates; const pts=towersFromLine(cs,0.0045);
-    for(const p of pts){ tw.push({type:'Feature',properties:{brg:p[2]||0},geometry:{type:'Point',coordinates:[p[0],p[1]]}}); if(++n>7000)break; }
-    if(n>7000)break; }
+    for(const p of pts){ tw.push({type:'Feature',properties:{brg:p[2]||0},geometry:{type:'Point',coordinates:[p[0],p[1]]}}); if(++n>20000)break; }
+    if(n>20000)break; }
   map.getSource('txtowers').setData({type:'FeatureCollection',features:tw});
 }
 function loadTowers(){
@@ -528,12 +528,26 @@ function loadStateSeq(i){
   const q=`[out:json][timeout:80];area["name"="${st}"]["admin_level"="4"]["boundary"="administrative"]->.a;(node["power"="substation"](area.a);way["power"="substation"](area.a);node["power"="plant"](area.a);way["power"="plant"](area.a););out center tags;`;
   _overpass(q).then(data=>mergeRealAssets(data,st)).catch(()=>{}).finally(()=>{ setTimeout(()=>loadStateSeq(i+1),800); });
 }
-function loadAllSubstations(){ if(INVENTORY_MODE) return; loadStateSeq(0); }
+function loadAllSubstations(){ if(INVENTORY_MODE) return; loadStateSeq(0); loadAllLines(0); }
+// Carga TODAS las líneas de transmisión de cada estado (red completa)
+function loadAllLines(i){
+  if(i>=ESTADOS_MX.length) return;
+  const st=ESTADOS_MX[i];
+  const q=`[out:json][timeout:90];area["name"="${st}"]["admin_level"="4"]["boundary"="administrative"]->.a;(way["power"="line"](area.a););out geom;`;
+  _overpass(q).then(data=>{
+    (data.elements||[]).forEach(e=>{ if(e.type==='way'&&e.geometry&&e.geometry.length>1){
+      const v=parseInt(((e.tags&&e.tags.voltage)||'0').split(';')[0])||0;
+      txFeatures.set(e.id,{type:'Feature',properties:{v},geometry:{type:'LineString',coordinates:e.geometry.map(p=>[p.lon,p.lat])}});
+    }});
+    if(map.getSource('txlines')) map.getSource('txlines').setData({type:'FeatureCollection',features:[...txFeatures.values()]});
+    rebuildTowers();
+  }).catch(()=>{}).finally(()=>{ setTimeout(()=>loadAllLines(i+1),900); });
+}
 map.on('load',loadAllSubstations);
 
 // Clic en torre/línea REAL -> abrir Núcleo MEC de esa estructura (orientado al rumbo real)
 map.on('click','txtowers-l',(e)=>{ const f=e.features[0], c=f.geometry.coordinates, brg=(f.properties&&+f.properties.brg)||0;
-  openDetail({id:'torre@'+c.join(','), name:'Torre de Transmisión', type:'torre', lon:c[0], lat:c[1], estado:'', bearing:brg, t:genTelemetry()}); });
+  openDetail({id:'torre@'+c.join(','), name:'Torre de Transmisión', type:'torre', modelKey:'torre1', lon:c[0], lat:c[1], estado:'', bearing:brg, t:genTelemetry()}); });
 map.on('click','txlines-l',(e)=>{ const c=e.lngLat, f=e.features[0]; let brg=0;
   const cs=f&&f.geometry&&f.geometry.coordinates;
   if(cs&&cs.length>1){ let best=1e18; for(let i=0;i<cs.length-1;i++){ const mx=(cs[i][0]+cs[i+1][0])/2,my=(cs[i][1]+cs[i+1][1])/2,d=(mx-c.lng)*(mx-c.lng)+(my-c.lat)*(my-c.lat);
@@ -762,7 +776,7 @@ function setHoloModel(a){
   if(!holoState.scene) return;
   const scn=holoState.scene;
   while(scn.children.length) scn.remove(scn.children[0]);
-  const key=(window.Holo&&Holo.TYPE2MODEL[a.type])||'subestacion';
+  const key=a.modelKey || (window.Holo&&Holo.TYPE2MODEL[a.type]) || 'subestacion';
   const b=Holo.build(key); scn.add(b.group);
   holoState.baseRings=Holo.buildBaseRings(); scn.add(holoState.baseRings);
   holoState.motes=Holo.buildMotes(); scn.add(holoState.motes);

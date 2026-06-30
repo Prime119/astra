@@ -173,6 +173,12 @@
     g.add(segs(cond,GLOW,0.4));
     return g;
   }
+  function mTorreUnica(){ // UNA sola torre (para inspeccionar cada poste de la línea)
+    clearSpin(); const g=new THREE.Group();
+    const t=txTower(); g.add(t.g);
+    g.add(ring(3,0.05,HUD,0.3,64));
+    return g;
+  }
   function mTorreEnfriamiento(){
     clearSpin(); const g=new THREE.Group();
     const H=13, baseR=4.2, throatR=2.3, throatY=H*0.80;
@@ -352,6 +358,7 @@
   const MODELS={
     aerogenerador:{f:mAerogenerador,name:"Aerogenerador",type:"Central Eólica",glb:"aerogenerador.glb"},
     transmision:{f:mTorreTransmision,name:"Torre de Transmisión",type:"Líneas / Pilón",glb:"torre-transmision.glb"},
+    torre1:{f:mTorreUnica,name:"Torre de Transmisión",type:"Torre / Pilón",glb:""},
     enfriamiento:{f:mTorreEnfriamiento,name:"Torre de Enfriamiento",type:"Termoeléctrica",glb:"torre-enfriamiento.glb"},
     subestacion:{f:mSubestacion,name:"Subestación",type:"Transformación",glb:"subestacion.glb"},
     solar:{f:mSolar,name:"Planta Solar",type:"Fotovoltaica",glb:"planta-solar.glb"},
