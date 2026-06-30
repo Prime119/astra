@@ -317,7 +317,7 @@ let INVENTORY_MODE=false;
 (function(){ try{ const raw=localStorage.getItem('falconInventory');
   if(raw){ const list=JSON.parse(raw);
     if(list && list.length){ ASSETS.length=0; id=0;
-      list.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado||'',t:genTelemetry()}));
+      list.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado||'',device:a.device||'',t:genTelemetry()}));
       INVENTORY_MODE=true; } }
 }catch(e){} })();
 updateCount();
@@ -649,18 +649,20 @@ function parseInventory(text){
   const head=splitCSVLine(lines[0],delim).map(h=>h.trim().toLowerCase());
   const idx=names=>{ for(const n of names){ const i=head.indexOf(n); if(i>=0) return i; } return -1; };
   const iName=idx(['nombre','name']), iTipo=idx(['tipo','type','categoria']), iEst=idx(['estado','state','entidad']),
-        iLat=idx(['lat','latitud','latitude','y']), iLon=idx(['lon','lng','long','longitud','longitude','x']);
+        iLat=idx(['lat','latitud','latitude','y']), iLon=idx(['lon','lng','long','longitud','longitude','x']),
+        iDev=idx(['device','url','esp32','endpoint','dispositivo']);
   if(iLat<0||iLon<0) return [];
   const out=[];
   for(let k=1;k<lines.length;k++){ const c=splitCSVLine(lines[k],delim);
     const lat=parseFloat((c[iLat]||'').replace(',','.')), lon=parseFloat((c[iLon]||'').replace(',','.'));
     if(isNaN(lat)||isNaN(lon)) continue;
     out.push({ name:(iName>=0?(c[iName]||'').trim():'Estructura')||'Estructura',
-      type:mapTipo(iTipo>=0?c[iTipo]:''), estado:(iEst>=0?(c[iEst]||'').trim():''), lat, lon }); }
+      type:mapTipo(iTipo>=0?c[iTipo]:''), estado:(iEst>=0?(c[iEst]||'').trim():''),
+      device:(iDev>=0?(c[iDev]||'').trim():''), lat, lon }); }
   return out; }
 function applyInventory(list){
   ASSETS.length=0; id=0;
-  list.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado||'',t:genTelemetry()}));
+  list.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado||'',device:a.device||'',t:genTelemetry()}));
   INVENTORY_MODE=true;
   if(map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
   updateCount();
@@ -695,10 +697,20 @@ const METERS_PER_UNIT=11;
 const DCAP=64;
 const dHist={temp:[],vib:[],salud:[],thd:[]};
 let dLive=null;
+let deviceLatest=null, devTimer=null;   // telemetría real desde un ESP32 (si la estructura tiene 'device')
+function startDevicePoll(url){ stopDevicePoll();
+  const poll=()=>fetch(url,{cache:'no-store'}).then(r=>r.json()).then(j=>{ deviceLatest=j; }).catch(()=>{ deviceLatest=null; });
+  poll(); devTimer=setInterval(poll,1000); }
+function stopDevicePoll(){ if(devTimer){clearInterval(devTimer);devTimer=null;} deviceLatest=null; }
 function detailOpen(){ return detailEl.classList.contains('open'); }
 
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
 function sampleLive(a){
+  if(a.device && deviceLatest){   // datos REALES del ESP32
+    const d=deviceLatest;
+    dLive={ v:+d.v, i:+d.i, freq:+d.freq, pf:+d.pf, thd:+d.thd, vib:+d.vib, temp:+d.temp, salud:+d.salud };
+    return;
+  }
   const b=a.t, jit=(v,p)=>v+(Math.random()-0.5)*p;
   dLive={ v:jit(b.v,1.4), i:Math.max(0,jit(b.i,2.2)), freq:jit(b.freq,0.05),
     pf:clamp(jit(b.pf,0.008),0.5,1), thd:Math.max(0,jit(b.thd,0.35)),
@@ -732,6 +744,8 @@ function refreshDetailHeader(){
     row('Frecuencia',m.freq.toFixed(2)+' Hz')+row('F. potencia',m.pf.toFixed(3))+
     row('THD',m.thd.toFixed(1)+' %')+row('Vibración',m.vib.toFixed(2)+' mm/s')+
     row('Temperatura',m.temp.toFixed(1)+' °C')+row('Salud',m.salud.toFixed(0)+' %');
+  const liveTxt=(dAsset.device&&deviceLatest)?'● ESP32':'● LIVE';
+  document.querySelectorAll('.dpanel .ph .phk').forEach(el=>el.textContent=liveTxt);
 }
 function row(k,v){ return `<div class="vr"><span class="k">${k}</span><span class="v">${v}</span></div>`; }
 
@@ -808,6 +822,7 @@ function openDetail(i){
   refreshDetailHeader();
   if(dTimer) clearInterval(dTimer);
   dTimer=setInterval(refreshDetailHeader,1000);
+  if(dAsset.device) startDevicePoll(dAsset.device); else stopDevicePoll();
   if(!dRAF) dLoop();
   if(dCloseTO){clearTimeout(dCloseTO);dCloseTO=null;}
   if(dShowTO) clearTimeout(dShowTO);
@@ -816,7 +831,7 @@ function openDetail(i){
   setTimeout(()=>{ if(detailOpen()) dAutoRot=true; }, 2700);
 }
 function closeDetail(){
-  detailEl.classList.remove('show'); dAutoRot=false;
+  detailEl.classList.remove('show'); dAutoRot=false; stopDevicePoll();
   if(dShowTO){clearTimeout(dShowTO);dShowTO=null;}
   if(dCamPrev){ try{ map.flyTo({center:dCamPrev.center,zoom:dCamPrev.zoom,bearing:dCamPrev.bearing,
         pitch:dCamPrev.pitch,duration:1500,essential:true}); }catch(e){} }
