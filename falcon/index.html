@@ -466,18 +466,22 @@ function loadLines(){
       rebuildTowers();   // genera las torres a lo largo del trazo real
     }).catch(()=>{}).finally(()=>{txBusy=false;});
 }
-// Coloca torres a lo largo de una polilínea cada ~step grados (≈450 m)
+// Rumbo (bearing) de un segmento, en radianes desde el norte
+function segBearing(a,b){ const f1=a[1]*Math.PI/180,f2=b[1]*Math.PI/180,dl=(b[0]-a[0])*Math.PI/180;
+  const y=Math.sin(dl)*Math.cos(f2), x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl);
+  return Math.atan2(y,x); }
+// Coloca torres a lo largo de una polilínea cada ~step grados (≈450 m), guardando el rumbo del tramo
 function towersFromLine(coords,step){ const pts=[]; let carry=0;
   for(let i=0;i<coords.length-1;i++){ const a=coords[i],b=coords[i+1],dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy);
-    if(L===0)continue; let pos=step-carry;
-    while(pos<L){ const t=pos/L; pts.push([a[0]+dx*t,a[1]+dy*t]); pos+=step; }
+    if(L===0)continue; const brg=segBearing(a,b); let pos=step-carry;
+    while(pos<L){ const t=pos/L; pts.push([a[0]+dx*t,a[1]+dy*t,brg]); pos+=step; }
     carry=L-(pos-step); if(carry<0)carry=0; }
   return pts; }
 function rebuildTowers(){
   if(!map.getSource('txtowers')) return;
   const tw=[]; let n=0;
   for(const f of txFeatures.values()){ const cs=f.geometry.coordinates; const pts=towersFromLine(cs,0.0045);
-    for(const p of pts){ tw.push({type:'Feature',geometry:{type:'Point',coordinates:p}}); if(++n>7000)break; }
+    for(const p of pts){ tw.push({type:'Feature',properties:{brg:p[2]||0},geometry:{type:'Point',coordinates:[p[0],p[1]]}}); if(++n>7000)break; }
     if(n>7000)break; }
   map.getSource('txtowers').setData({type:'FeatureCollection',features:tw});
 }
@@ -527,11 +531,14 @@ function loadStateSeq(i){
 function loadAllSubstations(){ if(INVENTORY_MODE) return; loadStateSeq(0); }
 map.on('load',loadAllSubstations);
 
-// Clic en torre/línea REAL -> abrir Núcleo MEC de esa estructura
-map.on('click','txtowers-l',(e)=>{ const c=e.features[0].geometry.coordinates;
-  openDetail({id:'torre@'+c.join(','), name:'Torre de Transmisión', type:'torre', lon:c[0], lat:c[1], estado:'', t:genTelemetry()}); });
-map.on('click','txlines-l',(e)=>{ const c=e.lngLat;
-  openDetail({id:'linea@'+c.lng.toFixed(4), name:'Línea de Transmisión', type:'torre', lon:c.lng, lat:c.lat, estado:'', t:genTelemetry()}); });
+// Clic en torre/línea REAL -> abrir Núcleo MEC de esa estructura (orientado al rumbo real)
+map.on('click','txtowers-l',(e)=>{ const f=e.features[0], c=f.geometry.coordinates, brg=(f.properties&&+f.properties.brg)||0;
+  openDetail({id:'torre@'+c.join(','), name:'Torre de Transmisión', type:'torre', lon:c[0], lat:c[1], estado:'', bearing:brg, t:genTelemetry()}); });
+map.on('click','txlines-l',(e)=>{ const c=e.lngLat, f=e.features[0]; let brg=0;
+  const cs=f&&f.geometry&&f.geometry.coordinates;
+  if(cs&&cs.length>1){ let best=1e18; for(let i=0;i<cs.length-1;i++){ const mx=(cs[i][0]+cs[i+1][0])/2,my=(cs[i][1]+cs[i+1][1])/2,d=(mx-c.lng)*(mx-c.lng)+(my-c.lat)*(my-c.lat);
+    if(d<best){best=d; brg=segBearing(cs[i],cs[i+1]);} } }
+  openDetail({id:'linea@'+c.lng.toFixed(4), name:'Línea de Transmisión', type:'torre', lon:c.lng, lat:c.lat, estado:'', bearing:brg, t:genTelemetry()}); });
 ['txtowers-l','txlines-l'].forEach(l=>{ map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
   map.on('mouseleave',l,()=>map.getCanvas().style.cursor=''); });
 
@@ -668,7 +675,7 @@ document.getElementById('invFile').addEventListener('change',ev=>{
 // ============ Vista de detalle "Núcleo MEC" (modelo 3D + gráficas MEC) ============
 const detailEl=document.getElementById('detail');
 let dAsset=null, dPhase=0, dRAF=null, dTimer=null;
-let holoLayer=null, holoState={scene:null,origin:null,scale:1,baseRings:null,motes:null};
+let holoLayer=null, holoState={scene:null,origin:null,scale:1,baseRings:null,motes:null,rot:0};
 let dAutoRot=false, dDragging=false;
 const METERS_PER_UNIT=11;
 const DCAP=64;
@@ -739,8 +746,9 @@ function ensureHoloLayer(){
         for(let i=0;i<pos.count;i++){let y=pos.getY(i)+0.02; if(y>12)y=-2; pos.setY(i,y);} pos.needsUpdate=true; }
       const o=holoState.origin, sc=holoState.scale;
       const rx=new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1,0,0),Math.PI/2);
+      const ry=new THREE.Matrix4().makeRotationY(holoState.rot||0);   // orienta según el rumbo real de la línea
       const m=new THREE.Matrix4().fromArray(matrix);
-      const l=new THREE.Matrix4().makeTranslation(o.x,o.y,o.z).scale(new THREE.Vector3(sc,-sc,sc)).multiply(rx);
+      const l=new THREE.Matrix4().makeTranslation(o.x,o.y,o.z).scale(new THREE.Vector3(sc,-sc,sc)).multiply(rx).multiply(ry);
       this.cam.projectionMatrix=m.clone().multiply(l);
       this.renderer.resetState();
       this.renderer.render(this.scene,this.cam);
@@ -761,6 +769,7 @@ function setHoloModel(a){
   const merc=maplibregl.MercatorCoordinate.fromLngLat([a.lon,a.lat],0);
   holoState.origin={x:merc.x,y:merc.y,z:merc.z};
   holoState.scale=merc.meterInMercatorCoordinateUnits()*METERS_PER_UNIT;
+  holoState.rot=(a.type==='torre' && typeof a.bearing==='number') ? (Math.PI - a.bearing) : 0;  // alinear con la línea real
 }
 // pausar el giro automático mientras el usuario interactúa con el mapa
 map.on('mousedown',()=>{ dDragging=true; });
