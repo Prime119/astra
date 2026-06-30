@@ -42,3 +42,23 @@ Cuando abras el Núcleo MEC de esa estructura en el mapa, Falcon leerá la telem
 ## Seguridad
 - Cambia `AP_PASS` por una contraseña fuerte.
 - Para uso en CFE, colócalo en una red autorizada y, si se requiere, agrega autenticación al endpoint.
+
+
+---
+
+# Opción 2: Alojar TODO Falcon dentro del ESP32 (`falcon_host_esp32.ino`)
+
+Guarda el programa Falcon completo en la memoria del ESP32 y lo sirve por WiFi. Te conectas con tu celular/PC, abres la dirección y **el navegador renderiza Falcon completo** (mapa, hologramas, Núcleo MEC). El ESP32 es el servidor; el dispositivo que se conecta es quien dibuja (el ESP32 no puede renderizar 3D por sí solo).
+
+### Pasos
+1. Junto a `falcon_host_esp32.ino` crea una carpeta **`data/`**.
+2. Copia dentro de `data/` los archivos de `falcon/`: `index.html`, `holo-lib.js`, `sw.js` y (opcional) `estructuras-cfe-osm.csv`.
+3. Instala el plugin **"ESP32 LittleFS Data Upload"** (o usa PlatformIO).
+4. Herramientas → **Partition Scheme** → elige uno con SPIFFS/LittleFS amplio (p. ej. *No OTA (2MB APP/2MB SPIFFS)*).
+5. Herramientas → **ESP32 Sketch Data Upload** (sube la carpeta `data/`).
+6. **Subir** el sketch.
+7. Conéctate al WiFi `FALCON` y abre `http://192.168.4.1/`.
+
+### Sobre los mapas (importante y honesto)
+- Los **mosaicos del mapa** y los datos de OSM necesitan **internet** en el dispositivo que se conecta. Por eso, para uso real, conviene `MODO_AP=false` y poner el ESP32 en una **red con internet** (modo STA).
+- Para uso **100% sin internet**, primero usa el botón **⬇ OFFLINE** (descarga la zona en el dispositivo) o, a futuro, una **microSD** con los mosaicos guardados (paso avanzado).
