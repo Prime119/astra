@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from ..brain.llm import Brain
+from ..cfe.falcon import Falcon
 from ..memory.store import Memory
 from .auditor import Auditor, Risk
 from .config import Config, load_config
@@ -52,6 +53,7 @@ class Astra:
     tamper_reason: str = ""
     pending_action: str | None = None
     history: list[dict] = field(default_factory=list)
+    falcon: Falcon | None = None
 
     @classmethod
     def boot(cls, edition: str | None = None) -> "Astra":
@@ -77,6 +79,9 @@ class Astra:
         system_prompt = _build_system_prompt(constitution, personality, config)
         brain = Brain.from_app_config(config, system_prompt=system_prompt)
 
+        # FALCON (solo MEC): oculto/bloqueado hasta completar su catálogo.
+        falcon = Falcon.from_config(config, memory=memory, brain=brain)
+
         return cls(
             config=config,
             constitution=constitution,
@@ -88,6 +93,7 @@ class Astra:
             integrity_ok=integrity_ok,
             tamper_ok=tamper_ok,
             tamper_reason=tamper_reason,
+            falcon=falcon,
         )
 
     @staticmethod
@@ -150,6 +156,11 @@ class Astra:
         # 1) ¿Hay una acción pendiente de confirmación? (human-in-the-loop, volátil)
         if self.pending_action:
             return self._resolve_pending(text, self.pending_action)
+
+        # 1b) FALCON (solo MEC): si pide abrir/usar el sistema, responde según su estado
+        #     (oculto/bloqueado hasta completar el catálogo).
+        if self.falcon and self.falcon.is_falcon_intent(text):
+            return self.falcon.handle(text)
 
         # 2) Code-Switching: detecta estrés/contexto y ajusta el modo + system prompt.
         self.personality.detect_mode(text)
