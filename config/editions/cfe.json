@@ -28,7 +28,8 @@
     "system_automation": true,
     "web_access": true,
     "cloud_boost": false,
-    "intelligence_falcon": true,
+    "intelligence_falcon": false,
+    "vision_learning": true,
     "mec_monitoring": true
   },
   "personality": {
@@ -47,6 +48,21 @@
     "enabled": true,
     "asset_selection_opens": "mec_monitoring",
     "comment_selection": "Al seleccionar una subestación, torre, línea o estructura de CFE en el mapa 3D, se abre el monitoreo MEC del activo."
+  },
+  "falcon": {
+    "enabled": false,
+    "locked": true,
+    "status": "en_construccion",
+    "unlock_threshold": 1.0,
+    "unlock_phrase": "reactiva el protocolo falcon",
+    "comment": "Sistema FALCON OCULTO/BLOQUEADO. Solo quien conozca la indicación secreta (unlock_phrase) puede desbloquearlo; una vez desbloqueado, MEC lo abre siempre. Cámbiala por una frase que solo tú sepas.",
+    "catalog_blueprint": [
+      "subestacion", "transformador", "medidor", "central_hidro", "central_termo",
+      "central_solar", "central_eolica", "central_nuclear",
+      "torre_transmision_chica", "torre_transmision_mediana", "torre_transmision_grande",
+      "linea_alta_tension", "linea_subtransmision", "linea_distribucion", "poste",
+      "almacen", "oficina", "interruptor", "banco_capacitores", "apartarrayos"
+    ]
   },
   "mec_monitoring": {
     "enabled": true,

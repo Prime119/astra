@@ -21,3 +21,10 @@ piper-tts>=1.2       # voz / TTS offline (voz femenina en español)
 
 # --- Control del sistema (Fase 4) ---
 # pyautogui>=0.9
+
+
+# --- Face ID del creador (opcional; para el Guardian con rostro) ---
+# Requiere cámara. En Windows, face_recognition necesita dlib (usa wheels precompilados).
+# opencv-python>=4.8
+# face_recognition>=1.3
+# numpy>=1.24

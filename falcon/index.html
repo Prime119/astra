@@ -27,6 +27,31 @@
   #topbar .spacer{flex:1;}
   #topbar .dot{color:var(--good);font-size:11px;font-weight:bold;letter-spacing:1px;}
   #topbar .count{color:var(--muted);font-size:11px;}
+  #topbar button{pointer-events:auto;cursor:pointer;background:#0a1c2b;border:1px solid var(--hud-dk);
+    color:var(--glow);font-family:inherit;font-size:10.5px;letter-spacing:1px;padding:5px 9px;border-radius:5px;}
+  #topbar button:hover{border-color:var(--hud);}
+  #topbar button.on{background:var(--hud);color:#04121b;font-weight:bold;border-color:var(--glow);}
+  /* Panel de descarga offline */
+  #offline{position:fixed;top:52px;left:14px;z-index:30;width:286px;display:none;
+    background:rgba(7,20,32,.94);border:1px solid var(--hud-dk);border-radius:8px;padding:12px 13px;
+    color:var(--text);box-shadow:0 0 22px rgba(34,211,238,.18);font-size:12px;}
+  #offline.open{display:block;}
+  #offline h4{margin:0 0 6px;color:var(--glow);font-size:12px;letter-spacing:1px;}
+  #offline p{margin:0 0 9px;color:var(--muted);font-size:10.5px;line-height:1.45;}
+  #offline .seg{display:flex;gap:6px;margin-bottom:9px;}
+  #offline .seg button{flex:1;background:#0a1c2b;border:1px solid var(--hud-dk);color:var(--muted);
+    padding:6px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:11px;}
+  #offline .seg button.on{background:var(--hud);color:#04121b;border-color:var(--glow);font-weight:bold;}
+  #offline .dl{width:100%;background:#0a2018;border:1px solid var(--good);color:var(--good);
+    padding:8px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px;letter-spacing:1px;}
+  #offline .dl:hover{background:var(--good);color:#04121b;font-weight:bold;}
+  #offline .bar{height:6px;background:#0c2230;border-radius:3px;margin-top:9px;overflow:hidden;display:none;}
+  #offline .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0e7490,#22d3ee);}
+  #offline .msg{margin-top:6px;font-size:10.5px;color:var(--muted);min-height:14px;}
+  #offline .zlist{margin-top:9px;border-top:1px solid var(--hud-dk);padding-top:7px;max-height:120px;overflow:auto;}
+  #offline .zitem{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--muted);margin:3px 0;}
+  #offline .zitem b{color:var(--text);}
+  #offline .x{position:absolute;top:9px;right:11px;color:var(--muted);cursor:pointer;font-size:13px;}
 
   #help{position:fixed;top:54px;right:14px;z-index:10;text-align:right;pointer-events:none;
     color:var(--muted);font-size:11px;line-height:1.7;text-shadow:0 0 6px #000;}
@@ -64,6 +89,48 @@
   #panel .warn{color:var(--warn);}
   #panel .mec{margin-top:10px;padding-top:8px;border-top:1px solid var(--hud-dk);color:var(--text);font-size:11px;}
   #panel .mec b{color:var(--glow);}
+
+  /* ===== Vista de detalle "Núcleo MEC" (overlay pantalla completa) ===== */
+  #detail{position:fixed;inset:0;z-index:50;display:none;opacity:0;transition:opacity .55s ease;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 56%, rgba(4,8,16,0.06) 0%, rgba(4,8,16,0.40) 62%, rgba(4,8,16,0.80) 100%);}
+  #detail.open{display:block;}
+  #detail.show{opacity:1;}
+  #detailStage{position:absolute;inset:0;pointer-events:none;}
+  #detailStage canvas{display:block;}
+  #detailBar{position:absolute;top:0;left:0;right:0;height:50px;display:flex;align-items:center;gap:12px;
+    padding:0 16px;z-index:3;pointer-events:none;
+    background:linear-gradient(180deg,rgba(8,26,40,.95),rgba(4,8,16,0));border-bottom:1px solid var(--hud-dk);}
+  #detailBar .dmark{color:var(--glow);font-weight:900;letter-spacing:2px;font-size:14px;text-shadow:0 0 10px var(--hud);}
+  #detailBar .dname{color:var(--text);font-weight:bold;font-size:14px;}
+  #detailBar .dtype{color:var(--muted);font-size:11px;}
+  #detailBar .dcond{font-size:11px;font-weight:bold;padding:3px 9px;border-radius:4px;letter-spacing:.5px;}
+  #detailBar .dspacer{flex:1;}
+  #detailBar .dcoord{color:var(--muted);font-size:11px;}
+  #dBack{pointer-events:auto;cursor:pointer;background:#0a1c2b;border:1px solid var(--hud);color:var(--glow);
+    font-family:inherit;font-size:11px;letter-spacing:1px;padding:7px 12px;border-radius:6px;}
+  #dBack:hover{background:var(--hud);color:#04121b;font-weight:bold;}
+  #dXls{pointer-events:auto;cursor:pointer;background:#0a2018;border:1px solid var(--good);color:var(--good);
+    font-family:inherit;font-size:11px;letter-spacing:1px;padding:7px 12px;border-radius:6px;}
+  #dXls:hover{background:var(--good);color:#04121b;font-weight:bold;}
+
+  .dcol{position:absolute;top:62px;bottom:54px;width:294px;display:flex;flex-direction:column;gap:10px;
+    z-index:2;pointer-events:none;}
+  .dcol.left{left:14px;} .dcol.right{right:14px;}
+  .dpanel{background:rgba(7,20,32,0.82);border:1px solid var(--hud-dk);border-radius:8px;pointer-events:auto;
+    box-shadow:0 0 18px rgba(34,211,238,.12);display:flex;flex-direction:column;overflow:hidden;position:relative;}
+  .dpanel .ph{padding:5px 10px;color:var(--glow);font-size:10.5px;letter-spacing:1.5px;
+    border-bottom:1px solid var(--hud-dk);display:flex;justify-content:space-between;align-items:center;}
+  .dpanel .ph .phk{color:var(--good);font-size:9px;letter-spacing:1px;}
+  .dpanel canvas{flex:1;width:100%;min-height:64px;display:block;}
+  .dvals{padding:9px 11px;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;}
+  .dvals .vr{display:flex;justify-content:space-between;font-size:11px;}
+  .dvals .vr .k{color:var(--muted);} .dvals .vr .v{color:var(--text);font-weight:bold;}
+  #mecTicker{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);max-width:48vw;z-index:3;
+    background:rgba(7,20,32,.88);border:1px solid var(--hud-dk);border-left:3px solid var(--hud);border-radius:6px;
+    padding:8px 14px;font-size:12px;line-height:1.45;color:var(--text);pointer-events:none;
+    box-shadow:0 0 18px rgba(34,211,238,.12);}
+  #mecTicker b{color:var(--glow);}
+  .dhint{position:absolute;bottom:16px;right:16px;z-index:3;color:var(--muted);font-size:10px;pointer-events:none;}
 </style>
 </head>
 <body>
@@ -75,7 +142,25 @@
   <span class="sub">// MEC — INFRAESTRUCTURA CFE · MÉXICO</span>
   <span class="spacer"></span>
   <span class="count" id="count">— activos</span>
-  <span class="dot">● EN LÍNEA</span>
+  <button id="invBtn" title="Cargar inventario oficial de CFE (CSV)">📂 INVENTARIO</button>
+  <input type="file" id="invFile" accept=".csv,text/csv,text/plain" style="display:none">
+  <button id="satBtn" title="Ver imagen satelital real">🛰 SATÉLITE</button>
+  <button id="dlBtn" title="Descargar esta zona para usar sin internet">⬇ OFFLINE</button>
+  <span class="dot" id="netState">● EN LÍNEA</span>
+</div>
+
+<div id="offline">
+  <span class="x" id="offClose">✕</span>
+  <h4>DESCARGA OFFLINE</h4>
+  <p>Acércate a la zona que quieras monitorear y descárgala. Se guardan los mosaicos del mapa y las líneas reales de esa área para usarlas <b>sin internet</b>.</p>
+  <div class="seg">
+    <button data-z="12" class="on">Media · z12</button>
+    <button data-z="13">Alta · z13</button>
+  </div>
+  <button class="dl" id="offDl">⬇ Descargar esta zona</button>
+  <div class="bar" id="offBar"><i></i></div>
+  <div class="msg" id="offMsg"></div>
+  <div class="zlist" id="offZones"></div>
 </div>
 
 <div id="help">
@@ -99,7 +184,36 @@
   <div class="body" id="panelBody"></div>
 </div>
 
+<div id="detail">
+  <div id="detailStage"></div>
+  <div id="detailBar">
+    <span class="dmark">◆ NÚCLEO MEC</span>
+    <span id="dName" class="dname">—</span>
+    <span id="dType" class="dtype">—</span>
+    <span id="dCond" class="dcond">—</span>
+    <span class="dspacer"></span>
+    <span id="dCoord" class="dcoord"></span>
+    <button id="dXls">⬇ EXCEL</button>
+    <button id="dBack">◀ VOLVER AL MAPA</button>
+  </div>
+  <div class="dcol left">
+    <div class="dpanel" style="flex:1"><div class="ph"><span>OSCILOGRAMA · V / I</span><span class="phk">● LIVE</span></div><canvas id="cvOsc"></canvas></div>
+    <div class="dpanel" style="flex:1"><div class="ph"><span>ESPECTRO ARMÓNICO · THD</span></div><canvas id="cvSpec"></canvas></div>
+    <div class="dpanel" style="flex:1"><div class="ph"><span>TRIÁNGULO DE POTENCIAS</span></div><canvas id="cvTri"></canvas></div>
+  </div>
+  <div class="dcol right">
+    <div class="dpanel" style="flex:0 0 auto"><div class="ph"><span>PARÁMETROS EN VIVO</span><span class="phk">● LIVE</span></div><div id="dVals" class="dvals"></div></div>
+    <div class="dpanel" style="flex:1"><div class="ph"><span>TENDENCIAS · TEMP / VIB</span></div><canvas id="cvTrend"></canvas></div>
+    <div class="dpanel" style="flex:1"><div class="ph"><span>MONITOR DE CONDICIÓN · SALUD / THD</span></div><canvas id="cvCond"></canvas></div>
+  </div>
+  <div id="mecTicker"><b>MEC:</b> <span id="dMec">—</span></div>
+  <div class="dhint">arrastra para rotar · rueda para zoom</div>
+</div>
+
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="holo-lib.js"></script>
 <script>
 // ============ Diagnóstico (mismos criterios del monitoreo MEC) ============
 function diagnose(m){
@@ -120,8 +234,8 @@ function diagnose(m){
 const COND_HEX={buenas:"#10b981",regulares:"#facc15",malas:"#f97316",pesimas:"#ef4444"};
 const COND_TXT={buenas:"🟢 BUENAS",regulares:"🟡 REGULARES",malas:"🟠 MALAS",pesimas:"🔴 PÉSIMAS"};
 const TYPE_LABEL={subestacion:"Subestación",torre:"Torre / Línea",hidro:"Hidroeléctrica",
-  eolica:"Eólica",solar:"Solar",termo:"Termoeléctrica",oficina:"Oficina CFE"};
-const TYPE_PREFIX={subestacion:"S.E.",torre:"Torre",hidro:"C.H.",eolica:"C.E.",solar:"C.F.V.",termo:"C.T.",oficina:"Oficina CFE"};
+  eolica:"Eólica",solar:"Solar",termo:"Termoeléctrica",oficina:"Oficina CFE",almacen:"Almacén CFE"};
+const TYPE_PREFIX={subestacion:"S.E.",torre:"Torre",hidro:"C.H.",eolica:"C.E.",solar:"C.F.V.",termo:"C.T.",oficina:"Oficina CFE",almacen:"Almacén"};
 const ESTADOS=["Sonora","Chihuahua","Coahuila","Nuevo León","Tamaulipas","Sinaloa","Durango","Zacatecas",
   "San Luis Potosí","Jalisco","Nayarit","Aguascalientes","Guanajuato","Querétaro","Hidalgo","Veracruz",
   "Puebla","México","CDMX","Morelos","Michoacán","Colima","Guerrero","Oaxaca","Tlaxcala","Tabasco",
@@ -143,15 +257,14 @@ function inMexico(lon,lat){return inPoly(lon,lat,MX_MAINLAND)||inPoly(lon,lat,MX
 // ============ Generación de MUCHOS activos CFE (representativos) ============
 // Activos reales destacados:
 const NAMED=[
-  {name:"S.E. Cerro Gordo",type:"subestacion",lon:-99.05,lat:19.72},
-  {name:"S.E. Monterrey Oriente",type:"subestacion",lon:-100.18,lat:25.70},
-  {name:"S.E. Guadalajara",type:"subestacion",lon:-103.35,lat:20.67},
-  {name:"C.H. Malpaso",type:"hidro",lon:-93.60,lat:17.18},
-  {name:"C.H. Chicoasén",type:"hidro",lon:-93.10,lat:16.93},
-  {name:"C.E. La Venta",type:"eolica",lon:-94.80,lat:16.60},
-  {name:"C.F.V. Puerto Peñasco",type:"solar",lon:-113.53,lat:31.30},
-  {name:"C.T. Tula",type:"termo",lon:-99.12,lat:20.05},
-  {name:"S.E. Hermosillo",type:"subestacion",lon:-110.97,lat:29.07},
+  {name:"S.E. Hermosillo",type:"subestacion",lon:-110.97,lat:29.07,estado:"Sonora"},
+  {name:"C.F.V. Puerto Peñasco",type:"solar",lon:-113.53,lat:31.30,estado:"Sonora"},
+  {name:"C.T. Puerto Libertad",type:"termo",lon:-112.68,lat:29.91,estado:"Sonora"},
+  {name:"S.E. Culiacán",type:"subestacion",lon:-107.39,lat:24.80,estado:"Sinaloa"},
+  {name:"C.H. Sanalona",type:"hidro",lon:-107.13,lat:24.82,estado:"Sinaloa"},
+  {name:"S.E. Chihuahua Industrial",type:"subestacion",lon:-106.07,lat:28.63,estado:"Chihuahua"},
+  {name:"S.E. Mexicali",type:"subestacion",lon:-115.47,lat:32.62,estado:"Baja California"},
+  {name:"S.E. La Paz",type:"subestacion",lon:-110.31,lat:24.14,estado:"Baja California Sur"},
 ];
 function pickType(){const r=Math.random();
   if(r<0.55)return"subestacion"; if(r<0.80)return"torre"; if(r<0.86)return"solar";
@@ -163,22 +276,51 @@ function genTelemetry(){
   if(roll>0.95){temp=66+Math.random()*16;vib=7+Math.random()*4;thd=9+Math.random()*9;pf=0.70+Math.random()*0.12;salud=18+Math.random()*30;}
   return {v:120+Math.random()*12,i:10+Math.random()*45,freq:59.8+Math.random()*0.4,pf,temp,vib,thd,salud};
 }
+// Estados a monitorear (noroeste) con su caja de coordenadas
+const REGION=[
+  {estado:"Baja California",     baja:true, lon0:-117.3,lon1:-113.0, lat0:28.00,lat1:32.70},
+  {estado:"Baja California Sur", baja:true, lon0:-115.2,lon1:-109.4, lat0:22.80,lat1:28.05},
+  {estado:"Sonora",                         lon0:-113.6,lon1:-108.5, lat0:26.50,lat1:32.40},
+  {estado:"Sinaloa",                        lon0:-109.2,lon1:-105.5, lat0:22.60,lat1:27.00},
+  {estado:"Chihuahua",                      lon0:-108.8,lon1:-103.4, lat0:25.60,lat1:31.60},
+];
 const ASSETS=[];
 let id=0;
-NAMED.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:"",t:genTelemetry()}));
-// Distribuir ~520 activos dentro de México
-const TARGET=520; let guard=0;
-while(ASSETS.length<TARGET && guard<40000){
-  guard++;
-  const lon=-117+Math.random()*31, lat=14.5+Math.random()*18.2;
-  if(!inMexico(lon,lat))continue;
-  const type=pickType();
-  const estado=ESTADOS[Math.floor(Math.random()*ESTADOS.length)];
-  const num=100+Math.floor(Math.random()*900);
-  const name=`${TYPE_PREFIX[type]} ${estado} ${num}`;
-  ASSETS.push({id:id++,name,type,lon,lat,estado,t:genTelemetry()});
+NAMED.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado,t:genTelemetry()}));
+function inRegion(lon,lat){ return REGION.some(r=> lon>=r.lon0&&lon<=r.lon1&&lat>=r.lat0&&lat<=r.lat1); }
+// Frontera México–EE.UU. aproximada (para NO meter estructuras de Estados Unidos)
+function borderLat(lon){
+  if(lon<=-114.72) return 32.66;                                  // línea California–Baja (incluye Mexicali)
+  if(lon<=-111.07) return 32.62 + ((lon+114.72)/3.65)*(31.333-32.62); // baja hacia la línea de Sonora
+  if(lon<=-108.2)  return 31.34;                                  // línea recta Sonora–Arizona
+  return 31.80;                                                   // Chihuahua–Nuevo México
 }
-document.getElementById('count').textContent = ASSETS.length+" activos";
+function enMexicoNorte(lon,lat){ return inRegion(lon,lat) && lat<=borderLat(lon); }
+// Ciudades reales de la región -> ahí sembramos oficinas, almacenes y subestaciones (no en el desierto)
+const CITIES=[
+  ["Hermosillo",-110.97,29.07],["Cd. Obregón",-109.93,27.49],["Nogales",-110.94,31.31],
+  ["Guaymas",-110.90,27.92],["Navojoa",-109.44,27.07],["Caborca",-112.16,30.72],
+  ["Culiacán",-107.39,24.80],["Mazatlán",-106.41,23.25],["Los Mochis",-108.99,25.79],
+  ["Guasave",-108.47,25.57],["Chihuahua",-106.07,28.63],["Cd. Juárez",-106.49,31.69],
+  ["Delicias",-105.47,28.19],["Cuauhtémoc",-106.87,28.41],["Parral",-105.66,26.93],
+  ["Mexicali",-115.47,32.62],["Tijuana",-117.01,32.51],["Ensenada",-116.60,31.86],
+  ["La Paz",-110.31,24.14],["San José del Cabo",-109.70,23.06],["Loreto",-111.34,26.01],
+];
+CITIES.forEach(([cn,lon,lat])=>{
+  const j=()=> (Math.random()-0.5)*0.01;   // ~500 m: se quedan dentro de la ciudad
+  ASSETS.push({id:id++,name:'Oficina CFE '+cn,type:'oficina',lon:lon+j(),lat:lat+j(),estado:'',t:genTelemetry()});
+  ASSETS.push({id:id++,name:'Almacén CFE '+cn,type:'almacen',lon:lon+j(),lat:lat+j(),estado:'',t:genTelemetry()});
+});
+function updateCount(){ const el=document.getElementById('count'); if(el) el.textContent=ASSETS.length+" activos"; }
+// Si hay un inventario OFICIAL de CFE cargado, se usa ESE (no OSM)
+let INVENTORY_MODE=false;
+(function(){ try{ const raw=localStorage.getItem('falconInventory');
+  if(raw){ const list=JSON.parse(raw);
+    if(list && list.length){ ASSETS.length=0; id=0;
+      list.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado||'',device:a.device||'',t:genTelemetry()}));
+      INVENTORY_MODE=true; } }
+}catch(e){} })();
+updateCount();
 
 function featureCollection(){
   return {type:"FeatureCollection",features:ASSETS.map(a=>{
@@ -195,19 +337,23 @@ const map=new maplibregl.Map({
     version:8,
     glyphs:"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
     sources:{ carto:{ type:"raster", tileSize:256,
-      tiles:["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-             "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-             "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
+      tiles:["https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"],
       attribution:"© OpenStreetMap, © CARTO" } },
     layers:[{id:"carto",type:"raster",source:"carto"}]
   },
-  center:[-102,23.6], zoom:4.6, minZoom:4.4, maxZoom:18, maxPitch:0,
-  maxBounds:[[-122,11],[-83,34]]   // no te alejas más que ver todo México
+  center:[-110.5,27.6], zoom:5.7, minZoom:5.5, maxZoom:18, maxPitch:70,
+  maxBounds:[[-126,18],[-94,36]]   // no te alejas más que ver la región noroeste
 });
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
 
 map.on('load',()=>{
   map.addSource('cfe',{type:'geojson', data:featureCollection(), cluster:true, clusterMaxZoom:9, clusterRadius:48});
+
+  // Capa SATELITAL (Esri World Imagery) — oculta por defecto, debajo de los datos
+  map.addSource('sat',{type:'raster',tileSize:256,
+    tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+    attribution:'© Esri, Maxar, Earthstar Geographics'});
+  map.addLayer({id:'sat',type:'raster',source:'sat',layout:{visibility:'none'}});
 
   // Clusters (cian, tamaño por cantidad) + número
   map.addLayer({id:'clusters',type:'circle',source:'cfe',filter:['has','point_count'],
@@ -225,6 +371,23 @@ map.on('load',()=>{
     paint:{'circle-color':['get','color'],'circle-radius':4.5,
       'circle-stroke-color':'#0a1320','circle-stroke-width':1}});
 
+  // ---- Líneas de transmisión REALES (OpenStreetMap) — sólo visibles al acercarse ----
+  map.addSource('txlines',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'txglow',type:'line',source:'txlines',minzoom:7.5,
+    layout:{'line-cap':'round','line-join':'round'},
+    paint:{'line-color':['step',['get','v'],'#0e7490',161000,'#22d3ee',345000,'#a5f3fc'],
+      'line-width':['step',['get','v'],3,161000,5,345000,8],'line-opacity':0.14,'line-blur':3}},'clusters');
+  map.addLayer({id:'txlines-l',type:'line',source:'txlines',minzoom:7.5,
+    layout:{'line-cap':'round','line-join':'round'},
+    paint:{'line-color':['step',['get','v'],'#0e7490',161000,'#22d3ee',345000,'#a5f3fc'],
+      'line-width':['interpolate',['linear'],['zoom'],8,['step',['get','v'],0.8,161000,1.3,345000,2],14,['step',['get','v'],1.6,161000,2.6,345000,4]],
+      'line-opacity':0.85}},'clusters');
+  map.addSource('txtowers',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+  map.addLayer({id:'txtowers-l',type:'circle',source:'txtowers',minzoom:12,
+    paint:{'circle-radius':['interpolate',['linear'],['zoom'],12,1.4,17,3.2],'circle-color':'#67e8f9','circle-opacity':0.9,
+      'circle-stroke-color':'#0a1320','circle-stroke-width':0.6}},'clusters');
+
+
   // Interacción
   map.on('click','clusters',(e)=>{
     const f=e.features[0];
@@ -232,7 +395,7 @@ map.on('load',()=>{
       map.easeTo({center:f.geometry.coordinates,zoom:z});
     });
   });
-  map.on('click','pts',(e)=>select(+e.features[0].properties.id));
+  map.on('click','pts',(e)=>openDetail(+e.features[0].properties.id));
   ['clusters','pts'].forEach(l=>{
     map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
     map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
@@ -242,7 +405,8 @@ map.on('load',()=>{
   setInterval(()=>{
     ASSETS.forEach(a=>{ if(Math.random()<0.25) a.t=genTelemetry(); });
     if(map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
-    if(selectedId!=null) renderPanel();
+    if(selectedId!=null && !detailOpen()) renderPanel();
+    if(detailOpen()) refreshDetailHeader();
   },3000);
 });
 
@@ -276,6 +440,526 @@ function renderPanel(){
     ${d.err.length?`<div class="flag err">⚠ ${d.err.join(' · ')}</div>`:''}
     ${d.warn.length?`<div class="flag warn">• ${d.warn.join(' · ')}</div>`:''}
     <div class="mec"><b>MEC:</b> ${mecComment(a,d)}</div>`;
+}
+
+// ===== Líneas de transmisión REALES (OpenStreetMap / Overpass) =====
+let txCache=[], twCache=[], txBusy=false, twBusy=false, powerTimer=null;
+const txFeatures=new Map(), twFeatures=new Map();
+function _bbox(exp){ const b=map.getBounds(); const dy=(b.getNorth()-b.getSouth())*exp, dx=(b.getEast()-b.getWest())*exp;
+  return [b.getSouth()-dy,b.getWest()-dx,b.getNorth()+dy,b.getEast()+dx]; }
+function _covered(cache,q){ return cache.some(c=> q[0]>=c[0]&&q[1]>=c[1]&&q[2]<=c[2]&&q[3]<=c[3]); }
+function _overpass(query){
+  return fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query))
+    .then(r=>{ if(!r.ok) throw new Error('overpass '+r.status); return r.json(); });
+}
+function loadLines(){
+  if(txBusy || !map.getSource('txlines') || map.getZoom()<8) return;
+  const q=_bbox(0.15); if(_covered(txCache,q)) return; txBusy=true;
+  _overpass(`[out:json][timeout:25];(way["power"="line"](${q[0]},${q[1]},${q[2]},${q[3]});way["power"="minor_line"](${q[0]},${q[1]},${q[2]},${q[3]}););out geom;`)
+    .then(data=>{ if(txFeatures.size>6000){txFeatures.clear();txCache=[];}
+      (data.elements||[]).forEach(e=>{ if(e.type==='way'&&e.geometry&&e.geometry.length>1){
+        const v=parseInt(((e.tags&&e.tags.voltage)||'0').split(';')[0])||0;
+        txFeatures.set(e.id,{type:'Feature',properties:{v},geometry:{type:'LineString',coordinates:e.geometry.map(p=>[p.lon,p.lat])}});
+      }});
+      txCache.push(q); if(txCache.length>14)txCache.shift();
+      map.getSource('txlines').setData({type:'FeatureCollection',features:[...txFeatures.values()]});
+      rebuildTowers();   // genera las torres a lo largo del trazo real
+    }).catch(()=>{}).finally(()=>{txBusy=false;});
+}
+// Rumbo (bearing) de un segmento, en radianes desde el norte
+function segBearing(a,b){ const f1=a[1]*Math.PI/180,f2=b[1]*Math.PI/180,dl=(b[0]-a[0])*Math.PI/180;
+  const y=Math.sin(dl)*Math.cos(f2), x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl);
+  return Math.atan2(y,x); }
+// Coloca torres a lo largo de una polilínea cada ~step grados (≈450 m), guardando el rumbo del tramo
+function towersFromLine(coords,step){ const pts=[]; let carry=0;
+  for(let i=0;i<coords.length-1;i++){ const a=coords[i],b=coords[i+1],dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy);
+    if(L===0)continue; const brg=segBearing(a,b); let pos=step-carry;
+    while(pos<L){ const t=pos/L; pts.push([a[0]+dx*t,a[1]+dy*t,brg]); pos+=step; }
+    carry=L-(pos-step); if(carry<0)carry=0; }
+  return pts; }
+function rebuildTowers(){
+  if(!map.getSource('txtowers')) return;
+  const tw=[]; let n=0;
+  for(const f of txFeatures.values()){ const cs=f.geometry.coordinates; const pts=towersFromLine(cs,0.0045);
+    for(const p of pts){ tw.push({type:'Feature',properties:{brg:p[2]||0},geometry:{type:'Point',coordinates:[p[0],p[1]]}}); if(++n>20000)break; }
+    if(n>20000)break; }
+  map.getSource('txtowers').setData({type:'FeatureCollection',features:tw});
+}
+function loadTowers(){
+  if(twBusy || !map.getSource('txtowers') || map.getZoom()<12) return;
+  const q=_bbox(0.1); if(_covered(twCache,q)) return; twBusy=true;
+  _overpass(`[out:json][timeout:25];node["power"="tower"](${q[0]},${q[1]},${q[2]},${q[3]});out;`)
+    .then(data=>{ if(twFeatures.size>9000){twFeatures.clear();twCache=[];}
+      (data.elements||[]).forEach(e=>{ if(e.type==='node'){
+        twFeatures.set(e.id,{type:'Feature',properties:{},geometry:{type:'Point',coordinates:[e.lon,e.lat]}});
+      }});
+      twCache.push(q); if(twCache.length>18)twCache.shift();
+      map.getSource('txtowers').setData({type:'FeatureCollection',features:[...twFeatures.values()]});
+    }).catch(()=>{}).finally(()=>{twBusy=false;});
+}
+function schedulePower(){ if(powerTimer)clearTimeout(powerTimer); powerTimer=setTimeout(()=>{ loadLines(); },500); }
+map.on('moveend',schedulePower);
+map.on('load',schedulePower);
+
+// Carga TODAS las subestaciones y centrales REALES de la región (OSM), en bloques (confiable)
+const REGION_BBOX={W:-117.6,S:22.4,E:-103.2,N:32.9};
+function classify(tg){ let type='subestacion';
+  if(tg.power==='plant'){ const src=((tg['plant:source']||tg['generator:source']||'')+'').toLowerCase();
+    type=src.indexOf('hydro')>=0?'hidro':src.indexOf('solar')>=0?'solar':src.indexOf('wind')>=0?'eolica':'termo'; }
+  return type; }
+function mergeRealAssets(data, estadoName){
+  const seen=new Set(ASSETS.map(a=>a.osm).filter(Boolean)); let added=0;
+  (data.elements||[]).forEach(e=>{
+    const lon=e.lon!=null?e.lon:(e.center&&e.center.lon), lat=e.lat!=null?e.lat:(e.center&&e.center.lat);
+    if(lon==null||lat==null) return;
+    const key=e.type+'/'+e.id; if(seen.has(key))return; seen.add(key);
+    const tg=e.tags||{}, type=classify(tg);
+    const name=tg.name||(TYPE_PREFIX[type]+' '+(100+e.id%9000));
+    ASSETS.push({id:id++,osm:key,name,type,lon,lat,estado:estadoName||'',t:genTelemetry()}); added++;
+  });
+  if(added && map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
+  updateCount();
+}
+// Carga subestaciones/centrales REALES por LÍMITE OFICIAL de cada estado (sin EE.UU. ni estados vecinos)
+const ESTADOS_MX=["Sonora","Sinaloa","Chihuahua","Baja California","Baja California Sur"];
+function loadStateSeq(i){
+  if(i>=ESTADOS_MX.length) return;
+  const st=ESTADOS_MX[i];
+  const q=`[out:json][timeout:80];area["name"="${st}"]["admin_level"="4"]["boundary"="administrative"]->.a;(node["power"="substation"](area.a);way["power"="substation"](area.a);node["power"="plant"](area.a);way["power"="plant"](area.a););out center tags;`;
+  _overpass(q).then(data=>mergeRealAssets(data,st)).catch(()=>{}).finally(()=>{ setTimeout(()=>loadStateSeq(i+1),800); });
+}
+function loadAllSubstations(){ if(INVENTORY_MODE) return; loadStateSeq(0); loadAllLines(0); }
+// Carga TODAS las líneas de transmisión de cada estado (red completa)
+function loadAllLines(i){
+  if(i>=ESTADOS_MX.length) return;
+  const st=ESTADOS_MX[i];
+  const q=`[out:json][timeout:90];area["name"="${st}"]["admin_level"="4"]["boundary"="administrative"]->.a;(way["power"="line"](area.a););out geom;`;
+  _overpass(q).then(data=>{
+    (data.elements||[]).forEach(e=>{ if(e.type==='way'&&e.geometry&&e.geometry.length>1){
+      const v=parseInt(((e.tags&&e.tags.voltage)||'0').split(';')[0])||0;
+      txFeatures.set(e.id,{type:'Feature',properties:{v},geometry:{type:'LineString',coordinates:e.geometry.map(p=>[p.lon,p.lat])}});
+    }});
+    if(map.getSource('txlines')) map.getSource('txlines').setData({type:'FeatureCollection',features:[...txFeatures.values()]});
+    rebuildTowers();
+  }).catch(()=>{}).finally(()=>{ setTimeout(()=>loadAllLines(i+1),900); });
+}
+map.on('load',loadAllSubstations);
+
+// Clic en torre/línea REAL -> abrir Núcleo MEC de esa estructura (orientado al rumbo real)
+map.on('click','txtowers-l',(e)=>{ const f=e.features[0], c=f.geometry.coordinates, brg=(f.properties&&+f.properties.brg)||0;
+  openDetail({id:'torre@'+c.join(','), name:'Torre de Transmisión', type:'torre', modelKey:'torre1', lon:c[0], lat:c[1], estado:'', bearing:brg, t:genTelemetry()}); });
+map.on('click','txlines-l',(e)=>{ const c=e.lngLat, f=e.features[0]; let brg=0;
+  const cs=f&&f.geometry&&f.geometry.coordinates;
+  if(cs&&cs.length>1){ let best=1e18; for(let i=0;i<cs.length-1;i++){ const mx=(cs[i][0]+cs[i+1][0])/2,my=(cs[i][1]+cs[i+1][1])/2,d=(mx-c.lng)*(mx-c.lng)+(my-c.lat)*(my-c.lat);
+    if(d<best){best=d; brg=segBearing(cs[i],cs[i+1]);} } }
+  openDetail({id:'linea@'+c.lng.toFixed(4), name:'Línea de Transmisión', type:'torre', lon:c.lng, lat:c.lat, estado:'', bearing:brg, t:genTelemetry()}); });
+['txtowers-l','txlines-l'].forEach(l=>{ map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave',l,()=>map.getCanvas().style.cursor=''); });
+
+// ===== Modo OFFLINE (descarga de zonas, estilo Maps) =====
+if('serviceWorker' in navigator){
+  let _swReloaded=false;
+  if(navigator.serviceWorker.controller){
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(!_swReloaded){_swReloaded=true; location.reload();} });
+  }
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+const offEl=document.getElementById('offline'); let offDetail=12, offBusy=false;
+document.getElementById('dlBtn').onclick=()=>{ offEl.classList.toggle('open'); renderZones(); };
+document.getElementById('offClose').onclick=()=>offEl.classList.remove('open');
+[...document.querySelectorAll('#offline .seg button')].forEach(b=>b.onclick=()=>{
+  offDetail=+b.dataset.z; document.querySelectorAll('#offline .seg button').forEach(x=>x.classList.toggle('on',x===b)); });
+document.getElementById('offDl').onclick=()=>downloadZone(offDetail);
+function offMsg(t){ document.getElementById('offMsg').textContent=t; }
+function offProgress(done,total){ const bar=document.getElementById('offBar'); bar.style.display='block';
+  bar.querySelector('i').style.width=Math.round(done/total*100)+'%'; if(done>=total) setTimeout(()=>bar.style.display='none',1400); }
+function tileX(lon,z){ return Math.floor((lon+180)/360*Math.pow(2,z)); }
+function tileY(lat,z){ const r=lat*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*Math.pow(2,z)); }
+// URL del mosaico según el mapa base activo (carto oscuro o satélite Esri)
+function tileUrl(z,x,y){ return satOn
+  ? `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`
+  : `https://a.basemaps.cartocdn.com/dark_all/${z}/${x}/${y}.png`; }
+function tileList(b,zmin,zmax){ const list=[];
+  for(let z=zmin;z<=zmax;z++){ const x0=tileX(b.getWest(),z),x1=tileX(b.getEast(),z),y0=tileY(b.getNorth(),z),y1=tileY(b.getSouth(),z);
+    for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++) list.push(tileUrl(z,x,y)); }
+  return list; }
+async function downloadZone(maxDetail){
+  if(offBusy) return;
+  const b=map.getBounds(), zmin=Math.max(5,Math.floor(map.getZoom()));
+  if(zmin>maxDetail){ offMsg('Aléjate un poco o sube el nivel de detalle.'); return; }
+  const tiles=tileList(b,zmin,maxDetail);
+  if(tiles.length>4000){ offMsg(`Demasiados mosaicos (${tiles.length}). Acércate más a la zona.`); return; }
+  const q=[b.getSouth(),b.getWest(),b.getNorth(),b.getEast()];
+  const data=[
+    'https://overpass-api.de/api/interpreter?data='+encodeURIComponent(`[out:json][timeout:25];(way["power"="line"](${q[0]},${q[1]},${q[2]},${q[3]});way["power"="minor_line"](${q[0]},${q[1]},${q[2]},${q[3]}););out geom;`),
+    'https://overpass-api.de/api/interpreter?data='+encodeURIComponent(`[out:json][timeout:25];node["power"="tower"](${q[0]},${q[1]},${q[2]},${q[3]});out;`)
+  ];
+  const all=tiles.concat(data); let done=0, idx=0; offBusy=true; offMsg('Descargando '+tiles.length+' mosaicos + líneas...');
+  async function worker(){ while(idx<all.length){ const u=all[idx++]; try{ await fetch(u,{cache:'reload'}); }catch(e){} done++; offProgress(done,all.length); } }
+  await Promise.all(Array.from({length:6},()=>worker()));
+  offBusy=false; offMsg('✔ Zona lista para usar sin internet.');
+  const zones=JSON.parse(localStorage.getItem('falconZones')||'[]');
+  zones.unshift({c:[(b.getWest()+b.getEast())/2,(b.getNorth()+b.getSouth())/2], tiles:tiles.length, z:maxDetail, date:new Date().toLocaleDateString('es-MX')});
+  localStorage.setItem('falconZones',JSON.stringify(zones.slice(0,12)));
+  renderZones();
+}
+function renderZones(){
+  const zones=JSON.parse(localStorage.getItem('falconZones')||'[]');
+  document.getElementById('offZones').innerHTML = zones.length
+    ? '<div style="color:var(--glow);font-size:10px;letter-spacing:1px;margin-bottom:3px;">ZONAS DESCARGADAS</div>'+
+      zones.map(z=>`<div class="zitem"><b>${z.c[1].toFixed(2)}, ${z.c[0].toFixed(2)}</b><span>${z.tiles} mos · z${z.z} · ${z.date}</span></div>`).join('')
+    : '<div class="zitem"><span>Aún no hay zonas descargadas.</span></div>';
+}
+function updateNet(){ const el=document.getElementById('netState'); const on=navigator.onLine;
+  el.textContent= on?'● EN LÍNEA':'● OFFLINE'; el.style.color= on?'var(--good)':'#f59e0b'; }
+addEventListener('online',updateNet); addEventListener('offline',updateNet); updateNet();
+
+// ===== Interruptor Mapa / Satélite =====
+let satOn=false;
+document.getElementById('satBtn').onclick=()=>{
+  satOn=!satOn;
+  if(map.getLayer('sat')) map.setLayoutProperty('sat','visibility', satOn?'visible':'none');
+  if(map.getLayer('carto')) map.setLayoutProperty('carto','visibility', satOn?'none':'visible');
+  document.getElementById('satBtn').classList.toggle('on',satOn);
+  schedulePower();
+};
+
+// ===== Inventario OFICIAL de CFE (cargar CSV / volver a OSM) =====
+function splitCSVLine(line,delim){ const res=[]; let cur='', q=false;
+  for(let i=0;i<line.length;i++){ const ch=line[i];
+    if(ch==='"'){ if(q && line[i+1]==='"'){cur+='"';i++;} else q=!q; }
+    else if(ch===delim && !q){ res.push(cur); cur=''; }
+    else cur+=ch; }
+  res.push(cur); return res; }
+function mapTipo(s){ s=(s||'').toString().toLowerCase().trim();
+  if(s.indexOf('subestac')>=0||s==='se'||s==='s.e.') return 'subestacion';
+  if(s.indexOf('torre')>=0||s.indexOf('linea')>=0||s.indexOf('línea')>=0) return 'torre';
+  if(s.indexOf('hidro')>=0) return 'hidro';
+  if(s.indexOf('eolic')>=0||s.indexOf('eólic')>=0) return 'eolica';
+  if(s.indexOf('solar')>=0||s.indexOf('fotovolt')>=0) return 'solar';
+  if(s.indexOf('termo')>=0) return 'termo';
+  if(s.indexOf('oficina')>=0) return 'oficina';
+  if(s.indexOf('almac')>=0) return 'almacen';
+  if(['subestacion','torre','hidro','eolica','solar','termo','oficina','almacen'].indexOf(s)>=0) return s;
+  return 'subestacion'; }
+function parseInventory(text){
+  text=text.replace(/^\uFEFF/,''); const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2) return [];
+  const delim = (lines[0].split(';').length > lines[0].split(',').length) ? ';' : ',';
+  const head=splitCSVLine(lines[0],delim).map(h=>h.trim().toLowerCase());
+  const idx=names=>{ for(const n of names){ const i=head.indexOf(n); if(i>=0) return i; } return -1; };
+  const iName=idx(['nombre','name']), iTipo=idx(['tipo','type','categoria']), iEst=idx(['estado','state','entidad']),
+        iLat=idx(['lat','latitud','latitude','y']), iLon=idx(['lon','lng','long','longitud','longitude','x']),
+        iDev=idx(['device','url','esp32','endpoint','dispositivo']);
+  if(iLat<0||iLon<0) return [];
+  const out=[];
+  for(let k=1;k<lines.length;k++){ const c=splitCSVLine(lines[k],delim);
+    const lat=parseFloat((c[iLat]||'').replace(',','.')), lon=parseFloat((c[iLon]||'').replace(',','.'));
+    if(isNaN(lat)||isNaN(lon)) continue;
+    out.push({ name:(iName>=0?(c[iName]||'').trim():'Estructura')||'Estructura',
+      type:mapTipo(iTipo>=0?c[iTipo]:''), estado:(iEst>=0?(c[iEst]||'').trim():''),
+      device:(iDev>=0?(c[iDev]||'').trim():''), lat, lon }); }
+  return out; }
+function applyInventory(list){
+  ASSETS.length=0; id=0;
+  list.forEach(a=>ASSETS.push({id:id++,name:a.name,type:a.type,lon:a.lon,lat:a.lat,estado:a.estado||'',device:a.device||'',t:genTelemetry()}));
+  INVENTORY_MODE=true;
+  if(map.getSource('cfe')) map.getSource('cfe').setData(featureCollection());
+  updateCount();
+  document.getElementById('invBtn').classList.add('on');
+}
+if(INVENTORY_MODE) document.getElementById('invBtn').classList.add('on');
+document.getElementById('invBtn').onclick=()=>{
+  if(INVENTORY_MODE){
+    if(confirm('Ya hay un inventario CFE cargado ('+ASSETS.length+' estructuras).\n\nAceptar = cargar OTRO archivo.\nCancelar = volver a los datos de OpenStreetMap.'))
+      document.getElementById('invFile').click();
+    else { localStorage.removeItem('falconInventory'); location.reload(); }
+  } else document.getElementById('invFile').click();
+};
+document.getElementById('invFile').addEventListener('change',ev=>{
+  const f=ev.target.files[0]; if(!f) return; const rd=new FileReader();
+  rd.onload=()=>{ try{
+    const list=parseInventory(rd.result);
+    if(!list.length){ alert('No se reconocieron filas válidas.\nEl CSV debe tener encabezados con al menos: Nombre, Tipo, Estado, Lat, Lon.'); return; }
+    localStorage.setItem('falconInventory', JSON.stringify(list));
+    applyInventory(list);
+    alert('✔ Inventario CFE cargado: '+list.length+' estructuras.\nSe usará este inventario (no OSM). Para volver a OSM, pulsa de nuevo INVENTARIO y elige Cancelar.');
+  }catch(e){ alert('Error leyendo el CSV: '+e.message); } };
+  rd.readAsText(f,'UTF-8'); ev.target.value='';
+});
+
+// ============ Vista de detalle "Núcleo MEC" (modelo 3D + gráficas MEC) ============
+const detailEl=document.getElementById('detail');
+let dAsset=null, dPhase=0, dRAF=null, dTimer=null;
+let holoLayer=null, holoState={scene:null,origin:null,scale:1,baseRings:null,motes:null,rot:0};
+let dAutoRot=false, dDragging=false;
+const METERS_PER_UNIT=11;
+const DCAP=64;
+const dHist={temp:[],vib:[],salud:[],thd:[]};
+let dLive=null;
+let deviceLatest=null, devTimer=null;   // telemetría real desde un ESP32 (si la estructura tiene 'device')
+function startDevicePoll(url){ stopDevicePoll();
+  const poll=()=>fetch(url,{cache:'no-store'}).then(r=>r.json()).then(j=>{ deviceLatest=j; }).catch(()=>{ deviceLatest=null; });
+  poll(); devTimer=setInterval(poll,1000); }
+function stopDevicePoll(){ if(devTimer){clearInterval(devTimer);devTimer=null;} deviceLatest=null; }
+function detailOpen(){ return detailEl.classList.contains('open'); }
+
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function sampleLive(a){
+  if(a.device && deviceLatest){   // datos REALES del ESP32
+    const d=deviceLatest;
+    dLive={ v:+d.v, i:+d.i, freq:+d.freq, pf:+d.pf, thd:+d.thd, vib:+d.vib, temp:+d.temp, salud:+d.salud };
+    return;
+  }
+  const b=a.t, jit=(v,p)=>v+(Math.random()-0.5)*p;
+  dLive={ v:jit(b.v,1.4), i:Math.max(0,jit(b.i,2.2)), freq:jit(b.freq,0.05),
+    pf:clamp(jit(b.pf,0.008),0.5,1), thd:Math.max(0,jit(b.thd,0.35)),
+    vib:Math.max(0,jit(b.vib,0.18)), temp:jit(b.temp,0.55), salud:clamp(jit(b.salud,0.7),0,100) };
+}
+function pushHist(){
+  const H=dHist; H.temp.push(dLive.temp); H.vib.push(dLive.vib); H.salud.push(dLive.salud); H.thd.push(dLive.thd);
+  ['temp','vib','salud','thd'].forEach(k=>{ if(H[k].length>DCAP) H[k].shift(); });
+}
+function mecDetail(a,d){
+  const n=a.name;
+  if(d.cond==='buenas') return `Todo en orden con ${n}. Tensión, frecuencia y factor de potencia están dentro de norma y la salud del activo se mantiene alta. No hace falta intervenir; lo seguimos vigilando.`;
+  if(d.cond==='regulares'){ const f=(d.warn[0]||'algunos parámetros al límite'); return `${n} opera bien, pero estoy vigilando de cerca: ${f.toLowerCase()}. Conviene agendar una revisión preventiva antes de que escale.`; }
+  if(d.cond==='malas'){ const f=(d.err[0]||d.warn[0]||'parámetros degradados'); return `Ojo con ${n}: ${f.toLowerCase()}. Recomiendo revisarla en el próximo turno y no dejarla pasar.`; }
+  return `Alerta seria en ${n}: ${(d.err.join('; ')||'condiciones críticas').toLowerCase()}. Hay que intervenir de inmediato y mandar verificación en sitio.`;
+}
+function refreshDetailHeader(){
+  const a=dAsset; if(!a)return;
+  sampleLive(a); pushHist();
+  const d=diagnose(a.t), col=COND_HEX[d.cond];
+  document.getElementById('dName').textContent=a.name;
+  document.getElementById('dType').textContent='· '+TYPE_LABEL[a.type]+' · '+(a.estado||'México');
+  const cb=document.getElementById('dCond');
+  cb.textContent=COND_TXT[d.cond]+' · salud '+dLive.salud.toFixed(0)+'%';
+  cb.style.background=col+'22'; cb.style.color=col; cb.style.border='1px solid '+col;
+  document.getElementById('dCoord').textContent=a.lat.toFixed(3)+', '+a.lon.toFixed(3);
+  document.getElementById('dMec').textContent=mecDetail(a,d);
+  const m=dLive;
+  document.getElementById('dVals').innerHTML=
+    row('Tensión',m.v.toFixed(1)+' V')+row('Corriente',m.i.toFixed(1)+' A')+
+    row('Frecuencia',m.freq.toFixed(2)+' Hz')+row('F. potencia',m.pf.toFixed(3))+
+    row('THD',m.thd.toFixed(1)+' %')+row('Vibración',m.vib.toFixed(2)+' mm/s')+
+    row('Temperatura',m.temp.toFixed(1)+' °C')+row('Salud',m.salud.toFixed(0)+' %');
+  const liveTxt=(dAsset.device&&deviceLatest)?'● ESP32':'● LIVE';
+  document.querySelectorAll('.dpanel .ph .phk').forEach(el=>el.textContent=liveTxt);
+}
+function row(k,v){ return `<div class="vr"><span class="k">${k}</span><span class="v">${v}</span></div>`; }
+
+let dShowTO=null, dCloseTO=null, dCamPrev=null;
+
+// Capa 3D personalizada de MapLibre: dibuja el holograma ANCLADO al punto del mapa
+function ensureHoloLayer(){
+  if(holoLayer || !window.Holo || !map.isStyleLoaded()) { return holoLayer; }
+  holoLayer={
+    id:'holo3d', type:'custom', renderingMode:'3d',
+    onAdd:function(m,gl){
+      this.cam=new THREE.Camera();
+      this.scene=new THREE.Scene();
+      this.renderer=new THREE.WebGLRenderer({canvas:m.getCanvas(),context:gl,antialias:true});
+      this.renderer.autoClear=false;
+      holoState.scene=this.scene;
+    },
+    render:function(gl,matrix){
+      if(!detailOpen()||!holoState.origin||!holoState.scene) return;
+      const t=performance.now()*0.001;
+      Holo._spin.forEach(s=>{ s.obj.rotation[s.axis]+=s.speed*0.016; });
+      Holo._steam.forEach(s=>{ const p=s.m.geometry.attributes.position;
+        for(let i=0;i<p.count;i++){let y=p.getY(i)+0.03; if(y>s.top)y=s.baseY; p.setY(i,y);} p.needsUpdate=true; });
+      if(holoState.baseRings) holoState.baseRings.rotation.y=t*0.15;
+      if(holoState.motes){ const pos=holoState.motes.geometry.attributes.position;
+        for(let i=0;i<pos.count;i++){let y=pos.getY(i)+0.02; if(y>12)y=-2; pos.setY(i,y);} pos.needsUpdate=true; }
+      const o=holoState.origin, sc=holoState.scale;
+      const rx=new THREE.Matrix4().makeRotationAxis(new THREE.Vector3(1,0,0),Math.PI/2);
+      const ry=new THREE.Matrix4().makeRotationY(holoState.rot||0);   // orienta según el rumbo real de la línea
+      const m=new THREE.Matrix4().fromArray(matrix);
+      const l=new THREE.Matrix4().makeTranslation(o.x,o.y,o.z).scale(new THREE.Vector3(sc,-sc,sc)).multiply(rx).multiply(ry);
+      this.cam.projectionMatrix=m.clone().multiply(l);
+      this.renderer.resetState();
+      this.renderer.render(this.scene,this.cam);
+    }
+  };
+  try{ map.addLayer(holoLayer); }catch(e){ holoLayer=null; }
+  return holoLayer;
+}
+function setHoloModel(a){
+  ensureHoloLayer();
+  if(!holoState.scene) return;
+  const scn=holoState.scene;
+  while(scn.children.length) scn.remove(scn.children[0]);
+  const key=a.modelKey || (window.Holo&&Holo.TYPE2MODEL[a.type]) || 'subestacion';
+  const b=Holo.build(key); scn.add(b.group);
+  holoState.baseRings=Holo.buildBaseRings(); scn.add(holoState.baseRings);
+  holoState.motes=Holo.buildMotes(); scn.add(holoState.motes);
+  const merc=maplibregl.MercatorCoordinate.fromLngLat([a.lon,a.lat],0);
+  holoState.origin={x:merc.x,y:merc.y,z:merc.z};
+  holoState.scale=merc.meterInMercatorCoordinateUnits()*METERS_PER_UNIT;
+  holoState.rot=(a.type==='torre' && typeof a.bearing==='number') ? (Math.PI - a.bearing) : 0;  // alinear con la línea real
+}
+// pausar el giro automático mientras el usuario interactúa con el mapa
+map.on('mousedown',()=>{ dDragging=true; });
+addEventListener('mouseup',()=>{ dDragging=false; });
+map.on('touchstart',()=>{ dDragging=true; });
+addEventListener('touchend',()=>{ dDragging=false; });
+
+function openDetail(i){
+  const a=(i&&typeof i==='object')? i : ASSETS.find(x=>x.id===i); if(!a)return;
+  dAsset=a; selectedId=(a.id!=null?a.id:null); panel.style.display='none';
+  dCamPrev={center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()};
+  detailEl.classList.add('open'); detailEl.classList.remove('show');
+  // ancla el holograma en el punto exacto del mapa (crece al acercarnos)
+  setHoloModel(a);
+  map.triggerRepaint();
+  // vuelo de aproximación tipo "street view": baja, se inclina y centra en el activo
+  dAutoRot=false;
+  try{ map.flyTo({center:[a.lon,a.lat], zoom:17, pitch:65, bearing:(map.getBearing()+20),
+        duration:2600, curve:1.5, essential:true}); }catch(e){}
+  // datos + gráficas
+  Object.values(dHist).forEach(arr=>arr.length=0);
+  refreshDetailHeader();
+  if(dTimer) clearInterval(dTimer);
+  dTimer=setInterval(refreshDetailHeader,1000);
+  if(dAsset.device) startDevicePoll(dAsset.device); else stopDevicePoll();
+  if(!dRAF) dLoop();
+  if(dCloseTO){clearTimeout(dCloseTO);dCloseTO=null;}
+  if(dShowTO) clearTimeout(dShowTO);
+  dShowTO=setTimeout(()=>{ detailEl.classList.add('show'); }, 1200);
+  // al terminar el vuelo, el espacio empieza a girar alrededor del holograma
+  setTimeout(()=>{ if(detailOpen()) dAutoRot=true; }, 2700);
+}
+function closeDetail(){
+  detailEl.classList.remove('show'); dAutoRot=false; stopDevicePoll();
+  if(dShowTO){clearTimeout(dShowTO);dShowTO=null;}
+  if(dCamPrev){ try{ map.flyTo({center:dCamPrev.center,zoom:dCamPrev.zoom,bearing:dCamPrev.bearing,
+        pitch:dCamPrev.pitch,duration:1500,essential:true}); }catch(e){} }
+  if(dCloseTO) clearTimeout(dCloseTO);
+  dCloseTO=setTimeout(()=>{
+    detailEl.classList.remove('open');
+    if(dTimer){ clearInterval(dTimer); dTimer=null; }
+    if(dRAF){ cancelAnimationFrame(dRAF); dRAF=null; }
+    holoState.origin=null;     // oculta el holograma
+    if(holoState.scene){ while(holoState.scene.children.length) holoState.scene.remove(holoState.scene.children[0]); }
+    dAsset=null; selectedId=null;
+    map.triggerRepaint();
+  }, 560);
+}
+// Descarga un reporte (CSV compatible con Excel) del activo seleccionado
+function downloadExcel(){
+  const a=dAsset; if(!a||!dLive)return;
+  const d=diagnose(a.t), m=dLive, sep=';', nl='\r\n';
+  const esc=v=>{ const s=String(v); return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; };
+  const r=(...c)=>c.map(esc).join(sep);
+  const thd=m.thd, esp=[100,thd*1.2,thd*2.0,thd*0.8,thd*1.5,thd*0.5,thd*1.0,thd*0.4];
+  const now=new Date().toLocaleString('es-MX');
+  const L=[];
+  L.push(r('ANÁLISIS DE MEC'));
+  L.push(r('Activo',a.name));
+  L.push(r('Tipo',TYPE_LABEL[a.type]));
+  L.push(r('Ubicación',(a.estado||'México')+' ('+a.lat.toFixed(4)+', '+a.lon.toFixed(4)+')'));
+  L.push(r('Condición',COND_TXT[d.cond]));
+  L.push(r('Fecha',now));
+  L.push('');
+  L.push(r('PARÁMETRO','VALOR','UNIDAD'));
+  L.push(r('Tensión',m.v.toFixed(1),'V'));
+  L.push(r('Corriente',m.i.toFixed(1),'A'));
+  L.push(r('Frecuencia',m.freq.toFixed(2),'Hz'));
+  L.push(r('Factor de potencia',m.pf.toFixed(3),''));
+  L.push(r('THD',m.thd.toFixed(1),'%'));
+  L.push(r('Vibración',m.vib.toFixed(2),'mm/s'));
+  L.push(r('Temperatura',m.temp.toFixed(1),'°C'));
+  L.push(r('Salud',m.salud.toFixed(0),'%'));
+  L.push('');
+  L.push(r('ESPECTRO ARMÓNICO'));
+  L.push(r('Armónico','Magnitud (%)'));
+  esp.forEach((v,k)=> L.push(r('H'+(k+1),v.toFixed(1))));
+  L.push('');
+  L.push(r('ANÁLISIS DE MEC'));
+  L.push(r(mecDetail(a,d)));
+  const csv='\uFEFF'+L.join(nl);
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('a');
+  link.href=url; link.download='MEC_'+a.name.replace(/[^\w\-]+/g,'_')+'.csv';
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+document.getElementById('dBack').onclick=closeDetail;
+document.getElementById('dXls').onclick=downloadExcel;
+addEventListener('keydown',e=>{ if(e.key==='Escape'&&detailOpen()) closeDetail(); });
+addEventListener('resize',()=>{ if(detailOpen()) map.resize(); });
+
+// ---- motor de gráficas (canvas 2D, estilo holográfico) ----
+function gctx(id){
+  const c=document.getElementById(id); const r=c.getBoundingClientRect(); const dpr=window.devicePixelRatio||1;
+  const W=Math.max(2,Math.round(r.width*dpr)), H=Math.max(2,Math.round(r.height*dpr));
+  if(c.width!==W||c.height!==H){ c.width=W; c.height=H; }
+  const ctx=c.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w:r.width,h:r.height};
+}
+function grid(ctx,w,h){
+  ctx.strokeStyle='rgba(34,211,238,0.10)'; ctx.lineWidth=1;
+  for(let x=0;x<=w;x+=Math.max(20,w/8)){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
+  for(let y=0;y<=h;y+=Math.max(16,h/4)){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+}
+function legend(ctx,items){ ctx.font='9px monospace'; ctx.textAlign='left'; let x=8;
+  items.forEach(it=>{ ctx.fillStyle=it.c; ctx.fillRect(x,7,9,3); ctx.fillStyle='#9fb6c6'; ctx.fillText(it.t,x+13,11); x+=13+ctx.measureText(it.t).width+12; }); }
+function drawOsc(){
+  if(!dLive)return; const {ctx,w,h}=gctx('cvOsc'); ctx.clearRect(0,0,w,h); grid(ctx,w,h);
+  const mid=h*0.52, cyc=3, vAmp=h*0.34, iAmp=h*0.30*clamp(dLive.i/45,0.25,1.15), ph=Math.acos(clamp(dLive.pf,0,1)), td=dLive.thd/100;
+  ctx.lineWidth=2; ctx.strokeStyle='#22d3ee'; ctx.beginPath();
+  for(let x=0;x<=w;x++){const a=(x/w)*cyc*2*Math.PI+dPhase; const y=mid-Math.sin(a)*vAmp; x?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+  ctx.strokeStyle='#facc15'; ctx.beginPath();
+  for(let x=0;x<=w;x++){const a=(x/w)*cyc*2*Math.PI+dPhase-ph; const f=Math.sin(a)+td*Math.sin(3*a)+0.5*td*Math.sin(5*a);
+    const y=mid-f*iAmp; x?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+  legend(ctx,[{c:'#22d3ee',t:'Tensión'},{c:'#facc15',t:'Corriente'}]);
+}
+function drawSpec(){
+  if(!dLive)return; const {ctx,w,h}=gctx('cvSpec'); ctx.clearRect(0,0,w,h); grid(ctx,w,h);
+  const thd=dLive.thd, vals=[100,thd*1.2,thd*2.0,thd*0.8,thd*1.5,thd*0.5,thd*1.0,thd*0.4], n=vals.length;
+  const gap=w*0.03, bw=(w-gap*(n+1))/n;
+  for(let k=0;k<n;k++){ const v=clamp(vals[k],0,110), bh=(v/110)*(h-22), x=gap+k*(bw+gap), y=h-bh-12;
+    ctx.fillStyle='rgba(249,115,22,0.45)'; ctx.fillRect(x,y,bw,bh);
+    ctx.strokeStyle='#67e8f9'; ctx.lineWidth=1; ctx.strokeRect(x,y,bw,bh);
+    ctx.fillStyle='#6b8597'; ctx.font='9px monospace'; ctx.textAlign='center'; ctx.fillText('H'+(k+1),x+bw/2,h-2); }
+  ctx.fillStyle='#f97316'; ctx.font='10px monospace'; ctx.textAlign='right'; ctx.fillText('THD '+thd.toFixed(1)+'%',w-6,12);
+}
+function drawSeries(id,series){
+  const {ctx,w,h}=gctx(id); ctx.clearRect(0,0,w,h); grid(ctx,w,h);
+  series.forEach(se=>{ const d=se.data; if(d.length<2)return;
+    ctx.strokeStyle=se.c; ctx.lineWidth=2; ctx.beginPath();
+    d.forEach((val,idx)=>{ const x=(idx/(DCAP-1))*w; const y=h-6-clamp((val-se.min)/(se.max-se.min),0,1)*(h-16);
+      idx?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
+    const lv=d[d.length-1], ly=h-6-clamp((lv-se.min)/(se.max-se.min),0,1)*(h-16);
+    ctx.fillStyle=se.c; ctx.beginPath(); ctx.arc((d.length-1)/(DCAP-1)*w,ly,2.5,0,7); ctx.fill(); });
+  legend(ctx,series.map(s=>({c:s.c,t:s.t})));
+}
+function drawTri(){
+  if(!dLive)return; const {ctx,w,h}=gctx('cvTri'); ctx.clearRect(0,0,w,h); grid(ctx,w,h);
+  const pf=clamp(dLive.pf,0,1), P=pf, Q=Math.sqrt(Math.max(0,1-pf*pf));
+  const ox=w*0.16, oy=h*0.82, sc=Math.min(w*0.66,h*0.62), px=ox+P*sc, qx=px, qy=oy-Q*sc;
+  ctx.lineWidth=2.5; ctx.strokeStyle='#22d3ee'; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(px,oy); ctx.stroke();
+  ctx.strokeStyle='#facc15'; ctx.beginPath(); ctx.moveTo(px,oy); ctx.lineTo(qx,qy); ctx.stroke();
+  ctx.strokeStyle='#d1d5db'; ctx.setLineDash([5,4]); ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(qx,qy); ctx.stroke(); ctx.setLineDash([]);
+  const S=dLive.v*dLive.i/1000;
+  ctx.font='10px monospace'; ctx.textAlign='left';
+  ctx.fillStyle='#22d3ee'; ctx.fillText('P '+(S*P).toFixed(1)+' kW', ox, oy+14);
+  ctx.fillStyle='#facc15'; ctx.fillText('Q '+(S*Q).toFixed(1)+' kVAr', qx+6, (oy+qy)/2);
+  ctx.fillStyle='#d1d5db'; ctx.fillText('S '+S.toFixed(1)+' kVA', (ox+qx)/2-30, (oy+qy)/2-8);
+  ctx.fillStyle='#67e8f9'; ctx.fillText('FP '+pf.toFixed(3), ox, 14);
+}
+function dLoop(){
+  dRAF=requestAnimationFrame(dLoop);
+  dPhase+=0.06;
+  if(detailOpen()){
+    if(dAutoRot && !dDragging){ map.setBearing(map.getBearing()+0.10); }  // gira el espacio alrededor del holograma
+    map.triggerRepaint();                                                  // mantiene la animación del holograma fluida
+  }
+  drawOsc(); drawSpec(); drawTri();
+  drawSeries('cvTrend',[{data:dHist.temp,c:'#ef4444',t:'Temp °C',min:30,max:90},{data:dHist.vib,c:'#a855f7',t:'Vib mm/s',min:0,max:12}]);
+  drawSeries('cvCond',[{data:dHist.salud,c:'#10b981',t:'Salud %',min:0,max:100},{data:dHist.thd,c:'#f97316',t:'THD %',min:0,max:20}]);
 }
 </script>
 </body>
