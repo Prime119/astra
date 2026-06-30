@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..vision.learner import VisionLearner
+from ..core.config import PACKAGE_ROOT
 
 # Catálogo OBJETIVO: todo lo que FALCON debe contener antes de poder mostrarse.
 CATALOG_BLUEPRINT: dict[str, str] = {
@@ -40,6 +41,15 @@ CATALOG_BLUEPRINT: dict[str, str] = {
     "interruptor": "Interruptores de potencia",
     "banco_capacitores": "Bancos de capacitores",
     "apartarrayos": "Apartarrayos",
+}
+
+# Mapeo de tipos del CSV/OSM al catálogo.
+_CSV_TIPO_MAP = {
+    "subestación": "subestacion", "subestacion": "subestacion", "substation": "subestacion",
+    "termoeléctrica": "central_termo", "termoelectrica": "central_termo", "termo": "central_termo",
+    "solar": "central_solar",
+    "hidroeléctrica": "central_hidro", "hidroelectrica": "central_hidro", "hidro": "central_hidro",
+    "eólica": "central_eolica", "eolica": "central_eolica",
 }
 
 
@@ -118,7 +128,7 @@ class Falcon:
             owner_override = bool(json.loads(override_path.read_text(encoding="utf-8")).get("unlocked", False))
         except Exception:
             owner_override = False
-        return cls(
+        obj = cls(
             active=True,
             enabled=bool(fal.get("enabled", False)),
             locked=bool(fal.get("locked", True)),
@@ -129,6 +139,94 @@ class Falcon:
             unlock_phrase=str(fal.get("unlock_phrase", "") or ""),
             override_path=override_path,
         )
+        # Siembra automática: si el catálogo está vacío, lo llena con los datos REALES de OSM
+        # (el avance sube solo sin intervención).
+        if not obj.catalog.items:
+            try:
+                obj.seed_from_csv(PACKAGE_ROOT / "falcon" / "estructuras-cfe-osm.csv")
+            except Exception:
+                pass
+        return obj
+
+    # ----------------------------------------------------------- aprendizaje (datos reales)
+    def seed_from_csv(self, path) -> int:
+        """Confirma tipos del catálogo a partir del CSV real de OSM (offline, rápido)."""
+        import csv
+        from pathlib import Path as _P
+        path = _P(path)
+        if not self.catalog or not path.exists():
+            return 0
+        added = 0
+        try:
+            with path.open(encoding="utf-8-sig", newline="") as f:
+                head = f.readline(); f.seek(0)
+                delim = ';' if head.count(';') >= head.count(',') else ','
+                have = self.catalog.confirmed_types()
+                for row in csv.DictReader(f, delimiter=delim):
+                    raw = (row.get("Tipo") or row.get("tipo") or "").strip().lower()
+                    t = _CSV_TIPO_MAP.get(raw)
+                    if t and t not in have:
+                        self.catalog.add(t, nombre=(row.get("Nombre") or "").strip(), source="osm", confirmed=True)
+                        have.add(t); added += 1
+        except Exception:
+            pass
+        return added
+
+    def learn_from_osm(self, states: list[str] | None = None) -> str:
+        """
+        APRENDIZAJE AUTÓNOMO desde mapas actuales (OpenStreetMap): busca infraestructura real,
+        deduce su tipo y la agrega al catálogo con coordenadas verificadas. Requiere internet.
+        """
+        import json as _json
+        import urllib.parse
+        import urllib.request
+        if not self.catalog:
+            return "Catálogo no disponible."
+        states = states or ["Sonora", "Sinaloa", "Chihuahua", "Baja California", "Baja California Sur"]
+        nuevos: set[str] = set()
+        have = self.catalog.confirmed_types()
+        has_line = False
+
+        def fetch(state: str):
+            query = (
+                '[out:json][timeout:60];area["name"="%s"]["admin_level"="4"]["boundary"="administrative"]->.a;'
+                '(node["power"="substation"](area.a);way["power"="substation"](area.a);'
+                'node["power"="plant"](area.a);way["power"="plant"](area.a);'
+                'way["power"="line"](area.a);way["power"="minor_line"](area.a););out tags 300;'
+            ) % state
+            url = "https://overpass-api.de/api/interpreter?data=" + urllib.parse.quote(query)
+            req = urllib.request.Request(url, headers={"User-Agent": "ASTRA-MEC/1.0"})
+            return _json.loads(urllib.request.urlopen(req, timeout=80).read().decode())
+
+        for st in states:
+            try:
+                data = fetch(st)
+            except Exception:
+                continue
+            for e in data.get("elements", []):
+                tg = e.get("tags", {}) or {}
+                p = tg.get("power")
+                t = None
+                if p == "substation":
+                    t = "subestacion"
+                elif p == "plant":
+                    src = (tg.get("plant:source") or tg.get("generator:source") or "").lower()
+                    t = ("central_hidro" if "hydro" in src else "central_solar" if "solar" in src
+                         else "central_eolica" if "wind" in src else "central_termo")
+                elif p == "line":
+                    t = "linea_alta_tension"; has_line = True
+                elif p == "minor_line":
+                    t = "linea_distribucion"; has_line = True
+                if t and t not in have and t not in nuevos:
+                    self.catalog.add(t, nombre=tg.get("name", ""), source="osm-auto", confirmed=True)
+                    nuevos.add(t)
+        if has_line:
+            for t in ("torre_transmision_grande", "torre_transmision_mediana", "torre_transmision_chica", "poste"):
+                if t not in have and t not in nuevos:
+                    self.catalog.add(t, source="osm-auto", confirmed=True)
+                    nuevos.add(t)
+        return ("🛰️ Aprendí de mapas actuales (OpenStreetMap): confirmé %d tipos nuevos. "
+                "Avance del catálogo: %d%%." % (len(nuevos), int(self.catalog.completeness() * 100)))
 
     def _save_override(self, val: bool) -> None:
         if not self.override_path:

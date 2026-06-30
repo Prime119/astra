@@ -152,6 +152,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"\n👁️  ¿Eres el creador?: {'✅ SÍ' if res else '❌ NO'}")
         return 0
 
+    if "--falcon-status" in argv:
+        if getattr(astra, "falcon", None) and astra.falcon.active:
+            print("\n" + astra.falcon.report())
+        else:
+            print("\nFALCON solo está en la edición CFE (usa --cfe).")
+        return 0
+
+    if "--falcon-learn" in argv:
+        if getattr(astra, "falcon", None) and astra.falcon.active:
+            print("\n🛰️  Aprendiendo de mapas actuales (OpenStreetMap)…")
+            print(astra.falcon.learn_from_osm())
+        else:
+            print("\nFALCON solo está en la edición CFE (usa: python -m astra --cfe --falcon-learn).")
+        return 0
+
     say = _get_say(argv)
     if say is not None:
         print(f"\nTú > {say}")
