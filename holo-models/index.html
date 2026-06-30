@@ -39,6 +39,7 @@
   #picker button:hover{color:var(--text);border-color:var(--hud);}
   #picker button.active{color:#04121b;background:var(--hud);border-color:var(--glow);font-weight:bold;
     box-shadow:0 0 12px rgba(34,211,238,.5);}
+  #picker button#regen{color:#04121b;background:var(--glow);border-color:var(--glow);font-weight:bold;}
   #hint{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:10;pointer-events:none;
     color:var(--muted);font-size:11px;}
 </style>
@@ -517,24 +518,31 @@ function fitModel(obj,target){
   obj.position.x-=c.x; obj.position.z-=c.z; obj.position.y-=box.min.y;
 }
 
-let current=null, loadToken=0;
+let current=null, loadToken=0, currentKey=null, VARIANT=0;
+// --- Variantes: si un diseño no gusta, "Regenerar" produce otra versión (proporciones/giro) ---
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function srand(seed){let s=seed>>>0||1;return ()=>{s=(Math.imul(s,1103515245)+12345)>>>0;return s/4294967296;};}
+function applyVariant(obj,seedStr){const r=srand(hashStr(seedStr));const f=(a,b)=>a+r()*(b-a);
+  obj.scale.set(f(0.9,1.12),f(0.9,1.16),f(0.9,1.12)); obj.rotation.y=f(-0.5,0.5);}
 function setCurrent(obj){ if(current) scene.remove(current); current=obj; scene.add(obj); }
 function setActive(key){ [...document.querySelectorAll('#picker button')].forEach(b=>b.classList.toggle('active',b.dataset.k===key)); }
 function updateCard(key){
-  document.getElementById('cName').textContent=MODELS[key].name;
+  document.getElementById('cName').textContent=MODELS[key].name + (VARIANT>0?(' · v'+VARIANT):'');
   document.getElementById('cType').textContent=MODELS[key].type+" · CFE";
   const carga=40+Math.floor(Math.random()*60);
   document.getElementById('cCarga').textContent=carga+"%"; document.getElementById('cBar').style.width=carga+"%";
 }
 function show(key){
+  if(key!==currentKey){ currentKey=key; VARIANT=0; }   // cada modelo arranca en su diseño aprobado
   const m=MODELS[key]; const token=++loadToken; clearSpin();
-  setCurrent(m.f());          // respaldo a código: aparece al instante
+  const g=m.f();                              // respaldo a código: aparece al instante
+  if(VARIANT>0) applyVariant(g, key+'#'+VARIANT);   // variante si pediste regenerar
+  setCurrent(g);
   updateCard(key); setActive(key);
-  // si hay un modelo 3D REAL disponible, lo carga y reemplaza (efecto holográfico)
   if(m.glb && THREE.GLTFLoader){
     new THREE.GLTFLoader().load('models3d/'+m.glb,
       (gltf)=>{ if(token!==loadToken) return; clearSpin();
-        const obj=gltf.scene; applyHolo(obj); fitModel(obj,9); setCurrent(obj); },
+        const obj=gltf.scene; applyHolo(obj); fitModel(obj,9); if(VARIANT>0) applyVariant(obj,key+'#'+VARIANT); setCurrent(obj); },
       undefined,
       ()=>{ /* no existe el .glb -> se queda el modelo a código */ });
   }
@@ -545,6 +553,9 @@ Object.entries(MODELS).forEach(([k,v])=>{
   const b=document.createElement('button'); b.textContent=v.name; b.dataset.k=k;
   b.onclick=()=>show(k); picker.appendChild(b);
 });
+const regen=document.createElement('button'); regen.textContent='🔄 Regenerar'; regen.id='regen';
+regen.onclick=()=>{ if(currentKey){ VARIANT++; show(currentKey); } };
+picker.appendChild(regen);
 show('aerogenerador');
 
 // ---------- Animación ----------
