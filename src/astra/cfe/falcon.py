@@ -99,6 +99,8 @@ class Falcon:
     owner_override: bool = False   # el dueño puede forzar el desbloqueo
     catalog: FalconCatalog | None = None
     learner: VisionLearner | None = None
+    unlock_phrase: str = ""
+    override_path: Path | None = None
 
     @classmethod
     def from_config(cls, config, memory=None, brain=None) -> "Falcon":
@@ -110,14 +112,32 @@ class Falcon:
         catalog = FalconCatalog(
             path=config.paths.profile_dir / "falcon_catalog.json", blueprint=bp
         ).load()
+        override_path = config.paths.profile_dir / "falcon_unlock.json"
+        owner_override = False
+        try:
+            owner_override = bool(json.loads(override_path.read_text(encoding="utf-8")).get("unlocked", False))
+        except Exception:
+            owner_override = False
         return cls(
             active=True,
             enabled=bool(fal.get("enabled", False)),
             locked=bool(fal.get("locked", True)),
             threshold=float(fal.get("unlock_threshold", 1.0)),
+            owner_override=owner_override,
             catalog=catalog,
             learner=VisionLearner(brain=brain),
+            unlock_phrase=str(fal.get("unlock_phrase", "") or ""),
+            override_path=override_path,
         )
+
+    def _save_override(self, val: bool) -> None:
+        if not self.override_path:
+            return
+        try:
+            self.override_path.parent.mkdir(parents=True, exist_ok=True)
+            self.override_path.write_text(json.dumps({"unlocked": bool(val)}), encoding="utf-8")
+        except Exception:
+            pass
 
     # ----------------------------------------------------------- intención
     _OPEN_HINTS = ("falcon", "abre el mapa", "abrir el mapa", "muéstrame el mapa",
@@ -132,6 +152,10 @@ class Falcon:
         if not self.active:
             return False
         low = text.lower()
+        if self.unlock_phrase and self.unlock_phrase.lower() in low:
+            return True
+        if any(h in low for h in ("bloquea falcon", "oculta falcon", "esconde falcon")):
+            return True
         return any(h in low for h in (self._OPEN_HINTS + self._STATUS_HINTS + self._LEARN_HINTS))
 
     def is_ready(self) -> bool:
@@ -144,6 +168,16 @@ class Falcon:
     # ----------------------------------------------------------- respuestas
     def handle(self, text: str) -> str:
         low = text.lower()
+        # Desbloqueo SECRETO: solo quien conoce la indicación puede activarlo (queda persistente).
+        if self.unlock_phrase and self.unlock_phrase.lower() in low:
+            self.owner_override = True
+            self._save_override(True)
+            return ("🔓 FALCON desbloqueado. A partir de ahora puedo abrirlo cuando me lo pidas. "
+                    "(Esta indicación debería conocerla únicamente el creador.)")
+        if any(h in low for h in ("bloquea falcon", "oculta falcon", "esconde falcon")):
+            self.owner_override = False
+            self._save_override(False)
+            return "🔒 FALCON vuelve a quedar oculto y bloqueado."
         if any(h in low for h in self._STATUS_HINTS):
             return self.report()
         if any(h in low for h in self._LEARN_HINTS):
