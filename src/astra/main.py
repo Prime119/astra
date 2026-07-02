@@ -2,7 +2,7 @@
 Punto de entrada de Astra.
 
 ⚠️ Esta es una consola de DESARROLLO para probar el núcleo y la voz. El producto final
-NO será una ventana de comandos: será una app ambiental con interfaz holográfica (Fases 7+).
+NO será una ventana de comandos: será una app con interfaz propia (por definir en fases futuras).
 
 Uso:
     python -m astra.main            # mini-chat de texto (prueba del cerebro)

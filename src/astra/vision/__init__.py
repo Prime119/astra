@@ -1,1 +1,1 @@
-"""Capa 7 — Visión: atención por cámara y (futuro) interfaz holográfica + gestos."""
+"""Capa 7 — Visión: atención por cámara (sabe cuándo le hablas) + gestos."""

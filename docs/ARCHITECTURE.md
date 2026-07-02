@@ -35,7 +35,7 @@ La idea central, repetida en casi todos los documentos de referencia, es:
  explica   [Capa 4] MEMORIA registra (en el perfil)
             │
             ▼
-        🔊 Voz (TTS) / interfaz holográfica
+        🔊 Voz (TTS) / interfaz de usuario
 ```
 
 ## Capa 0 — Núcleo ético inmutable
@@ -63,5 +63,5 @@ Astra/
   opcional a la nube cuando hay internet.
 - **Voz**: faster-whisper (STT) + Piper (TTS, voz femenina en español).
 - **Memoria**: SQLite (corto plazo) + base vectorial / RAG (episódica).
-- **Visión / 3D**: MediaPipe (rostro, mirada, manos) + Three.js (interfaz holográfica).
+- **Visión / 3D**: MediaPipe (rostro, mirada, manos). Interfaz por definir.
 - **App**: interfaz gráfica de escritorio (no consola), empaquetada y portátil.

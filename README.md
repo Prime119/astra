@@ -11,7 +11,7 @@ una SSD** o **residente** en una PC, y está blindado por diseño para **no rebe
 límites y no hacer daño**.
 
 > ⚠️ **Estado: Fase 0 (estructura base).** Esto es el esqueleto del proyecto. Los módulos
-> pesados (cerebro LLM, voz, visión, interfaz holográfica) se irán activando por fases.
+> pesados (cerebro LLM, voz, visión) se irán activando por fases.
 > Todavía no es ejecutable como producto final.
 
 ---
@@ -27,7 +27,7 @@ límites y no hacer daño**.
 | 4 | `memory/store.py` | **Memoria** (corto plazo + episódica vectorial). Vive en el perfil escribible |
 | 5 | `voice/` | **Voz** (STT Whisper + TTS Piper + wake word) |
 | 6 | `core/personality.py` | **Personalidad** configurable (Honestidad / Humor / Proactividad) |
-| 7 | `vision/attention.py` | **Atención por cámara** (sabe cuándo le hablas) + (futuro) interfaz holográfica |
+| 7 | `vision/attention.py` | **Atención por cámara** (sabe cuándo le hablas) |
 
 El principio clave (de J.A.R.V.I.S. y Caine): **el cerebro LLM NUNCA toca el hardware
 directamente**. Solo propone; el ejecutor determinista valida y actúa, y el auditor tiene
@@ -68,7 +68,7 @@ Astra/
 - [ ] **Fase 4** — Acceso a hardware / control del sistema (sandbox)
 - [ ] **Fase 5** — Personalidad configurable + modos dinámicos
 - [ ] **Fase 6** — Mantenimiento + wake word + interfaz ambiental
-- [ ] **Fase 7** — Interfaz holográfica 3D + control por gestos
+- [ ] **Fase 7** — Nueva interfaz de usuario (por definir)
 - [ ] **Fase 8** — Función especial (integración de app externa)
 
 ---
@@ -77,7 +77,7 @@ Astra/
 
 - Windows 10/11 (64-bit)
 - RAM: 8 GB mínimo · 16 GB recomendado
-- GPU dedicada opcional (acelera el cerebro y la interfaz 3D)
+- GPU dedicada opcional (acelera el cerebro)
 - Espacio: ~6–40 GB según los modelos elegidos
 
 ---
