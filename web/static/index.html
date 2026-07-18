@@ -130,23 +130,27 @@ var vozFemenina = null;
 // Buscar la mejor voz femenina en español al cargar
 function buscarVozFemenina(){
   var voces = speechSynthesis.getVoices();
-  // Prioridad: voces naturales/jóvenes primero
+  // Prioridad: voces ONLINE/NATURAL (neuronales, suenan humanas)
   var prioridad = [
-    v => v.name.includes('Larissa'),   // Microsoft Larissa (joven, natural)
-    v => v.name.includes('Dalia'),     // Microsoft Dalia (MX, natural)
-    v => v.name.includes('Sabina'),    // Microsoft Sabina (española)
-    v => v.name.includes('Elvira'),    // Microsoft Elvira
-    v => v.name.includes('Nuria'),     // Google Nuria
-    v => v.name.toLowerCase().includes('female') && v.lang.startsWith('es'),
-    v => v.lang === 'es-MX',
-    v => v.lang === 'es-US',
+    v => v.name.includes('Dalia') && v.name.includes('Online'),
+    v => v.name.includes('Larissa') && v.name.includes('Online'),
+    v => v.name.includes('Online') && v.name.includes('Natural') && v.lang === 'es-MX',
+    v => v.name.includes('Online') && v.name.includes('Natural') && v.lang.startsWith('es'),
+    v => v.name.includes('Natural') && v.lang === 'es-MX',
+    v => v.name.includes('Natural') && v.lang.startsWith('es'),
+    v => v.name.includes('Online') && v.lang === 'es-MX',
+    v => v.name.includes('Online') && v.lang.startsWith('es'),
+    v => v.name.includes('Sabina'),
+    v => v.lang === 'es-MX' && !v.name.includes('Raul'),
     v => v.lang.startsWith('es'),
   ];
   for(var p of prioridad){
     var found = voces.find(p);
-    if(found){ vozFemenina = found; console.log('Voz:', found.name, found.lang); return; }
+    if(found){ vozFemenina = found; console.log('Voz seleccionada:', found.name, found.lang); return; }
   }
-  console.log('Voces disponibles:', voces.filter(v=>v.lang.startsWith('es')).map(v=>v.name+' ('+v.lang+')'));
+  // Si nada, usar la primera es-MX que no sea Raul
+  var fallback = voces.find(v => v.lang === 'es-MX' && !v.name.toLowerCase().includes('raul'));
+  if(fallback){ vozFemenina = fallback; console.log('Voz (fallback):', fallback.name); }
 }
 if(window.speechSynthesis){
   speechSynthesis.onvoiceschanged = buscarVozFemenina;
