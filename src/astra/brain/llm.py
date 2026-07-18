@@ -39,6 +39,7 @@ class Brain:
     def __init__(self, config: BrainConfig, system_prompt: str) -> None:
         self.config = config
         self.system_prompt = system_prompt
+        self._available_cache: bool | None = None  # cache de disponibilidad
 
     @classmethod
     def from_app_config(cls, cfg, system_prompt: str) -> "Brain":
@@ -56,14 +57,16 @@ class Brain:
 
     # ---------------------------------------------------------------- estado
     def is_local_available(self) -> bool:
-        """Comprueba si hay un servidor Ollama local respondiendo."""
+        """Comprueba si hay un servidor Ollama local respondiendo (con cache)."""
+        if self._available_cache is not None:
+            return self._available_cache
         try:
-            import httpx  # type: ignore
-
+            import httpx
             r = httpx.get(f"{self.config.local_endpoint}/api/tags", timeout=2.0)
-            return r.status_code == 200
+            self._available_cache = r.status_code == 200
         except Exception:
-            return False
+            self._available_cache = False
+        return self._available_cache
 
     def available_models(self) -> list[str]:
         try:
@@ -76,15 +79,15 @@ class Brain:
             return []
 
     # --------------------------------------------------------------- inferencia
-    def chat(self, history: list[Message], *, coding: bool = False) -> str:
+    def chat(self, history: list[Message], *, coding: bool = False, max_tokens: int = 0) -> str:
         """
         Envía la conversación al modelo local y devuelve la respuesta.
         `history` NO incluye el system prompt; se antepone aquí.
+        max_tokens: si > 0, limita la respuesta (para respuestas rápidas).
         """
         if not self.is_local_available():
             return (
-                "[Astra] No encuentro mi cerebro local (Ollama). Verifica que esté corriendo "
-                "y que el modelo esté descargado. Mientras tanto, sigo operativa en lo básico."
+                "No encuentro mi cerebro local. Verifica que Ollama esté corriendo."
             )
 
         model = self.config.coder_model if coding else self.config.local_model
@@ -94,11 +97,15 @@ class Brain:
         try:
             import httpx  # type: ignore
 
+            options = {"temperature": self.config.temperature}
+            if max_tokens > 0:
+                options["num_predict"] = max_tokens
+
             payload = {
                 "model": model,
                 "messages": messages,
                 "stream": False,
-                "options": {"temperature": self.config.temperature},
+                "options": options,
             }
             r = httpx.post(
                 f"{self.config.local_endpoint}/api/chat",
@@ -109,7 +116,7 @@ class Brain:
             data = r.json()
             return (data.get("message", {}) or {}).get("content", "").strip() or "(sin respuesta)"
         except Exception as exc:  # degradación graciosa
-            return f"[Astra] Tuve un problema al pensar: {exc}"
+            return f"Tuve un problema al pensar: {exc}"
 
     def think(self, prompt: str, *, coding: bool = False) -> str:
         """Atajo de un solo turno (sin historial)."""

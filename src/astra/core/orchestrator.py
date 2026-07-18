@@ -127,13 +127,15 @@ class Astra:
                 self.memory.remember("accion_pendiente", user_text)
                 return f"{verdict.reason} ¿Confirmas que proceda? (sí/no)"
         except Exception:
-            pass  # Si el auditor falla, continuar (fail-open para UX)
+            pass
 
         coding = any(h in user_text.lower() for h in CODING_HINTS)
+        
+        # Detectar complejidad para limitar tokens (respuestas más rápidas)
+        max_tokens = self._estimar_tokens(user_text)
 
         # Actualizar system prompt con estado emocional actual
         try:
-            emotional_ctx = self.emotions.get_emotional_context()
             self.brain.system_prompt = _build_system_prompt(
                 self.constitution, self.personality, self.emotions
             )
@@ -142,7 +144,7 @@ class Astra:
 
         # Hilo de conversación (memoria de trabajo, volátil)
         self.history.append({"role": "user", "content": user_text})
-        response = self.brain.chat(self.history, coding=coding)
+        response = self.brain.chat(self.history, coding=coding, max_tokens=max_tokens)
         self.history.append({"role": "assistant", "content": response})
         self._trim_history()
 
@@ -157,9 +159,36 @@ class Astra:
             self.memory.log_episode("conversacion", user_text)
             self.memory.save_conversation(user_text, response)
         except Exception:
-            pass  # La memoria es opcional, nunca debe crashear el chat
+            pass
 
         return self.personality.flag_figurative(response)
+
+    def _estimar_tokens(self, texto: str) -> int:
+        """
+        Estima cuántos tokens necesita la respuesta según la complejidad.
+        Preguntas simples = respuesta corta = más rápido.
+        Preguntas complejas = más tokens permitidos.
+        """
+        t = texto.lower().strip()
+        largo = len(t)
+        
+        # Saludos y preguntas simples → respuesta muy corta (máx 60 tokens)
+        simples = ["hola", "cómo estás", "qué tal", "hey", "buenas", "gracias",
+                   "ok", "está bien", "vale", "sí", "no", "adiós", "bye",
+                   "qué hora es", "qué día es", "cómo te llamas"]
+        if any(t.startswith(s) or t == s for s in simples) or largo < 10:
+            return 60
+        
+        # Preguntas cortas (una línea) → respuesta media (máx 120 tokens)
+        if largo < 40 and "?" in t:
+            return 120
+        
+        # Conversación normal → respuesta normal (máx 200 tokens)
+        if largo < 80:
+            return 200
+        
+        # Preguntas largas/complejas → sin límite
+        return 0  # 0 = sin límite
 
     def learn_from_interaction(self, user_text: str, response: str) -> None:
         """
