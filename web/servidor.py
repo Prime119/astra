@@ -280,47 +280,55 @@ async def handle_chat(request):
     # Detectar si pide info del sistema
     t = texto.lower()
     
-    # === SIMULACIONES 3D (detección agresiva — si menciona algo 3D, hacerlo YA) ===
-    sim_temas = ["simulación", "simulacion", "simula", "holograma", "3d",
-                 "universo", "planeta", "sistema solar", "galaxia", "átomo", "atomo",
-                 "molécula", "molecula", "partículas", "particulas",
-                 "esfera", "cubo", "geometría", "geometria", "órbita", "orbita",
-                 "tierra", "luna", "sol", "estrellas", "estrella", "nebulosa",
-                 "quantum", "cuántic", "cuantic"]
-    sim_acciones = ["crea", "genera", "haz", "muestra", "hazme", "quiero", "dame",
-                    "pon", "hazlo", "créa", "creame", "créame", "ponme", "simula",
-                    "hacer", "ver", "mostrar", "una", "un", "básic", "basic",
-                    "sí", "si", "va", "dale", "órale", "orale", "a ver"]
+    # === SIMULACIONES 3D ===
+    sim_keywords = ["simulación", "simulacion", "simula", "holograma", "hologram"]
+    sim_acciones = ["crea", "genera", "haz", "muestra", "hazme", "créame", "creame", "simula"]
+    tiene_sim = any(w in t for w in sim_keywords)
+    tiene_acc = any(w in t for w in sim_acciones)
     
-    # Si menciona UN tema de simulación, es suficiente para lanzar
-    tiene_tema = any(w in t for w in sim_temas)
-    tiene_accion = any(w in t for w in sim_acciones)
-    # También detectar si es una confirmación a algo de simulación previo
-    es_confirmacion = t.strip() in ["sí", "si", "va", "dale", "hazlo", "sí hazlo",
-                                     "si hazlo", "ok", "claro", "órale", "a ver"]
-    
-    if tiene_tema and (tiene_accion or len(t) < 60):
-        # Determinar tipo de simulación
-        sim_type = "universo"  # default
-        if any(w in t for w in ["sistema solar", "planeta", "sol", "tierra", "luna", "órbita", "orbita"]):
+    if tiene_sim and tiene_acc:
+        # Determinar tipo por contenido
+        sim_type = "particulas"  # default versátil (sirve para conceptos abstractos)
+        if any(w in t for w in ["sistema solar", "planeta", "sol", "tierra", "luna", "órbita"]):
             sim_type = "sistema_solar"
-        elif any(w in t for w in ["galaxia", "galaxias"]):
+        elif any(w in t for w in ["galaxia", "vía láctea"]):
             sim_type = "galaxia"
-        elif any(w in t for w in ["átomo", "atomo", "molécula", "molecula", "electr"]):
+        elif any(w in t for w in ["átomo", "atomo", "molécula", "molecula", "electrón"]):
             sim_type = "atomo"
-        elif any(w in t for w in ["partícula", "particula", "quantum", "cuántic", "cuantic"]):
-            sim_type = "particulas"
-        elif any(w in t for w in ["cubo", "geometr", "esfera", "pirámide", "piramide", "toroide"]):
+        elif any(w in t for w in ["universo", "cosmos", "nebulosa", "big bang"]):
+            sim_type = "universo"
+        elif any(w in t for w in ["cubo", "esfera", "geometr", "pirámide", "forma"]):
             sim_type = "geometria"
+        # Todo lo demás (cuerdas, dimensiones, conceptos) = partículas
         
-        respuesta = "Listo, mira la pantalla."
+        respuesta = "Listo, ahí está."
         emocion_actual = astra.emotions.state.emocion
         audio_url = await generar_audio_edge(respuesta, emocion_actual)
-        return web.json_response({
-            "respuesta": respuesta,
-            "audio": audio_url,
-            "simulacion": sim_type
-        })
+        return web.json_response({"respuesta": respuesta, "audio": audio_url, "simulacion": sim_type})
+
+    # === CREAR ARCHIVOS ===
+    crear_file_triggers = ["crea un archivo", "crea un documento", "genera un archivo",
+                           "escribe un archivo", "hazme un documento", "crea un txt",
+                           "crea un pdf", "genera un documento", "crea una nota"]
+    if any(trigger in t for trigger in crear_file_triggers):
+        loop = asyncio.get_event_loop()
+        contenido = await loop.run_in_executor(None, astra.handle,
+            f"Genera SOLO el contenido para este archivo (sin explicaciones): {texto}")
+        nombre = "documento_astra.txt"
+        if "pdf" in t: nombre = "documento_astra.txt"
+        elif "html" in t or "web" in t: nombre = "pagina_astra.html"
+        elif "python" in t or ".py" in t: nombre = "script_astra.py"
+        escritorio = Path.home() / "Desktop"
+        if not escritorio.exists(): escritorio = Path.home() / "OneDrive" / "Desktop"
+        if not escritorio.exists(): escritorio = Path.home()
+        try:
+            (escritorio / nombre).write_text(contenido, encoding="utf-8")
+            respuesta = f"Listo, creé {nombre} en tu escritorio."
+        except Exception as e:
+            respuesta = f"No pude crear el archivo: {e}"
+        emocion_actual = astra.emotions.state.emocion
+        audio_url = await generar_audio_edge(respuesta, emocion_actual)
+        return web.json_response({"respuesta": respuesta, "audio": audio_url})
 
     if any(w in t for w in ["sistema", "ram", "cpu", "disco", "hardware", "computadora", "pc"]):
         info = obtener_info_sistema()
