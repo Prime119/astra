@@ -104,6 +104,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 // ======================== THREE.JS 3D ORB ========================
 var scene, camera, renderer, orb, rings=[], particles;
 var orbScale=1, targetScale=1, glowIntensity=0.3, targetGlow=0.3;
+var ringSpeed=1, targetRingSpeed=1; // velocidad de los anillos
 
 function init3D(){
   var canvas = document.getElementById('three-canvas');
@@ -114,13 +115,13 @@ function init3D(){
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 
-  // Orbe central (esfera brillante)
+  // Orbe central
   var orbGeo = new THREE.SphereGeometry(0.4, 64, 64);
   var orbMat = new THREE.MeshBasicMaterial({color:0x4fc3f7, transparent:true, opacity:0.15});
   orb = new THREE.Mesh(orbGeo, orbMat);
   scene.add(orb);
 
-  // Núcleo interno brillante
+  // Núcleo interno
   var coreGeo = new THREE.SphereGeometry(0.15, 32, 32);
   var coreMat = new THREE.MeshBasicMaterial({color:0xb3e5fc, transparent:true, opacity:0.6});
   var core = new THREE.Mesh(coreGeo, coreMat);
@@ -134,11 +135,12 @@ function init3D(){
     var ring = new THREE.Mesh(ringGeo, ringMat);
     ring.rotation.x = Math.PI/2 + (i*0.15);
     ring.rotation.y = i*0.3;
+    ring._baseRadius = radius; // guardar radio original
     rings.push(ring);
     scene.add(ring);
   }
 
-  // Partículas flotantes
+  // Partículas
   var pGeo = new THREE.BufferGeometry();
   var pCount = 200;
   var positions = new Float32Array(pCount*3);
@@ -156,37 +158,50 @@ function init3D(){
   animate3D();
 }
 
+var ringContractTarget = 1; // 1 = normal, <1 = contraído hacia el centro
+
 function animate3D(){
   requestAnimationFrame(animate3D);
-  var t = Date.now()*0.001;
 
-  // Animar orbe
+  // Suavizar transiciones
   orbScale += (targetScale-orbScale)*0.05;
+  glowIntensity += (targetGlow-glowIntensity)*0.04;
+  ringSpeed += (targetRingSpeed-ringSpeed)*0.03;
+  ringContractTarget += (ringContractTarget < 1 ? 0.02 : 0); // expandir gradualmente
+
+  // Orbe
   orb.scale.set(orbScale,orbScale,orbScale);
   orb.material.opacity = 0.1 + glowIntensity*0.2;
   orb.children[0].material.opacity = 0.3 + glowIntensity*0.5;
 
-  // Animar anillos
+  // Anillos — rotan más rápido al hablar, se contraen al pensar
   for(var i=0;i<rings.length;i++){
-    rings[i].rotation.z += (0.002+i*0.001) * (i%2===0?1:-1);
-    rings[i].rotation.x += 0.001;
+    var speed = (0.002+i*0.001) * ringSpeed * (i%2===0?1:-1);
+    rings[i].rotation.z += speed;
+    rings[i].rotation.x += 0.001 * ringSpeed;
     rings[i].material.opacity = (0.06+i*0.015) + glowIntensity*0.1;
+    
+    // Contracción/expansión de anillos
+    var currentScale = rings[i].scale.x;
+    var target = ringContractTarget;
+    rings[i].scale.set(
+      currentScale + (target - currentScale) * 0.04,
+      currentScale + (target - currentScale) * 0.04,
+      1
+    );
   }
 
   // Partículas
-  particles.rotation.y += 0.0003;
+  particles.rotation.y += 0.0003 * ringSpeed;
   particles.rotation.x += 0.0001;
-
-  // Suavizar glow
-  glowIntensity += (targetGlow-glowIntensity)*0.04;
 
   renderer.render(scene,camera);
 }
 
 // Estados del orbe 3D
-function orb3D_hablar(){ targetScale=1.3; targetGlow=0.8; }
-function orb3D_pensar(){ targetScale=0.85; targetGlow=0.5; }
-function orb3D_idle(){ targetScale=1; targetGlow=0.3; }
+function orb3D_hablar(){ targetScale=1.3; targetGlow=0.8; targetRingSpeed=4; ringContractTarget=1.1; }
+function orb3D_pensar(){ targetScale=0.85; targetGlow=0.5; targetRingSpeed=0.3; ringContractTarget=0.5; }
+function orb3D_idle(){ targetScale=1; targetGlow=0.3; targetRingSpeed=1; ringContractTarget=1; }
 
 init3D();
 
@@ -225,6 +240,16 @@ input.addEventListener('keydown', e=>{ if(e.key==='Enter') enviar(); });
 
 // ======================== VOZ TTS ========================
 var vozActiva=true, audioActual=null;
+// Mantener AudioContext vivo para evitar cortes
+var audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+// Activar AudioContext con la primera interacción del usuario (requerido por navegadores)
+document.addEventListener('click', function(){getAudioCtx();}, {once:true});
+document.addEventListener('keydown', function(){getAudioCtx();}, {once:true});
 
 function hablar(texto, audioUrl){
   if(!vozActiva) return;
@@ -234,6 +259,7 @@ function hablar(texto, audioUrl){
 }
 function reproducirAudio(url){
   if(audioActual){audioActual.pause();audioActual=null;}
+  getAudioCtx(); // mantener contexto activo
   orb3D_hablar();
   audioActual=new Audio(url);
   audioActual.onended=function(){orb3D_idle();audioActual=null;};
