@@ -283,33 +283,42 @@ async def handle_chat(request):
     # Detectar si pide info del sistema
     t = texto.lower()
     
-    # === SIMULACIONES 3D ===
-    sim_keywords = ["simulación", "simulacion", "simula", "holograma", "hologram"]
-    sim_acciones = ["crea", "genera", "haz", "muestra", "hazme", "créame", "creame", "simula"]
+    # === SIMULACIONES/HOLOGRAMAS 3D (genera código Three.js dinámico) ===
+    sim_keywords = ["simulación", "simulacion", "simula", "holograma", "hologram", "3d"]
+    sim_acciones = ["crea", "genera", "haz", "muestra", "hazme", "créame", "creame", "simula", "pon"]
     tiene_sim = any(w in t for w in sim_keywords)
     tiene_acc = any(w in t for w in sim_acciones)
     
     if tiene_sim and tiene_acc:
-        # Determinar tipo por contenido
-        sim_type = "particulas"  # default versátil (sirve para conceptos abstractos)
-        if any(w in t for w in ["sistema solar", "planeta", "sol", "tierra", "luna", "órbita"]):
-            sim_type = "sistema_solar"
-        elif any(w in t for w in ["galaxia", "vía láctea"]):
-            sim_type = "galaxia"
-        elif any(w in t for w in ["átomo", "atomo", "molécula", "molecula", "electrón"]):
-            sim_type = "atomo"
-        elif any(w in t for w in ["universo", "cosmos", "nebulosa", "big bang"]):
-            sim_type = "universo"
-        elif any(w in t for w in ["cubo", "esfera", "geometr", "pirámide", "forma"]):
-            sim_type = "geometria"
-        # Todo lo demás (cuerdas, dimensiones, conceptos) = partículas
+        # Pedir al LLM que genere código Three.js para la simulación
+        prompt_sim = (
+            "Genera SOLO código JavaScript puro usando Three.js para crear esta simulación 3D. "
+            "La escena, cámara y renderer ya existen como variables: simScene, simCamera, simRenderer. "
+            "simCamera.position.z ya está en 20. Usa físicas realistas. "
+            "Agrega objetos a simScene. Crea una función 'animarObjetos()' que se llama cada frame. "
+            "NO incluyas explicaciones, solo código JS puro. NO uses import ni require. "
+            "Máximo 40 líneas. Usa THREE.Mesh, THREE.SphereGeometry, THREE.BoxGeometry, etc.\n\n"
+            f"Simulación pedida: {texto}"
+        )
+        loop = asyncio.get_event_loop()
+        codigo_3d = await loop.run_in_executor(None, lambda: astra.brain.think(prompt_sim))
         
-        respuesta = "Listo, ahí está."
+        # Limpiar el código (quitar markdown si el LLM lo pone)
+        import re
+        codigo_3d = re.sub(r'```(?:javascript|js)?\n?', '', codigo_3d)
+        codigo_3d = re.sub(r'```', '', codigo_3d)
+        codigo_3d = codigo_3d.strip()
+        
+        respuesta = "Listo, ahí está tu simulación."
         emocion_actual = astra.emotions.state.emocion
         audio_url = await generar_audio_edge(respuesta, emocion_actual)
-        return web.json_response({"respuesta": respuesta, "audio": audio_url, "simulacion": sim_type})
+        return web.json_response({
+            "respuesta": respuesta,
+            "audio": audio_url,
+            "simulacion_code": codigo_3d
+        })
 
-    # === CREAR ARCHIVOS ===
+    # === CREAR ARCHIVOS/DOCUMENTOS ===
     crear_file_triggers = ["crea un archivo", "crea un documento", "genera un archivo",
                            "escribe un archivo", "hazme un documento", "crea un txt",
                            "crea un pdf", "genera un documento", "crea una nota",
@@ -317,7 +326,8 @@ async def handle_chat(request):
                            "crea un reporte", "haz un ensayo", "crea un ensayo",
                            "genera un contrato", "crea una carta", "haz un resumen",
                            "crea un guión", "crea un guion", "escribe un código",
-                           "crea un script", "genera un código"]
+                           "crea un script", "genera un código", "hazme una lista",
+                           "crea una presentación", "genera una tabla"]
     if any(trigger in t for trigger in crear_file_triggers):
         loop = asyncio.get_event_loop()
         contenido = await loop.run_in_executor(None, astra.handle,
