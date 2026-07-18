@@ -100,17 +100,65 @@ def obtener_info_sistema() -> dict:
 
 def ejecutar_comando(cmd: str) -> str:
     """Ejecuta un comando del sistema (con límites de seguridad)."""
-    bloqueados = ["rm -rf", "format", "del /", "shutdown", "reboot", "mkfs"]
+    bloqueados = ["rm -rf /", "format c:", "del /s /q c:", ":(){ :|:& };:"]
     if any(b in cmd.lower() for b in bloqueados):
-        return "Comando bloqueado por seguridad. No ejecuto acciones destructivas."
+        return "Comando bloqueado por seguridad. No ejecuto acciones destructivas a nivel sistema."
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10)
-        salida = result.stdout[:1000] or result.stderr[:500] or "(sin salida)"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=15)
+        salida = result.stdout[:2000] or result.stderr[:1000] or "(sin salida)"
         return salida.strip()
     except subprocess.TimeoutExpired:
-        return "Comando cancelado (tardó más de 10 segundos)."
+        return "Comando cancelado (tardó más de 15 segundos)."
     except Exception as e:
         return f"Error: {e}"
+
+
+def abrir_programa(nombre: str) -> str:
+    """Abre un programa por nombre en Windows."""
+    import shutil
+    # Programas comunes y sus ejecutables
+    programas = {
+        "explorador": "explorer",
+        "bloc de notas": "notepad",
+        "notepad": "notepad",
+        "calculadora": "calc",
+        "paint": "mspaint",
+        "terminal": "wt" if shutil.which("wt") else "cmd",
+        "cmd": "cmd",
+        "powershell": "powershell",
+        "chrome": "chrome",
+        "edge": "msedge",
+        "firefox": "firefox",
+        "vscode": "code",
+        "word": "winword",
+        "excel": "excel",
+        "powerpoint": "powerpnt",
+    }
+    nombre_lower = nombre.lower().strip()
+    exe = programas.get(nombre_lower, nombre_lower)
+    try:
+        subprocess.Popen(exe, shell=True)
+        return f"Abrí {nombre} correctamente."
+    except Exception as e:
+        return f"No pude abrir {nombre}: {e}"
+
+
+def buscar_archivos(patron: str, directorio: str = None) -> str:
+    """Busca archivos en el sistema."""
+    import glob
+    if not directorio:
+        directorio = str(Path.home())
+    try:
+        resultados = glob.glob(f"{directorio}/**/*{patron}*", recursive=True)
+        if not resultados:
+            return f"No encontré archivos con '{patron}' en {directorio}"
+        # Limitar a 10 resultados
+        muestra = resultados[:10]
+        total = len(resultados)
+        texto = f"Encontré {total} archivos. Los primeros: " + ", ".join(muestra)
+        return texto[:500]
+    except Exception as e:
+        return f"Error buscando: {e}"
 
 
 def limpiar_texto_para_voz(texto: str) -> str:
@@ -244,8 +292,8 @@ async def handle_chat(request):
         audio_url = await generar_audio_edge(respuesta, emocion_actual)
         return web.json_response({"respuesta": respuesta, "sistema": info, "audio": audio_url})
 
-    # Detectar si pide ejecutar algo
-    if any(w in t for w in ["ejecuta", "corre", "abre", "run", "cmd"]):
+    # Detectar si pide ejecutar algo o abrir un programa
+    if any(w in t for w in ["ejecuta", "corre", "run", "cmd"]):
         for trigger in ["ejecuta ", "corre ", "run "]:
             if trigger in t:
                 cmd = texto[t.index(trigger) + len(trigger):]
@@ -254,6 +302,26 @@ async def handle_chat(request):
                 emocion_actual = astra.emotions.state.emocion
                 audio_url = await generar_audio_edge(respuesta, emocion_actual)
                 return web.json_response({"respuesta": respuesta, "audio": audio_url})
+
+    # Abrir programas
+    if any(w in t for w in ["abre ", "abrir ", "abre el ", "abre la ", "open "]):
+        for trigger in ["abre ", "abrir ", "open "]:
+            if trigger in t:
+                programa = texto[t.index(trigger) + len(trigger):].strip()
+                resultado = abrir_programa(programa)
+                emocion_actual = astra.emotions.state.emocion
+                audio_url = await generar_audio_edge(resultado, emocion_actual)
+                return web.json_response({"respuesta": resultado, "audio": audio_url})
+
+    # Buscar archivos
+    if any(w in t for w in ["busca ", "buscar ", "encuentra ", "dónde está "]):
+        for trigger in ["busca ", "buscar ", "encuentra ", "dónde está "]:
+            if trigger in t:
+                patron = texto[t.index(trigger) + len(trigger):].strip()
+                resultado = buscar_archivos(patron)
+                emocion_actual = astra.emotions.state.emocion
+                audio_url = await generar_audio_edge(resultado, emocion_actual)
+                return web.json_response({"respuesta": resultado, "audio": audio_url})
 
     # Detectar hora/fecha
     if any(w in t for w in ["hora", "fecha", "día", "qué día"]):

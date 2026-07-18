@@ -78,11 +78,14 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;
   </div>
   <div id="chat"></div>
   <div id="input-bar">
-    <button id="btn-mic" onclick="escuchar()">🎙️</button>
-    <input id="input" placeholder="Escribe algo o presiona el micrófono..." />
+    <button id="btn-mic" onclick="escuchar()" title="Pulsa para hablar">🎙️</button>
+    <button id="btn-conv" onclick="toggleConversacion()" title="Modo conversación continua (manos libres)" style="background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-size:14px;width:44px;border-radius:10px;cursor:pointer;">💬</button>
+    <input id="input" placeholder="Escribe algo o activa el modo conversación..." />
     <button onclick="enviar()">ENVIAR</button>
+    <button id="btn-cam" onclick="toggleCamara()" title="Activar cámara (Astra te puede ver)" style="background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-size:14px;width:44px;border-radius:10px;cursor:pointer;">📷</button>
     <button id="btn-voz" onclick="toggleVoz()" title="Voz activada (clic para silenciar)" style="background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-size:16px;width:44px;border-radius:10px;cursor:pointer;">🔊</button>
   </div>
+  <video id="cam-preview" autoplay muted style="display:none;position:fixed;bottom:60px;right:20px;width:160px;height:120px;border-radius:10px;border:1px solid var(--cyan);opacity:0.8;"></video>
   <div id="info-bar">
     <span id="info-emocion"></span>
     <span id="info-hora"></span>
@@ -221,27 +224,133 @@ function toggleVoz(){
   }
 }
 
-// Voz STT (micrófono)
+// Voz STT (micrófono) — modo pulsación y modo conversación continua
 var reconocimiento = null;
+var modoConversacion = false; // modo manos libres (escucha continua)
 var Recon = window.SpeechRecognition || window.webkitSpeechRecognition;
 if(Recon){
   reconocimiento = new Recon();
   reconocimiento.lang = 'es-MX';
   reconocimiento.continuous = false;
+  reconocimiento.interimResults = false;
   reconocimiento.onresult = function(e){
     var texto = e.results[0][0].transcript;
     input.value = texto;
     document.getElementById('btn-mic').classList.remove('grabando');
     enviar();
   };
-  reconocimiento.onend = function(){ document.getElementById('btn-mic').classList.remove('grabando'); };
+  reconocimiento.onend = function(){
+    document.getElementById('btn-mic').classList.remove('grabando');
+    // Si está en modo conversación continua, volver a escuchar después de que Astra termine de hablar
+    if(modoConversacion){
+      // Esperar a que termine de hablar antes de volver a escuchar
+      var esperarAudio = setInterval(function(){
+        if(!audioActual && disco.className !== 'hablando'){
+          clearInterval(esperarAudio);
+          setTimeout(function(){
+            if(modoConversacion) iniciarEscucha();
+          }, 500);
+        }
+      }, 300);
+    }
+  };
+  reconocimiento.onerror = function(e){
+    document.getElementById('btn-mic').classList.remove('grabando');
+    if(modoConversacion && e.error !== 'aborted'){
+      setTimeout(function(){ if(modoConversacion) iniciarEscucha(); }, 1000);
+    }
+  };
 }
+
+function iniciarEscucha(){
+  if(!reconocimiento) return;
+  try{ reconocimiento.start(); document.getElementById('btn-mic').classList.add('grabando'); }
+  catch(e){}
+}
+
 function escuchar(){
-  if(!reconocimiento){ agregarMsg('Tu navegador no soporta voz (usa Chrome/Edge).','sistema'); return; }
+  if(!reconocimiento){ agregarMsg('Tu navegador no soporta voz (usa Edge).','sistema'); return; }
   var btn = document.getElementById('btn-mic');
   if(btn.classList.contains('grabando')){ reconocimiento.stop(); return; }
   btn.classList.add('grabando');
   reconocimiento.start();
+}
+
+function toggleConversacion(){
+  modoConversacion = !modoConversacion;
+  var btn = document.getElementById('btn-conv');
+  if(modoConversacion){
+    btn.style.background = 'rgba(79,195,247,0.2)';
+    btn.style.borderColor = 'var(--cyan)';
+    btn.title = 'Modo conversación ACTIVO (clic para desactivar)';
+    agregarMsg('Modo conversación activado. Puedes hablar libremente, te escucho.', 'sistema');
+    iniciarEscucha();
+  } else {
+    btn.style.background = 'var(--panel)';
+    btn.style.borderColor = 'var(--border)';
+    btn.title = 'Modo conversación continua (manos libres)';
+    try{ reconocimiento.stop(); } catch(e){}
+    document.getElementById('btn-mic').classList.remove('grabando');
+    agregarMsg('Modo conversación desactivado.', 'sistema');
+  }
+}
+
+// === CÁMARA ===
+var camaraActiva = false;
+var streamCamara = null;
+
+function toggleCamara(){
+  if(camaraActiva){
+    desactivarCamara();
+  } else {
+    activarCamara();
+  }
+}
+
+function activarCamara(){
+  navigator.mediaDevices.getUserMedia({video: true, audio: false})
+    .then(function(stream){
+      streamCamara = stream;
+      var video = document.getElementById('cam-preview');
+      video.srcObject = stream;
+      video.style.display = 'block';
+      camaraActiva = true;
+      var btn = document.getElementById('btn-cam');
+      btn.style.background = 'rgba(79,195,247,0.2)';
+      btn.style.borderColor = 'var(--cyan)';
+      btn.title = 'Cámara ACTIVA (clic para desactivar)';
+      agregarMsg('Cámara activada. Ahora puedo verte.', 'sistema');
+    })
+    .catch(function(e){
+      agregarMsg('No pude acceder a la cámara: ' + e.message, 'sistema');
+    });
+}
+
+function desactivarCamara(){
+  if(streamCamara){
+    streamCamara.getTracks().forEach(function(t){ t.stop(); });
+    streamCamara = null;
+  }
+  var video = document.getElementById('cam-preview');
+  video.style.display = 'none';
+  video.srcObject = null;
+  camaraActiva = false;
+  var btn = document.getElementById('btn-cam');
+  btn.style.background = 'var(--panel)';
+  btn.style.borderColor = 'var(--border)';
+  btn.title = 'Activar cámara (Astra te puede ver)';
+  agregarMsg('Cámara desactivada.', 'sistema');
+}
+
+// Capturar frame de la cámara (se puede usar para enviar al backend)
+function capturarFrame(){
+  if(!camaraActiva || !streamCamara) return null;
+  var video = document.getElementById('cam-preview');
+  var canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 320;
+  canvas.height = video.videoHeight || 240;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  return canvas.toDataURL('image/jpeg', 0.5);
 }
 
 // Info bar (se actualiza cada 30s)
