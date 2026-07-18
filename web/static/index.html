@@ -3,98 +3,140 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>ASTRA — Asistente IA</title>
+<title>ASTRA</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-:root{--bg:#080c14;--panel:#0d1520;--border:#1a2a3a;--text:#93a1b0;--text-h:#e8eef7;
-  --cyan:#4fc3f7;--blue:#1565c0;--glow:rgba(79,195,247,.3);--mono:'Consolas',monospace;}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;
+:root{--bg:#060a10;--panel:rgba(10,18,28,.85);--border:rgba(79,195,247,.08);--text:#8a9bb0;
+  --text-h:#e4ecf5;--cyan:#4fc3f7;--glow:rgba(79,195,247,.25);}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;
   height:100vh;display:flex;flex-direction:column;overflow:hidden;}
-/* HEADER */
-#header{padding:12px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);}
-#header h1{color:var(--cyan);font-size:18px;font-weight:700;letter-spacing:2px;}
-#header .sub{color:var(--text);font-size:11px;}
-#header .status{margin-left:auto;font-size:11px;color:var(--text);}
-#header .status .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;}
-#header .status .on{background:#4fc3f7;box-shadow:0 0 6px var(--glow);}
-#header .status .off{background:#c15f5f;}
-/* MAIN */
-#main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:20px;overflow-y:auto;}
-/* DISCO JARVIS (orbe animado) */
-#disco{width:220px;height:220px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-#disco .ring{position:absolute;width:100%;height:100%;border-radius:50%;
-  border:2px solid rgba(79,195,247,.2);animation:rotar 10s linear infinite;}
-#disco .ring:nth-child(2){width:82%;height:82%;border-color:rgba(79,195,247,.15);
-  animation-duration:7s;animation-direction:reverse;border-style:dashed;}
-#disco .ring:nth-child(3){width:64%;height:64%;border-color:rgba(79,195,247,.3);
-  animation-duration:5s;border-width:1px;}
-#disco .ring:nth-child(4){width:48%;height:48%;border-color:rgba(79,195,247,.1);
-  animation-duration:3s;animation-direction:reverse;border-style:dotted;}
-#disco .core{width:35%;height:35%;border-radius:50%;
-  background:radial-gradient(circle at 40% 40%,rgba(150,220,255,.8),rgba(79,195,247,.4),rgba(21,101,192,.2));
-  box-shadow:0 0 40px var(--glow),0 0 80px rgba(79,195,247,.1);transition:all .4s ease;}
-#disco.hablando .core{box-shadow:0 0 60px var(--cyan),0 0 120px var(--glow);transform:scale(1.2);
-  background:radial-gradient(circle at 40% 40%,rgba(200,240,255,.9),rgba(79,195,247,.6),rgba(21,101,192,.3));}
-#disco.hablando .ring{border-color:rgba(79,195,247,.5);animation-duration:1.5s;}
-#disco.pensando .core{animation:pulso 1.2s ease-in-out infinite;}
-#disco.pensando .ring:nth-child(3){border-color:rgba(79,195,247,.6);animation-duration:2s;}
-@keyframes rotar{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-@keyframes pulso{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.85);}}
-/* CHAT */
-#chat{width:100%;max-width:700px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:10px 0;scroll-behavior:smooth;}
-.msg{max-width:80%;padding:12px 16px;border-radius:16px;font-size:13px;line-height:1.6;animation:aparecer .3s ease;word-wrap:break-word;}
-.msg-user{align-self:flex-end;background:rgba(79,195,247,.1);border:1px solid rgba(79,195,247,.2);color:var(--text-h);border-bottom-right-radius:4px;}
-.msg-astra{align-self:flex-start;background:linear-gradient(135deg,rgba(13,21,32,.9),rgba(26,42,58,.6));border:1px solid rgba(79,195,247,.15);color:var(--text-h);border-bottom-left-radius:4px;box-shadow:0 2px 12px rgba(0,0,0,.3);}
-.msg-sistema{align-self:center;color:var(--text);font-size:10px;font-style:italic;opacity:.7;}
-@keyframes aparecer{from{opacity:0;transform:translateY(12px) scale(.97);}to{opacity:1;transform:none;}}
-/* INPUT */
-#input-bar{width:100%;max-width:700px;display:flex;gap:8px;padding:12px 0;}
-#input-bar input{flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text-h);
-  padding:12px 16px;border-radius:10px;font-size:13px;outline:none;transition:.15s;}
-#input-bar input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(79,195,247,.1);}
-#input-bar button{background:var(--cyan);color:#080c14;border:none;padding:12px 18px;
-  border-radius:10px;font-weight:700;cursor:pointer;font-size:12px;transition:.15s;}
-#input-bar button:hover{filter:brightness(1.15);}
-#btn-mic{background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-size:18px;
-  width:44px;border-radius:10px;cursor:pointer;transition:.15s;}
-#btn-mic.grabando{background:#c15f5f;border-color:#c15f5f;color:#fff;animation:pulso 1s infinite;}
-#btn-mic:hover{border-color:var(--cyan);}
-/* INFO BAR */
-#info-bar{width:100%;max-width:700px;display:flex;gap:12px;font-size:10px;color:var(--text);
-  padding:8px 0;border-top:1px solid var(--border);justify-content:center;flex-wrap:wrap;}
-#info-bar span{padding:2px 8px;background:var(--panel);border-radius:4px;}
+
+/* === DISCO DE FONDO (grande, centrado, detrás del chat) === */
+#disco-bg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:500px;height:500px;pointer-events:none;z-index:0;opacity:.4;transition:all .6s ease;}
+#disco-bg .ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  border-radius:50%;border:1.5px solid rgba(79,195,247,.12);animation:rotar 12s linear infinite;}
+#disco-bg .r1{width:100%;height:100%;}
+#disco-bg .r2{width:80%;height:80%;border-color:rgba(79,195,247,.08);animation-duration:9s;animation-direction:reverse;border-style:dashed;}
+#disco-bg .r3{width:60%;height:60%;border-color:rgba(79,195,247,.15);animation-duration:6s;border-width:1px;}
+#disco-bg .r4{width:42%;height:42%;border-color:rgba(79,195,247,.06);animation-duration:4s;animation-direction:reverse;border-style:dotted;}
+#disco-bg .r5{width:26%;height:26%;border-color:rgba(79,195,247,.1);animation-duration:3s;}
+#disco-bg .core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:18%;height:18%;border-radius:50%;
+  background:radial-gradient(circle at 40% 40%,rgba(140,210,255,.6),rgba(79,195,247,.25),rgba(21,101,192,.1));
+  box-shadow:0 0 60px rgba(79,195,247,.15),0 0 120px rgba(79,195,247,.05);transition:all .5s ease;}
+
+/* Estados del disco */
+#disco-bg.hablando{opacity:.7;}
+#disco-bg.hablando .core{box-shadow:0 0 80px var(--cyan),0 0 160px var(--glow);transform:translate(-50%,-50%) scale(1.4);
+  background:radial-gradient(circle at 40% 40%,rgba(200,240,255,.8),rgba(79,195,247,.5),rgba(21,101,192,.2));}
+#disco-bg.hablando .ring{border-color:rgba(79,195,247,.35);animation-duration:2s;}
+#disco-bg.pensando{opacity:.6;}
+#disco-bg.pensando .core{animation:pulso 1.2s ease-in-out infinite;}
+#disco-bg.pensando .r3{border-color:rgba(79,195,247,.4);animation-duration:2s;}
+@keyframes rotar{from{transform:translate(-50%,-50%) rotate(0deg);}to{transform:translate(-50%,-50%) rotate(360deg);}}
+@keyframes pulso{0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1);}50%{opacity:.3;transform:translate(-50%,-50%) scale(.8);}}
+
+/* === HEADER minimalista === */
+#header{padding:10px 24px;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid var(--border);backdrop-filter:blur(10px);z-index:10;background:rgba(6,10,16,.8);}
+#header h1{color:var(--cyan);font-size:16px;font-weight:700;letter-spacing:3px;}
+#header .status{margin-left:auto;font-size:10px;color:var(--text);display:flex;align-items:center;gap:6px;}
+#header .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--glow);}
+#header .dot.off{background:#c15f5f;box-shadow:none;}
+
+/* === ZONA DE CHAT (ocupa todo el espacio) === */
+#chat-zone{flex:1;display:flex;flex-direction:column;position:relative;z-index:5;overflow:hidden;}
+#chat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:20px 24px;scroll-behavior:smooth;}
+
+/* Scrollbar invisible/integrada */
+#chat::-webkit-scrollbar{width:4px;}
+#chat::-webkit-scrollbar-track{background:transparent;}
+#chat::-webkit-scrollbar-thumb{background:rgba(79,195,247,.15);border-radius:4px;}
+#chat::-webkit-scrollbar-thumb:hover{background:rgba(79,195,247,.3);}
+
+/* Mensajes */
+.msg{max-width:70%;padding:12px 18px;border-radius:18px;font-size:13.5px;line-height:1.65;
+  animation:aparecer .3s ease;word-wrap:break-word;}
+.msg-user{align-self:flex-end;background:rgba(79,195,247,.08);border:1px solid rgba(79,195,247,.15);
+  color:var(--text-h);border-bottom-right-radius:4px;}
+.msg-astra{align-self:flex-start;background:rgba(13,21,32,.75);border:1px solid rgba(79,195,247,.1);
+  color:var(--text-h);border-bottom-left-radius:4px;backdrop-filter:blur(4px);}
+.msg-sistema{align-self:center;color:var(--text);font-size:10px;opacity:.5;font-style:italic;}
+@keyframes aparecer{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+/* === BARRA DE INPUT === */
+#input-bar{padding:12px 24px;display:flex;gap:8px;align-items:center;
+  border-top:1px solid var(--border);backdrop-filter:blur(10px);background:rgba(6,10,16,.8);z-index:10;}
+#input-bar input{flex:1;background:rgba(13,21,32,.6);border:1px solid rgba(79,195,247,.1);
+  color:var(--text-h);padding:12px 16px;border-radius:12px;font-size:13px;outline:none;transition:.2s;}
+#input-bar input:focus{border-color:rgba(79,195,247,.3);box-shadow:0 0 0 3px rgba(79,195,247,.05);}
+.btn-action{background:rgba(13,21,32,.6);border:1px solid rgba(79,195,247,.12);color:var(--cyan);
+  width:40px;height:40px;border-radius:10px;cursor:pointer;font-size:15px;display:flex;
+  align-items:center;justify-content:center;transition:.2s;}
+.btn-action:hover{border-color:rgba(79,195,247,.3);background:rgba(79,195,247,.05);}
+.btn-action.active{background:rgba(79,195,247,.12);border-color:var(--cyan);}
+#btn-send{background:var(--cyan);color:#080c14;border:none;padding:10px 20px;border-radius:10px;
+  font-weight:700;cursor:pointer;font-size:12px;letter-spacing:.5px;transition:.15s;}
+#btn-send:hover{filter:brightness(1.15);}
+#btn-mic.grabando{background:rgba(200,80,80,.2);border-color:#c15f5f;color:#c15f5f;animation:pulso 1s infinite;}
+
+/* === INFO BAR === */
+#info-bar{padding:6px 24px;display:flex;gap:10px;font-size:9.5px;color:var(--text);
+  justify-content:center;flex-wrap:wrap;opacity:.6;z-index:10;}
+#info-bar span{padding:2px 8px;background:rgba(13,21,32,.5);border-radius:3px;}
+
+/* === CÁMARA PREVIEW === */
+#cam-preview{display:none;position:fixed;bottom:70px;right:20px;width:140px;height:105px;
+  border-radius:10px;border:1px solid rgba(79,195,247,.2);opacity:.75;z-index:20;}
 </style>
 </head>
 <body>
+
+<!-- DISCO DE FONDO (grande, centrado) -->
+<div id="disco-bg">
+  <div class="ring r1"></div>
+  <div class="ring r2"></div>
+  <div class="ring r3"></div>
+  <div class="ring r4"></div>
+  <div class="ring r5"></div>
+  <div class="core"></div>
+</div>
+
+<!-- HEADER -->
 <div id="header">
   <h1>ASTRA</h1>
-  <span class="sub">Asistente IA Personal</span>
-  <div class="status"><span class="dot on" id="dot-status"></span><span id="status-text">Conectada</span></div>
+  <div class="status"><span class="dot" id="dot-status"></span><span id="status-text">En línea</span></div>
 </div>
-<div id="main">
-  <div id="disco">
-    <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring"></div>
-    <div class="core"></div>
-  </div>
+
+<!-- CHAT (ocupa todo el espacio disponible) -->
+<div id="chat-zone">
   <div id="chat"></div>
-  <div id="input-bar">
-    <button id="btn-mic" onclick="escuchar()" title="Pulsa para hablar">🎙️</button>
-    <button id="btn-conv" onclick="toggleConversacion()" title="Modo conversación continua (manos libres)" style="background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-size:14px;width:44px;border-radius:10px;cursor:pointer;">💬</button>
-    <input id="input" placeholder="Escribe algo o activa el modo conversación..." />
-    <button onclick="enviar()">ENVIAR</button>
-    <button id="btn-cam" onclick="toggleCamara()" title="Activar cámara (Astra te puede ver)" style="background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-size:14px;width:44px;border-radius:10px;cursor:pointer;">📷</button>
-    <button id="btn-voz" onclick="toggleVoz()" title="Voz activada (clic para silenciar)" style="background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-size:16px;width:44px;border-radius:10px;cursor:pointer;">🔊</button>
-  </div>
-  <video id="cam-preview" autoplay muted style="display:none;position:fixed;bottom:60px;right:20px;width:160px;height:120px;border-radius:10px;border:1px solid var(--cyan);opacity:0.8;"></video>
-  <div id="info-bar">
-    <span id="info-emocion"></span>
-    <span id="info-hora"></span>
-    <span id="info-cpu"></span>
-    <span id="info-ram"></span>
-  </div>
 </div>
+
+<!-- INPUT BAR -->
+<div id="input-bar">
+  <button class="btn-action" id="btn-mic" onclick="escuchar()" title="Hablar">🎙️</button>
+  <button class="btn-action" id="btn-conv" onclick="toggleConversacion()" title="Conversación continua">💬</button>
+  <input id="input" placeholder="Escribe algo o activa el modo conversación..." />
+  <button id="btn-send" onclick="enviar()">ENVIAR</button>
+  <button class="btn-action" id="btn-cam" onclick="toggleCamara()" title="Cámara">📷</button>
+  <button class="btn-action" id="btn-voz" onclick="toggleVoz()" title="Voz">🔊</button>
+</div>
+
+<!-- INFO BAR -->
+<div id="info-bar">
+  <span id="info-emocion"></span>
+  <span id="info-hora"></span>
+  <span id="info-cpu"></span>
+  <span id="info-ram"></span>
+</div>
+
+<!-- CÁMARA -->
+<video id="cam-preview" autoplay muted></video>
+
 <script>
-var disco = document.getElementById('disco');
+var disco = document.getElementById('disco-bg');
 var chat = document.getElementById('chat');
 var input = document.getElementById('input');
 
@@ -127,311 +169,135 @@ function enviar(){
 }
 input.addEventListener('keydown', e=>{ if(e.key==='Enter') enviar(); });
 
-// Voz TTS — VOZ NEURONAL via edge-tts (backend genera audio MP3)
-// Si edge-tts no está disponible, cae al sintetizador del navegador como fallback
+// === VOZ TTS ===
 var vozActiva = true;
 var audioActual = null;
-var edgeTtsDisponible = false; // se actualiza al consultar /api/status
 
-// Verificar si edge-tts está disponible en el backend
 fetch('/api/status').then(r=>r.json()).then(d=>{
-  edgeTtsDisponible = d.edge_tts || false;
-  console.log('Edge TTS:', edgeTtsDisponible ? '✅ Disponible (voz neuronal)' : '⚠️ No disponible (usando navegador)');
+  console.log('Edge TTS:', d.edge_tts ? 'ON' : 'OFF');
 }).catch(()=>{});
 
 function hablar(texto, audioUrl){
   if(!vozActiva) return;
-  // No leer errores
   if(texto.includes('timed out') || texto.includes('[Astra]') || texto.includes('Error:')) return;
-  
-  // Si tenemos URL de audio del backend (edge-tts neuronal) → reproducir MP3
-  if(audioUrl){
-    reproducirAudioNeuronal(audioUrl);
-    return;
-  }
-  
-  // Fallback: sintetizador del navegador (menos natural pero funciona offline)
-  hablarConNavegador(texto);
+  if(audioUrl){ reproducirAudio(audioUrl); return; }
+  hablarNavegador(texto);
 }
 
-function reproducirAudioNeuronal(url){
-  // Detener audio previo si existe
-  if(audioActual){
-    audioActual.pause();
-    audioActual = null;
-  }
-  
+function reproducirAudio(url){
+  if(audioActual){ audioActual.pause(); audioActual = null; }
   disco.className = 'hablando';
   audioActual = new Audio(url);
-  audioActual.playbackRate = 1.0; // velocidad normal (edge-tts ya la configura)
   audioActual.onended = function(){ disco.className = ''; audioActual = null; };
   audioActual.onerror = function(){ disco.className = ''; audioActual = null; };
   audioActual.play().catch(function(){ disco.className = ''; });
 }
 
-// Fallback: voz del navegador (por si edge-tts no está instalado)
-var vozFemenina = null;
-var VOCES_MASCULINAS = ['raul','jorge','arnau','diego','pedro','alvaro','pablo','saul','alonso'];
-
-function buscarVozFemenina(){
-  var voces = speechSynthesis.getVoices();
-  if(!voces || voces.length === 0) return;
-  // Buscar cualquier voz es-MX/es-ES que no sea masculina
-  var candidata = voces.find(function(v){
-    if(!v.lang.startsWith('es')) return false;
-    var n = v.name.toLowerCase();
-    return !VOCES_MASCULINAS.some(function(m){ return n.includes(m); });
-  });
-  if(candidata) vozFemenina = candidata;
+var vozFem = null;
+function buscarVoz(){
+  var v = speechSynthesis.getVoices();
+  if(!v||!v.length) return;
+  vozFem = v.find(function(x){ return x.lang.startsWith('es') && !x.name.toLowerCase().match(/raul|jorge|diego|pedro/); });
 }
-if(window.speechSynthesis){
-  speechSynthesis.onvoiceschanged = buscarVozFemenina;
-  buscarVozFemenina();
-  setTimeout(buscarVozFemenina, 1000);
-}
+if(window.speechSynthesis){ speechSynthesis.onvoiceschanged=buscarVoz; buscarVoz(); setTimeout(buscarVoz,1000); }
 
-function hablarConNavegador(texto){
+function hablarNavegador(texto){
   if(!window.speechSynthesis) return;
-  var limpio = texto.replace(/```[\s\S]*?```/g,'').replace(/\*\*/g,'').replace(/\*/g,'')
-    .replace(/#/g,'').replace(/- /g, ', ').replace(/[🚫⚠️🔥⚡💻🧠🕐📊\[\]{}|_~`<>]/g,'')
-    .replace(/\(.*?\)/g,'').replace(/https?:\/\/\S+/g,'').replace(/\n+/g, ', ')
-    .replace(/\s+/g, ' ').trim();
-  if(limpio.length > 400) limpio = limpio.substring(0, 400);
-  if(!limpio || limpio.length < 3) return;
-  
-  speechSynthesis.cancel();
-  disco.className = 'hablando';
-  var u = new SpeechSynthesisUtterance(limpio);
-  u.lang = 'es-MX';
-  u.rate = 1.05;
-  u.pitch = 1.1;
-  u.volume = 1.0;
-  if(vozFemenina) u.voice = vozFemenina;
-  u.onend = function(){ disco.className = ''; };
-  u.onerror = function(){ disco.className = ''; };
+  var l=texto.replace(/[*#\[\]{}`<>]/g,'').replace(/\n/g,', ').trim();
+  if(l.length>400)l=l.substring(0,400);
+  if(l.length<3) return;
+  speechSynthesis.cancel(); disco.className='hablando';
+  var u=new SpeechSynthesisUtterance(l); u.lang='es-MX'; u.rate=1.05; u.pitch=1.1;
+  if(vozFem) u.voice=vozFem;
+  u.onend=function(){disco.className='';}; u.onerror=function(){disco.className='';};
   speechSynthesis.speak(u);
 }
 
 function toggleVoz(){
-  vozActiva = !vozActiva;
-  var btn = document.getElementById('btn-voz');
-  btn.textContent = vozActiva ? '🔊' : '🔇';
-  btn.title = vozActiva ? 'Voz activada (clic para silenciar)' : 'Voz silenciada (clic para activar)';
-  if(!vozActiva){
-    if(audioActual){ audioActual.pause(); audioActual = null; }
-    if(window.speechSynthesis) speechSynthesis.cancel();
-    disco.className = '';
-  }
+  vozActiva=!vozActiva;
+  var b=document.getElementById('btn-voz');
+  b.textContent=vozActiva?'🔊':'🔇';
+  b.classList.toggle('active',vozActiva);
+  if(!vozActiva){ if(audioActual){audioActual.pause();audioActual=null;} speechSynthesis.cancel(); disco.className=''; }
 }
 
-// Voz STT (micrófono) — modo pulsación y modo conversación continua
-var reconocimiento = null;
-var modoConversacion = false; // modo manos libres (escucha continua)
-var Recon = window.SpeechRecognition || window.webkitSpeechRecognition;
+// === STT (micrófono) ===
+var reconocimiento=null, modoConversacion=false;
+var Recon=window.SpeechRecognition||window.webkitSpeechRecognition;
 if(Recon){
-  reconocimiento = new Recon();
-  reconocimiento.lang = 'es-MX';
-  reconocimiento.continuous = false;
-  reconocimiento.interimResults = false;
-  reconocimiento.onresult = function(e){
-    var texto = e.results[0][0].transcript;
-    input.value = texto;
-    document.getElementById('btn-mic').classList.remove('grabando');
-    enviar();
+  reconocimiento=new Recon(); reconocimiento.lang='es-MX'; reconocimiento.continuous=false;
+  reconocimiento.onresult=function(e){ input.value=e.results[0][0].transcript; document.getElementById('btn-mic').classList.remove('grabando'); enviar(); };
+  reconocimiento.onend=function(){ document.getElementById('btn-mic').classList.remove('grabando');
+    if(modoConversacion){ var w=setInterval(function(){ if(!audioActual&&disco.className!=='hablando'){clearInterval(w);setTimeout(function(){if(modoConversacion)iniciarEscucha();},500);}},300); }
   };
-  reconocimiento.onend = function(){
-    document.getElementById('btn-mic').classList.remove('grabando');
-    // Si está en modo conversación continua, volver a escuchar después de que Astra termine de hablar
-    if(modoConversacion){
-      // Esperar a que termine de hablar antes de volver a escuchar
-      var esperarAudio = setInterval(function(){
-        if(!audioActual && disco.className !== 'hablando'){
-          clearInterval(esperarAudio);
-          setTimeout(function(){
-            if(modoConversacion) iniciarEscucha();
-          }, 500);
-        }
-      }, 300);
-    }
-  };
-  reconocimiento.onerror = function(e){
-    document.getElementById('btn-mic').classList.remove('grabando');
-    if(modoConversacion && e.error !== 'aborted'){
-      setTimeout(function(){ if(modoConversacion) iniciarEscucha(); }, 1000);
-    }
+  reconocimiento.onerror=function(e){ document.getElementById('btn-mic').classList.remove('grabando');
+    if(modoConversacion&&e.error!=='aborted') setTimeout(function(){if(modoConversacion)iniciarEscucha();},1000);
   };
 }
-
-function iniciarEscucha(){
-  if(!reconocimiento) return;
-  try{ reconocimiento.start(); document.getElementById('btn-mic').classList.add('grabando'); }
-  catch(e){}
+function iniciarEscucha(){ if(!reconocimiento)return; try{reconocimiento.start();document.getElementById('btn-mic').classList.add('grabando');}catch(e){} }
+function escuchar(){ if(!reconocimiento){agregarMsg('Navegador sin soporte de voz.','sistema');return;}
+  var b=document.getElementById('btn-mic'); if(b.classList.contains('grabando')){reconocimiento.stop();return;} b.classList.add('grabando'); reconocimiento.start(); }
+function toggleConversacion(){ modoConversacion=!modoConversacion; var b=document.getElementById('btn-conv');
+  b.classList.toggle('active',modoConversacion);
+  if(modoConversacion){agregarMsg('Modo conversación activado. Habla libremente.','sistema');iniciarEscucha();}
+  else{try{reconocimiento.stop();}catch(e){} document.getElementById('btn-mic').classList.remove('grabando');agregarMsg('Modo conversación desactivado.','sistema');}
 }
 
-function escuchar(){
-  if(!reconocimiento){ agregarMsg('Tu navegador no soporta voz (usa Edge).','sistema'); return; }
-  var btn = document.getElementById('btn-mic');
-  if(btn.classList.contains('grabando')){ reconocimiento.stop(); return; }
-  btn.classList.add('grabando');
-  reconocimiento.start();
+// === CÁMARA ===
+var camaraActiva=false, streamCam=null, usuarioPresente=true, intCam=null;
+function toggleCamara(){ camaraActiva?desactivarCam():activarCam(); }
+function activarCam(){
+  navigator.mediaDevices.getUserMedia({video:true}).then(function(s){
+    streamCam=s; var v=document.getElementById('cam-preview'); v.srcObject=s; v.style.display='block';
+    camaraActiva=true; document.getElementById('btn-cam').classList.add('active');
+    setTimeout(function(){enviarVision('camara_activada');},1500);
+    intCam=setInterval(monitorPresencia,5000);
+  }).catch(function(e){agregarMsg('No pude acceder a la cámara: '+e.message,'sistema');});
 }
-
-function toggleConversacion(){
-  modoConversacion = !modoConversacion;
-  var btn = document.getElementById('btn-conv');
-  if(modoConversacion){
-    btn.style.background = 'rgba(79,195,247,0.2)';
-    btn.style.borderColor = 'var(--cyan)';
-    btn.title = 'Modo conversación ACTIVO (clic para desactivar)';
-    agregarMsg('Modo conversación activado. Puedes hablar libremente, te escucho.', 'sistema');
-    iniciarEscucha();
-  } else {
-    btn.style.background = 'var(--panel)';
-    btn.style.borderColor = 'var(--border)';
-    btn.title = 'Modo conversación continua (manos libres)';
-    try{ reconocimiento.stop(); } catch(e){}
-    document.getElementById('btn-mic').classList.remove('grabando');
-    agregarMsg('Modo conversación desactivado.', 'sistema');
-  }
+function desactivarCam(){
+  if(streamCam){streamCam.getTracks().forEach(function(t){t.stop();});streamCam=null;}
+  if(intCam){clearInterval(intCam);intCam=null;}
+  document.getElementById('cam-preview').style.display='none';
+  camaraActiva=false; document.getElementById('btn-cam').classList.remove('active');
 }
-
-// === CÁMARA + VISIÓN ===
-var camaraActiva = false;
-var streamCamara = null;
-var usuarioPresente = true; // si el usuario está mirando la pantalla
-var intervaloCamara = null;
-
-function toggleCamara(){
-  if(camaraActiva){
-    desactivarCamara();
-  } else {
-    activarCamara();
-  }
-}
-
-function activarCamara(){
-  navigator.mediaDevices.getUserMedia({video: true, audio: false})
-    .then(function(stream){
-      streamCamara = stream;
-      var video = document.getElementById('cam-preview');
-      video.srcObject = stream;
-      video.style.display = 'block';
-      camaraActiva = true;
-      var btn = document.getElementById('btn-cam');
-      btn.style.background = 'rgba(79,195,247,0.2)';
-      btn.style.borderColor = 'var(--cyan)';
-      btn.title = 'Cámara ACTIVA (clic para desactivar)';
-      agregarMsg('Cámara activada. Ahora puedo verte.', 'sistema');
-      // Enviar frame al backend para que sepa que hay cámara
-      setTimeout(function(){ enviarFrameCamara('camara_activada'); }, 1500);
-      // Monitorear presencia cada 5 segundos
-      intervaloCamara = setInterval(monitorearPresencia, 5000);
-    })
-    .catch(function(e){
-      agregarMsg('No pude acceder a la cámara: ' + e.message, 'sistema');
-    });
-}
-
-function desactivarCamara(){
-  if(streamCamara){
-    streamCamara.getTracks().forEach(function(t){ t.stop(); });
-    streamCamara = null;
-  }
-  if(intervaloCamara){ clearInterval(intervaloCamara); intervaloCamara = null; }
-  var video = document.getElementById('cam-preview');
-  video.style.display = 'none';
-  video.srcObject = null;
-  camaraActiva = false;
-  var btn = document.getElementById('btn-cam');
-  btn.style.background = 'var(--panel)';
-  btn.style.borderColor = 'var(--border)';
-  btn.title = 'Activar cámara (Astra te puede ver)';
-}
-
-function capturarFrame(){
-  if(!camaraActiva || !streamCamara) return null;
-  var video = document.getElementById('cam-preview');
-  if(!video.videoWidth) return null;
-  var canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth || 320;
-  canvas.height = video.videoHeight || 240;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  return canvas.toDataURL('image/jpeg', 0.4);
-}
-
-function enviarFrameCamara(evento){
-  var frame = capturarFrame();
-  fetch('/api/vision', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({frame: frame, evento: evento})})
-    .then(r=>r.json()).then(d=>{
-      if(d.respuesta){
-        agregarMsg(d.respuesta, 'astra');
-        hablar(d.respuesta, d.audio);
-      }
+function enviarVision(ev){
+  fetch('/api/vision',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({frame:null,evento:ev})}).then(r=>r.json()).then(d=>{
+      if(d.respuesta){agregarMsg(d.respuesta,'astra');hablar(d.respuesta,d.audio);}
     }).catch(function(){});
 }
-
-// Detección de presencia: usa la visibilidad de la página
-// Si el usuario cambia de pestaña o minimiza, Astra lo sabe
-function monitorearPresencia(){
-  var nuevoEstado = document.hasFocus();
-  if(nuevoEstado !== usuarioPresente){
-    usuarioPresente = nuevoEstado;
-    // Notificar al backend del cambio de atención
-    fetch('/api/vision', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({frame: null, evento: nuevoEstado ? 'usuario_volvio' : 'usuario_se_fue'})})
-      .then(r=>r.json()).then(d=>{
-        if(d.respuesta && nuevoEstado){
-          agregarMsg(d.respuesta, 'astra');
-          hablar(d.respuesta, d.audio);
-        }
-      }).catch(function(){});
-  }
+function monitorPresencia(){
+  var n=document.hasFocus();
+  if(n!==usuarioPresente){usuarioPresente=n;enviarVision(n?'usuario_volvio':'usuario_se_fue');}
 }
 
-// Info bar (se actualiza cada 30s)
-var EMOJI_EMOCIONES = {
-  neutral:'😐', feliz:'😊', emocionada:'🤩', divertida:'😄', curiosa:'🤔',
-  orgullosa:'😌', apasionada:'🔥', triste:'😢', frustrada:'😤', enojada:'😠',
-  preocupada:'😟', estresada:'😰', cansada:'😴', nostalgica:'🥺', satisfecha:'☺️', impaciente:'⏳'
-};
+// === INFO BAR ===
+var EMOJIS={neutral:'😐',feliz:'😊',emocionada:'🤩',divertida:'😄',curiosa:'🤔',orgullosa:'😌',
+  apasionada:'🔥',triste:'😢',frustrada:'😤',enojada:'😠',preocupada:'😟',estresada:'😰',
+  cansada:'😴',nostalgica:'🥺',satisfecha:'☺️',impaciente:'⏳'};
 function actualizarInfo(){
   fetch('/api/status').then(r=>r.json()).then(d=>{
-    var s = d.sistema;
-    document.getElementById('info-hora').textContent = '🕐 '+s.hora;
-    document.getElementById('info-cpu').textContent = '💻 CPU '+s.cpu_uso+'%';
-    document.getElementById('info-ram').textContent = '🧠 RAM '+s.ram_usada_gb+'/'+s.ram_total_gb+'GB';
-    var dot = document.getElementById('dot-status');
-    dot.className = 'dot '+(d.astra.brain_local_online?'on':'off');
-    document.getElementById('status-text').textContent = d.astra.brain_local_online?'Conectada':'Cerebro offline';
-    // Mostrar emoción actual
-    if(d.astra.emotions){
-      var em = d.astra.emotions;
-      var emoji = EMOJI_EMOCIONES[em.emocion] || '😐';
-      document.getElementById('info-emocion').textContent = emoji + ' ' + em.descripcion;
-    }
+    var s=d.sistema;
+    document.getElementById('info-hora').textContent=s.hora;
+    document.getElementById('info-cpu').textContent='CPU '+s.cpu_uso+'%';
+    document.getElementById('info-ram').textContent='RAM '+s.ram_usada_gb+'/'+s.ram_total_gb+'GB';
+    document.getElementById('dot-status').className='dot '+(d.astra.brain_local_online?'':'off');
+    document.getElementById('status-text').textContent=d.astra.brain_local_online?'En línea':'Offline';
+    if(d.astra.emotions){var e=d.astra.emotions;document.getElementById('info-emocion').textContent=(EMOJIS[e.emocion]||'😐')+' '+e.descripcion;}
   }).catch(()=>{});
 }
-actualizarInfo();
-setInterval(actualizarInfo, 30000);
+actualizarInfo(); setInterval(actualizarInfo,30000);
 
-// Mensaje inicial (depende de la hora, corto y directo)
-var hora = new Date().getHours();
-var saludo;
-if(hora >= 5 && hora < 12) saludo = 'Buenos días, todos los sistemas están en línea. ¿En qué te ayudo?';
-else if(hora >= 12 && hora < 19) saludo = 'Buenas tardes, todo operativo. ¿Qué necesitas?';
-else saludo = 'Buenas noches, sistemas en línea. ¿En qué te ayudo?';
-agregarMsg(saludo, 'astra');
-// Generar audio del saludo con edge-tts (si está disponible)
+// === SALUDO INICIAL ===
+var h=new Date().getHours(), saludo;
+if(h>=5&&h<12) saludo='Buenos días, sistemas en línea. ¿En qué te ayudo?';
+else if(h>=12&&h<19) saludo='Buenas tardes, todo operativo. ¿Qué necesitas?';
+else saludo='Buenas noches, aquí estoy. ¿En qué te ayudo?';
+agregarMsg(saludo,'astra');
 setTimeout(function(){
-  fetch('/api/tts', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({texto: saludo})})
-    .then(r=>r.json()).then(d=>{
-      hablar(saludo, d.audio);
-    }).catch(function(){
-      hablar(saludo, null); // fallback al navegador
-    });
-}, 800);
+  fetch('/api/tts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texto:saludo})})
+    .then(r=>r.json()).then(d=>{hablar(saludo,d.audio);}).catch(function(){hablar(saludo,null);});
+},800);
 </script>
 </body>
 </html>
