@@ -21,25 +21,32 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;
 /* MAIN */
 #main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:20px;overflow-y:auto;}
 /* DISCO JARVIS (orbe animado) */
-#disco{width:200px;height:200px;position:relative;display:flex;align-items:center;justify-content:center;}
+#disco{width:220px;height:220px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 #disco .ring{position:absolute;width:100%;height:100%;border-radius:50%;
-  border:2px solid rgba(79,195,247,.3);animation:rotar 8s linear infinite;}
-#disco .ring:nth-child(2){width:80%;height:80%;border-color:rgba(79,195,247,.2);animation-duration:6s;animation-direction:reverse;}
-#disco .ring:nth-child(3){width:60%;height:60%;border-color:rgba(79,195,247,.4);animation-duration:4s;}
-#disco .core{width:40%;height:40%;border-radius:50%;background:radial-gradient(circle,rgba(79,195,247,.6),rgba(21,101,192,.3));
-  box-shadow:0 0 30px var(--glow),0 0 60px rgba(79,195,247,.15);transition:all .3s;}
-#disco.hablando .core{box-shadow:0 0 50px var(--cyan),0 0 100px var(--glow);transform:scale(1.1);}
-#disco.hablando .ring{border-color:rgba(79,195,247,.6);animation-duration:2s;}
-#disco.pensando .core{animation:pulso 1.5s ease-in-out infinite;}
+  border:2px solid rgba(79,195,247,.2);animation:rotar 10s linear infinite;}
+#disco .ring:nth-child(2){width:82%;height:82%;border-color:rgba(79,195,247,.15);
+  animation-duration:7s;animation-direction:reverse;border-style:dashed;}
+#disco .ring:nth-child(3){width:64%;height:64%;border-color:rgba(79,195,247,.3);
+  animation-duration:5s;border-width:1px;}
+#disco .ring:nth-child(4){width:48%;height:48%;border-color:rgba(79,195,247,.1);
+  animation-duration:3s;animation-direction:reverse;border-style:dotted;}
+#disco .core{width:35%;height:35%;border-radius:50%;
+  background:radial-gradient(circle at 40% 40%,rgba(150,220,255,.8),rgba(79,195,247,.4),rgba(21,101,192,.2));
+  box-shadow:0 0 40px var(--glow),0 0 80px rgba(79,195,247,.1);transition:all .4s ease;}
+#disco.hablando .core{box-shadow:0 0 60px var(--cyan),0 0 120px var(--glow);transform:scale(1.2);
+  background:radial-gradient(circle at 40% 40%,rgba(200,240,255,.9),rgba(79,195,247,.6),rgba(21,101,192,.3));}
+#disco.hablando .ring{border-color:rgba(79,195,247,.5);animation-duration:1.5s;}
+#disco.pensando .core{animation:pulso 1.2s ease-in-out infinite;}
+#disco.pensando .ring:nth-child(3){border-color:rgba(79,195,247,.6);animation-duration:2s;}
 @keyframes rotar{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-@keyframes pulso{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.9);}}
+@keyframes pulso{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.85);}}
 /* CHAT */
-#chat{width:100%;max-width:700px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:10px 0;}
-.msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;animation:aparecer .3s ease;}
-.msg-user{align-self:flex-end;background:rgba(79,195,247,.12);border:1px solid rgba(79,195,247,.25);color:var(--text-h);}
-.msg-astra{align-self:flex-start;background:var(--panel);border:1px solid var(--border);color:var(--text-h);}
-.msg-sistema{align-self:center;color:var(--text);font-size:10px;font-style:italic;}
-@keyframes aparecer{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+#chat{width:100%;max-width:700px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:10px 0;scroll-behavior:smooth;}
+.msg{max-width:80%;padding:12px 16px;border-radius:16px;font-size:13px;line-height:1.6;animation:aparecer .3s ease;word-wrap:break-word;}
+.msg-user{align-self:flex-end;background:rgba(79,195,247,.1);border:1px solid rgba(79,195,247,.2);color:var(--text-h);border-bottom-right-radius:4px;}
+.msg-astra{align-self:flex-start;background:linear-gradient(135deg,rgba(13,21,32,.9),rgba(26,42,58,.6));border:1px solid rgba(79,195,247,.15);color:var(--text-h);border-bottom-left-radius:4px;box-shadow:0 2px 12px rgba(0,0,0,.3);}
+.msg-sistema{align-self:center;color:var(--text);font-size:10px;font-style:italic;opacity:.7;}
+@keyframes aparecer{from{opacity:0;transform:translateY(12px) scale(.97);}to{opacity:1;transform:none;}}
 /* INPUT */
 #input-bar{width:100%;max-width:700px;display:flex;gap:8px;padding:12px 0;}
 #input-bar input{flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text-h);
@@ -66,7 +73,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;
 </div>
 <div id="main">
   <div id="disco">
-    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div><div class="ring"></div>
     <div class="core"></div>
   </div>
   <div id="chat"></div>
@@ -150,15 +157,29 @@ function hablar(texto){
   if(!vozActiva || !window.speechSynthesis) return;
   // NO decir mensajes de error en voz alta
   if(texto.includes('timed out') || texto.includes('[Astra]') || texto.includes('Error')) return;
-  var limpio = texto.replace(/```[\s\S]*?```/g,'').replace(/[🚫⚠️🔥⚡\[\]]/g,'').replace(/\(.*?\)/g,'').replace(/—.*$/,'').slice(0,400);
-  if(!limpio.trim()) return;
+  // Limpiar: quitar asteriscos, markdown, signos innecesarios, código, etc.
+  var limpio = texto
+    .replace(/```[\s\S]*?```/g,'')     // bloques de código
+    .replace(/\*\*/g,'')                // **negritas**
+    .replace(/\*/g,'')                  // *itálicas*
+    .replace(/#/g,'')                   // encabezados
+    .replace(/- /g, ', ')              // listas con guión → pausa natural
+    .replace(/•/g, ', ')               // bullet points
+    .replace(/[🚫⚠️🔥⚡\[\]{}|_~`]/g,'')  // emojis y markdown
+    .replace(/\(.*?\)/g,'')            // paréntesis y contenido
+    .replace(/https?:\/\/\S+/g,'')     // URLs
+    .replace(/\n+/g, '. ')             // saltos de línea → puntos (pausa)
+    .replace(/\.+/g, '.')              // múltiples puntos → uno
+    .replace(/,+/g, ',')              // múltiples comas → una
+    .replace(/\s+/g, ' ')             // espacios múltiples
+    .trim().slice(0, 500);
+  if(!limpio || limpio.length < 3) return;
   var u = new SpeechSynthesisUtterance(limpio);
   u.lang = 'es-MX';
-  u.rate = 1.0;    // velocidad natural
-  u.pitch = 1.3;   // más agudo = más joven y femenino
+  u.rate = 1.1;    // un poco más rápido (natural, no robótica)
+  u.pitch = 1.25;  // femenino y joven
   u.volume = 0.9;
   if(vozFemenina) u.voice = vozFemenina;
-  // Hacer que el disco reaccione mientras habla
   u.onstart = function(){ disco.className='hablando'; };
   u.onend = function(){ disco.className=''; };
   speechSynthesis.cancel();

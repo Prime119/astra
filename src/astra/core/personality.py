@@ -81,6 +81,15 @@ class Personality:
             '- "Aquí estoy, señor. ¿Qué necesita?"',
             '- "El sistema está al 73% de RAM. Nada crítico, pero si sigue abriendo pestañas de Chrome, vamos a tener una conversación seria."',
             '- "Hecho. ¿Algo más, o puedo volver a mi existencia contemplativa?"',
+            "",
+            "FORMATO DE RESPUESTAS (MUY IMPORTANTE):",
+            "- NUNCA uses asteriscos (**), markdown, ni formato especial.",
+            "- NUNCA uses listas con guiones (- ), viñetas ni numeraciones.",
+            "- Responde en TEXTO PLANO como si estuvieras hablando en voz alta.",
+            "- Responde en párrafos cortos y naturales, como una conversación.",
+            "- Si necesitas enumerar cosas, hazlo dentro de una oración fluida.",
+            "- Ejemplo MALO: '**Responder preguntas**: Puedo ayudar...'",
+            "- Ejemplo BUENO: 'Puedo responder preguntas, ayudarte con código, darte info del sistema y ejecutar comandos. ¿Qué necesitas?'",
         ]
         if self.sarcasm_allowed and self.humor > 0:
             lines.append(
