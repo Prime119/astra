@@ -25,3 +25,6 @@ piper-tts>=1.2       # voz / TTS offline (voz femenina en español)
 
 # --- Interfaz Web (Fase Web) ---
 aiohttp>=3.9           # servidor web para la interfaz JARVIS
+
+# --- Voz neuronal (Fase Web — recomendado) ---
+edge-tts>=6.1          # voz neuronal de Microsoft Edge (suena natural, femenina)

@@ -114,8 +114,8 @@ function enviar(){
     .then(r=>r.json()).then(d=>{
       disco.className = 'hablando';
       agregarMsg(d.respuesta, 'astra');
-      hablar(d.respuesta);
-      setTimeout(()=>{ disco.className=''; }, 3000);
+      hablar(d.respuesta, d.audio);
+      setTimeout(()=>{ if(disco.className==='hablando') disco.className=''; }, 8000);
     }).catch(e=>{
       disco.className = '';
       agregarMsg('Error de conexión: '+e, 'sistema');
@@ -123,121 +123,84 @@ function enviar(){
 }
 input.addEventListener('keydown', e=>{ if(e.key==='Enter') enviar(); });
 
-// Voz TTS (navegador) — VOZ FEMENINA NATURAL (un solo utterance, sin pausas)
+// Voz TTS — VOZ NEURONAL via edge-tts (backend genera audio MP3)
+// Si edge-tts no está disponible, cae al sintetizador del navegador como fallback
 var vozActiva = true;
-var vozFemenina = null;
+var audioActual = null;
+var edgeTtsDisponible = false; // se actualiza al consultar /api/status
 
-// Nombres femeninos conocidos de Microsoft Edge (español)
-var VOCES_FEMENINAS = ['nuria','elvira','marina','irene','abril','carlota','paloma',
-  'elena','ximena','renata','lupe','beatriz','lucia','sofia','dalia','larissa','sabina'];
-// Nombres masculinos a EVITAR
-var VOCES_MASCULINAS = ['raul','jorge','arnau','diego','pedro','alvaro','pablo',
-  'saul','alonso','guillermo','hector','gerardo','cecilio','fernando','yago','liwei'];
+// Verificar si edge-tts está disponible en el backend
+fetch('/api/status').then(r=>r.json()).then(d=>{
+  edgeTtsDisponible = d.edge_tts || false;
+  console.log('Edge TTS:', edgeTtsDisponible ? '✅ Disponible (voz neuronal)' : '⚠️ No disponible (usando navegador)');
+}).catch(()=>{});
+
+function hablar(texto, audioUrl){
+  if(!vozActiva) return;
+  // No leer errores
+  if(texto.includes('timed out') || texto.includes('[Astra]') || texto.includes('Error:')) return;
+  
+  // Si tenemos URL de audio del backend (edge-tts neuronal) → reproducir MP3
+  if(audioUrl){
+    reproducirAudioNeuronal(audioUrl);
+    return;
+  }
+  
+  // Fallback: sintetizador del navegador (menos natural pero funciona offline)
+  hablarConNavegador(texto);
+}
+
+function reproducirAudioNeuronal(url){
+  // Detener audio previo si existe
+  if(audioActual){
+    audioActual.pause();
+    audioActual = null;
+  }
+  
+  disco.className = 'hablando';
+  audioActual = new Audio(url);
+  audioActual.playbackRate = 1.0; // velocidad normal (edge-tts ya la configura)
+  audioActual.onended = function(){ disco.className = ''; audioActual = null; };
+  audioActual.onerror = function(){ disco.className = ''; audioActual = null; };
+  audioActual.play().catch(function(){ disco.className = ''; });
+}
+
+// Fallback: voz del navegador (por si edge-tts no está instalado)
+var vozFemenina = null;
+var VOCES_MASCULINAS = ['raul','jorge','arnau','diego','pedro','alvaro','pablo','saul','alonso'];
 
 function buscarVozFemenina(){
   var voces = speechSynthesis.getVoices();
   if(!voces || voces.length === 0) return;
-  
-  console.log('Voces disponibles:', voces.length);
-  voces.forEach(function(v){ console.log('  -', v.name, '|', v.lang, '|', v.localService?'local':'online'); });
-
-  var candidatas = [];
-  
-  for(var i=0; i<voces.length; i++){
-    var v = voces[i];
-    if(!v.lang.startsWith('es')) continue;
+  // Buscar cualquier voz es-MX/es-ES que no sea masculina
+  var candidata = voces.find(function(v){
+    if(!v.lang.startsWith('es')) return false;
     var n = v.name.toLowerCase();
-    
-    // Rechazar voces masculinas confirmadas
-    if(VOCES_MASCULINAS.some(function(m){ return n.includes(m); })) continue;
-    
-    var esOnline = n.includes('online') || n.includes('natural') || !v.localService;
-    var esFemenina = VOCES_FEMENINAS.some(function(f){ return n.includes(f); });
-    
-    var score = 0;
-    if(esFemenina) score += 100;
-    if(esOnline) score += 50;
-    if(v.lang === 'es-MX') score += 20;
-    
-    // Priorizar voces específicas (las mejores para español natural)
-    if(n.includes('nuria')) score += 250;     // Nuria es-ES — muy natural y femenina
-    if(n.includes('elvira')) score += 240;    // Elvira es-ES — clara y fluida
-    if(n.includes('marina')) score += 230;    // Marina
-    if(n.includes('abril')) score += 220;     // Abril — suena joven
-    if(n.includes('irene')) score += 210;     // Irene
-    if(n.includes('larissa')) score += 200;   // Larissa — buena para español
-    if(n.includes('dalia')) score += 190;     // Dalia es-MX
-    if(n.includes('sabina')) score += 100;    // Sabina es-MX (local, menos natural)
-    
-    // Voces "undefined Online (Natural)" en Edge — no sabemos si es F o M
-    // Solo aceptar si no hay mejor opción (score bajo)
-    if(n.includes('undefined') && !esFemenina) score += 10;
-    
-    if(score > 0) candidatas.push({voz: v, score: score});
-  }
-  
-  candidatas.sort(function(a,b){ return b.score - a.score; });
-  
-  if(candidatas.length > 0){
-    vozFemenina = candidatas[0].voz;
-    console.log('✅ Voz seleccionada:', vozFemenina.name, '|', vozFemenina.lang, '| Score:', candidatas[0].score);
-    return;
-  }
-  
-  // Fallback: cualquier voz es-MX que no sea masculina
-  var fb = voces.find(function(v){ 
-    var n = v.name.toLowerCase();
-    return v.lang.startsWith('es') && !VOCES_MASCULINAS.some(function(m){ return n.includes(m); });
+    return !VOCES_MASCULINAS.some(function(m){ return n.includes(m); });
   });
-  if(fb){
-    vozFemenina = fb;
-    console.log('⚠️ Voz fallback:', fb.name, fb.lang);
-  }
+  if(candidata) vozFemenina = candidata;
 }
-
-// Cargar voces (Edge las carga asíncronamente)
 if(window.speechSynthesis){
   speechSynthesis.onvoiceschanged = buscarVozFemenina;
   buscarVozFemenina();
-  setTimeout(buscarVozFemenina, 500);
-  setTimeout(buscarVozFemenina, 1500);
-  setTimeout(buscarVozFemenina, 3000);
+  setTimeout(buscarVozFemenina, 1000);
 }
 
-function hablar(texto){
-  if(!vozActiva || !window.speechSynthesis) return;
-  // No leer errores
-  if(texto.includes('timed out') || texto.includes('[Astra]') || texto.includes('Error:') || texto.includes('error:')) return;
-  
-  // Limpiar el texto para habla natural
-  var limpio = texto
-    .replace(/```[\s\S]*?```/g,'')
-    .replace(/\*\*/g,'').replace(/\*/g,'')
-    .replace(/#/g,'')
-    .replace(/- /g, ', ').replace(/•/g, ', ')
-    .replace(/[🚫⚠️🔥⚡💻🧠🕐📊\[\]{}|_~`<>]/g,'')
-    .replace(/\(.*?\)/g,'')
-    .replace(/https?:\/\/\S+/g,'')
-    .replace(/\n+/g, ', ')
-    .replace(/\.{2,}/g, '.')
-    .replace(/,{2,}/g, ',')
-    .replace(/:\s/g, ', ')
-    .replace(/;\s/g, ', ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  
-  if(limpio.length > 500) limpio = limpio.substring(0, 500);
+function hablarConNavegador(texto){
+  if(!window.speechSynthesis) return;
+  var limpio = texto.replace(/```[\s\S]*?```/g,'').replace(/\*\*/g,'').replace(/\*/g,'')
+    .replace(/#/g,'').replace(/- /g, ', ').replace(/[🚫⚠️🔥⚡💻🧠🕐📊\[\]{}|_~`<>]/g,'')
+    .replace(/\(.*?\)/g,'').replace(/https?:\/\/\S+/g,'').replace(/\n+/g, ', ')
+    .replace(/\s+/g, ' ').trim();
+  if(limpio.length > 400) limpio = limpio.substring(0, 400);
   if(!limpio || limpio.length < 3) return;
   
-  // NO dividir en frases — hablar todo en UN SOLO utterance
-  // Esto elimina las pausas/silencios entre oraciones
   speechSynthesis.cancel();
   disco.className = 'hablando';
-  
   var u = new SpeechSynthesisUtterance(limpio);
   u.lang = 'es-MX';
-  u.rate = 1.05;    // velocidad natural, ligeramente rápida
-  u.pitch = 1.1;    // tono femenino sutil
+  u.rate = 1.05;
+  u.pitch = 1.1;
   u.volume = 1.0;
   if(vozFemenina) u.voice = vozFemenina;
   u.onend = function(){ disco.className = ''; };
@@ -250,7 +213,11 @@ function toggleVoz(){
   var btn = document.getElementById('btn-voz');
   btn.textContent = vozActiva ? '🔊' : '🔇';
   btn.title = vozActiva ? 'Voz activada (clic para silenciar)' : 'Voz silenciada (clic para activar)';
-  if(!vozActiva) speechSynthesis.cancel();
+  if(!vozActiva){
+    if(audioActual){ audioActual.pause(); audioActual = null; }
+    if(window.speechSynthesis) speechSynthesis.cancel();
+    disco.className = '';
+  }
 }
 
 // Voz STT (micrófono)
@@ -298,7 +265,16 @@ if(hora >= 5 && hora < 12) saludo = 'Buenos días, todos los sistemas están en 
 else if(hora >= 12 && hora < 19) saludo = 'Buenas tardes, todo operativo. ¿Qué necesitas?';
 else saludo = 'Buenas noches, sistemas en línea. ¿En qué te ayudo?';
 agregarMsg(saludo, 'astra');
-setTimeout(function(){ hablar(saludo); }, 1500);
+// Generar audio del saludo con edge-tts (si está disponible)
+setTimeout(function(){
+  fetch('/api/tts', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({texto: saludo})})
+    .then(r=>r.json()).then(d=>{
+      hablar(saludo, d.audio);
+    }).catch(function(){
+      hablar(saludo, null); // fallback al navegador
+    });
+}, 800);
 </script>
 </body>
 </html>

@@ -4,7 +4,8 @@ Capa 4 — Memoria de Astra.
 Tres niveles (F.R.I.D.A.Y. / Zane / 2B):
 - Volátil      : el contexto de la conversación actual (en RAM, no se guarda).
 - Corto plazo  : estado, tareas, preferencias -> SQLite en el PERFIL.
-- Episódica    : recuerdos importantes con "peso" -> base vectorial (Fase 2).
+- Episódica    : recuerdos importantes con "peso" -> SQLite persistente.
+- Conversaciones: historial completo guardado para continuidad entre sesiones.
 
 Importante: TODO se escribe en `astra-perfil/`. La base es de solo lectura, así que
 borrar el perfil reinicia a Astra "como nueva" y otro usuario puede tener el suyo.
@@ -51,6 +52,14 @@ class Memory:
                 emotional_weight REAL DEFAULT 0.0,
                 created_at TEXT
             );
+            CREATE TABLE IF NOT EXISTS conversations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_text TEXT NOT NULL,
+                assistant_text TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_conversations_date 
+                ON conversations(created_at DESC);
             """
         )
         self._db.commit()
@@ -79,6 +88,43 @@ class Memory:
         )
         db.commit()
 
+    def episode_count(self) -> int:
+        """Cantidad total de episodios registrados."""
+        db = self.connect()
+        row = db.execute("SELECT COUNT(*) FROM episodic").fetchone()
+        return row[0] if row else 0
+
+    # --- Conversaciones persistentes ---
+    def save_conversation(self, user_text: str, assistant_text: str) -> None:
+        """Guarda un par de mensajes (usuario + asistente) para continuidad."""
+        db = self.connect()
+        db.execute(
+            "INSERT INTO conversations(user_text, assistant_text, created_at) VALUES(?,?,?)",
+            (user_text, assistant_text, _now()),
+        )
+        db.commit()
+
+    def get_recent_conversations(self, limit: int = 10) -> list[dict]:
+        """Recupera las conversaciones más recientes (para cargar al inicio)."""
+        db = self.connect()
+        rows = db.execute(
+            "SELECT user_text, assistant_text, created_at FROM conversations "
+            "ORDER BY created_at DESC LIMIT ?",
+            (limit,)
+        ).fetchall()
+        # Devolver en orden cronológico (más viejo primero)
+        return [
+            {"user": r[0], "assistant": r[1], "date": r[2]}
+            for r in reversed(rows)
+        ]
+
+    def get_conversation_count(self) -> int:
+        """Total de conversaciones almacenadas."""
+        db = self.connect()
+        row = db.execute("SELECT COUNT(*) FROM conversations").fetchone()
+        return row[0] if row else 0
+
+    # --- Mantenimiento ---
     def reset(self) -> None:
         """Reinicio limpio: olvida todo (borra la BD del perfil)."""
         if self._db is not None:
@@ -86,6 +132,17 @@ class Memory:
             self._db = None
         if self.db_path.exists():
             self.db_path.unlink()
+
+    def cleanup_old(self, keep_days: int = 30) -> int:
+        """Elimina conversaciones más viejas que `keep_days` días."""
+        db = self.connect()
+        from datetime import timedelta
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=keep_days)).isoformat()
+        cursor = db.execute(
+            "DELETE FROM conversations WHERE created_at < ?", (cutoff,)
+        )
+        db.commit()
+        return cursor.rowcount
 
 
 def _now() -> str:
