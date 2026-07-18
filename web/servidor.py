@@ -48,8 +48,11 @@ VOZ_EDGE = "es-MX-DaliaNeural"
 # "es-AR-ElenaNeural"    — argentina, cálida
 # "es-CO-SalomeNeural"   — colombiana, suave
 
-# Carpeta para cache de audio generado
+# Carpeta para cache de audio generado (se limpia al iniciar para usar nueva config de voz)
 AUDIO_CACHE = RAIZ / "web" / "static" / "audio"
+if AUDIO_CACHE.exists():
+    import shutil
+    shutil.rmtree(AUDIO_CACHE, ignore_errors=True)
 AUDIO_CACHE.mkdir(parents=True, exist_ok=True)
 
 # Inicializar Astra (rápido, solo configura)
@@ -187,22 +190,22 @@ def limpiar_texto_para_voz(texto: str) -> str:
 # Configuración de voz por emoción (rate y pitch de edge-tts)
 # NOTA: pitch base "+10Hz" para sonar más joven/femenina (antes era +0Hz que sonaba grave)
 VOZ_POR_EMOCION = {
-    "neutral":     {"rate": "+8%",  "pitch": "+10Hz"},     # base joven y natural
-    "feliz":       {"rate": "+12%", "pitch": "+20Hz"},     # alegre, ligera
-    "emocionada":  {"rate": "+15%", "pitch": "+25Hz"},     # energética
-    "apasionada":  {"rate": "+12%", "pitch": "+18Hz"},     # entusiasta con peso
-    "divertida":   {"rate": "+10%", "pitch": "+22Hz"},     # juguetona
-    "curiosa":     {"rate": "+8%",  "pitch": "+15Hz"},     # interesada
-    "orgullosa":   {"rate": "+5%",  "pitch": "+12Hz"},     # segura
-    "satisfecha":  {"rate": "+5%",  "pitch": "+12Hz"},     # contenta
-    "triste":      {"rate": "-5%",  "pitch": "+2Hz"},      # más lenta pero no grave
-    "nostalgica":  {"rate": "-3%",  "pitch": "+5Hz"},      # pausada
-    "frustrada":   {"rate": "+12%", "pitch": "+5Hz"},      # rápida, tensa
-    "enojada":     {"rate": "+15%", "pitch": "+0Hz"},      # rápida, seria
-    "impaciente":  {"rate": "+18%", "pitch": "+8Hz"},      # muy rápida
-    "preocupada":  {"rate": "+0%",  "pitch": "+5Hz"},      # seria
-    "estresada":   {"rate": "+10%", "pitch": "+3Hz"},      # tensa
-    "cansada":     {"rate": "-8%",  "pitch": "+5Hz"},      # lenta pero no grave
+    "neutral":     {"rate": "+12%", "pitch": "+10Hz"},     # natural, más rápida
+    "feliz":       {"rate": "+16%", "pitch": "+20Hz"},     # alegre
+    "emocionada":  {"rate": "+20%", "pitch": "+25Hz"},     # energética
+    "apasionada":  {"rate": "+16%", "pitch": "+18Hz"},     # entusiasta
+    "divertida":   {"rate": "+14%", "pitch": "+22Hz"},     # juguetona
+    "curiosa":     {"rate": "+12%", "pitch": "+15Hz"},     # interesada
+    "orgullosa":   {"rate": "+10%", "pitch": "+12Hz"},     # segura
+    "satisfecha":  {"rate": "+10%", "pitch": "+12Hz"},     # contenta
+    "triste":      {"rate": "+5%",  "pitch": "+2Hz"},      # lenta sin ser robótica
+    "nostalgica":  {"rate": "+7%",  "pitch": "+5Hz"},      # pausada
+    "frustrada":   {"rate": "+16%", "pitch": "+5Hz"},      # rápida
+    "enojada":     {"rate": "+18%", "pitch": "+0Hz"},      # rápida, seria
+    "impaciente":  {"rate": "+22%", "pitch": "+8Hz"},      # muy rápida
+    "preocupada":  {"rate": "+8%",  "pitch": "+5Hz"},      # seria
+    "estresada":   {"rate": "+14%", "pitch": "+3Hz"},      # tensa
+    "cansada":     {"rate": "+5%",  "pitch": "+5Hz"},      # lenta
 }
 
 
@@ -309,7 +312,12 @@ async def handle_chat(request):
     # === CREAR ARCHIVOS ===
     crear_file_triggers = ["crea un archivo", "crea un documento", "genera un archivo",
                            "escribe un archivo", "hazme un documento", "crea un txt",
-                           "crea un pdf", "genera un documento", "crea una nota"]
+                           "crea un pdf", "genera un documento", "crea una nota",
+                           "escríbeme", "escribeme", "redacta", "genera un reporte",
+                           "crea un reporte", "haz un ensayo", "crea un ensayo",
+                           "genera un contrato", "crea una carta", "haz un resumen",
+                           "crea un guión", "crea un guion", "escribe un código",
+                           "crea un script", "genera un código"]
     if any(trigger in t for trigger in crear_file_triggers):
         loop = asyncio.get_event_loop()
         contenido = await loop.run_in_executor(None, astra.handle,

@@ -249,31 +249,55 @@ input.addEventListener('keydown', e=>{ if(e.key==='Enter') enviar(); });
 
 // ======================== VOZ TTS ========================
 var vozActiva=true, audioActual=null;
-// Mantener AudioContext vivo para evitar cortes
+var colaAudio = []; // Cola de audios pendientes
+var reproduciendo = false;
+
+// Mantener AudioContext vivo
 var audioCtx = null;
 function getAudioCtx(){
   if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
   if(audioCtx.state==='suspended') audioCtx.resume();
   return audioCtx;
 }
-// Activar AudioContext con la primera interacción del usuario (requerido por navegadores)
 document.addEventListener('click', function(){getAudioCtx();}, {once:true});
 document.addEventListener('keydown', function(){getAudioCtx();}, {once:true});
 
 function hablar(texto, audioUrl){
   if(!vozActiva) return;
   if(texto.includes('timed out')||texto.includes('[Astra]')||texto.includes('Error:')) return;
-  if(audioUrl){ reproducirAudio(audioUrl); return; }
-  hablarNavegador(texto);
+  // Agregar a la cola en vez de reproducir directamente
+  colaAudio.push({texto: texto, url: audioUrl});
+  procesarColaAudio();
 }
+
+function procesarColaAudio(){
+  if(reproduciendo || colaAudio.length === 0) return;
+  reproduciendo = true;
+  var item = colaAudio.shift();
+  if(item.url){
+    reproducirAudio(item.url);
+  } else {
+    hablarNavegador(item.texto);
+  }
+}
+
+function audioTermino(){
+  orb3D_idle();
+  audioActual = null;
+  reproduciendo = false;
+  // Pequeña pausa entre audios para que suene natural
+  setTimeout(procesarColaAudio, 200);
+}
+
 function reproducirAudio(url){
   if(audioActual){audioActual.pause();audioActual=null;}
-  getAudioCtx(); // mantener contexto activo
+  getAudioCtx();
   orb3D_hablar();
   audioActual=new Audio(url);
-  audioActual.onended=function(){orb3D_idle();audioActual=null;};
-  audioActual.onerror=function(){orb3D_idle();audioActual=null;};
-  audioActual.play().catch(function(){orb3D_idle();});
+  audioActual.playbackRate = 1.1; // un poco más rápido para sonar más natural
+  audioActual.onended = audioTermino;
+  audioActual.onerror = audioTermino;
+  audioActual.play().catch(audioTermino);
 }
 
 var vozFem=null;
@@ -289,18 +313,22 @@ if(window.speechSynthesis){speechSynthesis.onvoiceschanged=buscarVoz;buscarVoz()
 function hablarNavegador(texto){
   if(!window.speechSynthesis)return;
   var l=texto.replace(/[*#\[\]{}`<>]/g,'').replace(/\n/g,', ').trim();
-  if(l.length>400)l=l.substring(0,400); if(l.length<3)return;
+  if(l.length>400)l=l.substring(0,400); if(l.length<3){audioTermino();return;}
   speechSynthesis.cancel(); orb3D_hablar();
-  var u=new SpeechSynthesisUtterance(l);u.lang='es-MX';u.rate=1.08;u.pitch=1.15;
+  var u=new SpeechSynthesisUtterance(l);u.lang='es-MX';u.rate=1.12;u.pitch=1.15;
   if(vozFem)u.voice=vozFem;
-  u.onend=function(){orb3D_idle();}; u.onerror=function(){orb3D_idle();};
+  u.onend=audioTermino; u.onerror=audioTermino;
   speechSynthesis.speak(u);
 }
 
 function toggleVoz(){
   vozActiva=!vozActiva; var b=document.getElementById('btn-voz');
   b.textContent=vozActiva?'🔊':'🔇'; b.classList.toggle('active',vozActiva);
-  if(!vozActiva){if(audioActual){audioActual.pause();audioActual=null;}speechSynthesis.cancel();orb3D_idle();}
+  if(!vozActiva){
+    colaAudio=[]; reproduciendo=false;
+    if(audioActual){audioActual.pause();audioActual=null;}
+    speechSynthesis.cancel(); orb3D_idle();
+  }
 }
 
 // ======================== STT ========================
