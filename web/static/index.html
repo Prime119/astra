@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ASTRA — Asistente IA</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--bg:#080c14;--panel:#0d1520;--border:#1a2a3a;--text:#93a1b0;--text-h:#e8eef7;
+  --cyan:#4fc3f7;--blue:#1565c0;--glow:rgba(79,195,247,.3);--mono:'Consolas',monospace;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;
+  height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+/* HEADER */
+#header{padding:12px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);}
+#header h1{color:var(--cyan);font-size:18px;font-weight:700;letter-spacing:2px;}
+#header .sub{color:var(--text);font-size:11px;}
+#header .status{margin-left:auto;font-size:11px;color:var(--text);}
+#header .status .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;}
+#header .status .on{background:#4fc3f7;box-shadow:0 0 6px var(--glow);}
+#header .status .off{background:#c15f5f;}
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:20px;overflow-y:auto;}
+/* DISCO JARVIS (orbe animado) */
+#disco{width:200px;height:200px;position:relative;display:flex;align-items:center;justify-content:center;}
+#disco .ring{position:absolute;width:100%;height:100%;border-radius:50%;
+  border:2px solid rgba(79,195,247,.3);animation:rotar 8s linear infinite;}
+#disco .ring:nth-child(2){width:80%;height:80%;border-color:rgba(79,195,247,.2);animation-duration:6s;animation-direction:reverse;}
+#disco .ring:nth-child(3){width:60%;height:60%;border-color:rgba(79,195,247,.4);animation-duration:4s;}
+#disco .core{width:40%;height:40%;border-radius:50%;background:radial-gradient(circle,rgba(79,195,247,.6),rgba(21,101,192,.3));
+  box-shadow:0 0 30px var(--glow),0 0 60px rgba(79,195,247,.15);transition:all .3s;}
+#disco.hablando .core{box-shadow:0 0 50px var(--cyan),0 0 100px var(--glow);transform:scale(1.1);}
+#disco.hablando .ring{border-color:rgba(79,195,247,.6);animation-duration:2s;}
+#disco.pensando .core{animation:pulso 1.5s ease-in-out infinite;}
+@keyframes rotar{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes pulso{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.9);}}
+/* CHAT */
+#chat{width:100%;max-width:700px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:10px 0;}
+.msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.5;animation:aparecer .3s ease;}
+.msg-user{align-self:flex-end;background:rgba(79,195,247,.12);border:1px solid rgba(79,195,247,.25);color:var(--text-h);}
+.msg-astra{align-self:flex-start;background:var(--panel);border:1px solid var(--border);color:var(--text-h);}
+.msg-sistema{align-self:center;color:var(--text);font-size:10px;font-style:italic;}
+@keyframes aparecer{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+/* INPUT */
+#input-bar{width:100%;max-width:700px;display:flex;gap:8px;padding:12px 0;}
+#input-bar input{flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text-h);
+  padding:12px 16px;border-radius:10px;font-size:13px;outline:none;transition:.15s;}
+#input-bar input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(79,195,247,.1);}
+#input-bar button{background:var(--cyan);color:#080c14;border:none;padding:12px 18px;
+  border-radius:10px;font-weight:700;cursor:pointer;font-size:12px;transition:.15s;}
+#input-bar button:hover{filter:brightness(1.15);}
+#btn-mic{background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-size:18px;
+  width:44px;border-radius:10px;cursor:pointer;transition:.15s;}
+#btn-mic.grabando{background:#c15f5f;border-color:#c15f5f;color:#fff;animation:pulso 1s infinite;}
+#btn-mic:hover{border-color:var(--cyan);}
+/* INFO BAR */
+#info-bar{width:100%;max-width:700px;display:flex;gap:12px;font-size:10px;color:var(--text);
+  padding:8px 0;border-top:1px solid var(--border);justify-content:center;flex-wrap:wrap;}
+#info-bar span{padding:2px 8px;background:var(--panel);border-radius:4px;}
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>ASTRA</h1>
+  <span class="sub">Asistente IA Personal</span>
+  <div class="status"><span class="dot on" id="dot-status"></span><span id="status-text">Conectada</span></div>
+</div>
+<div id="main">
+  <div id="disco">
+    <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+    <div class="core"></div>
+  </div>
+  <div id="chat"></div>
+  <div id="input-bar">
+    <button id="btn-mic" onclick="escuchar()">🎙️</button>
+    <input id="input" placeholder="Escribe algo o presiona el micrófono..." />
+    <button onclick="enviar()">ENVIAR</button>
+  </div>
+  <div id="info-bar">
+    <span id="info-hora"></span>
+    <span id="info-cpu"></span>
+    <span id="info-ram"></span>
+  </div>
+</div>
+<script>
+var disco = document.getElementById('disco');
+var chat = document.getElementById('chat');
+var input = document.getElementById('input');
+
+function agregarMsg(texto, tipo){
+  var div = document.createElement('div');
+  div.className = 'msg msg-'+tipo;
+  div.textContent = texto;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function enviar(){
+  var texto = input.value.trim();
+  if(!texto) return;
+  input.value = '';
+  agregarMsg(texto, 'user');
+  disco.className = 'pensando';
+
+  fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({texto:texto})})
+    .then(r=>r.json()).then(d=>{
+      disco.className = 'hablando';
+      agregarMsg(d.respuesta, 'astra');
+      hablar(d.respuesta);
+      setTimeout(()=>{ disco.className=''; }, 3000);
+    }).catch(e=>{
+      disco.className = '';
+      agregarMsg('Error de conexión: '+e, 'sistema');
+    });
+}
+input.addEventListener('keydown', e=>{ if(e.key==='Enter') enviar(); });
+
+// Voz TTS (navegador)
+var vozActiva = true;
+function hablar(texto){
+  if(!vozActiva || !window.speechSynthesis) return;
+  var limpio = texto.replace(/```[\s\S]*?```/g,'').replace(/[🚫⚠️🔥⚡]/g,'').slice(0,300);
+  var u = new SpeechSynthesisUtterance(limpio);
+  u.lang='es-MX'; u.rate=1.05; u.pitch=0.95;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+// Voz STT (micrófono)
+var reconocimiento = null;
+var Recon = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(Recon){
+  reconocimiento = new Recon();
+  reconocimiento.lang = 'es-MX';
+  reconocimiento.continuous = false;
+  reconocimiento.onresult = function(e){
+    var texto = e.results[0][0].transcript;
+    input.value = texto;
+    document.getElementById('btn-mic').classList.remove('grabando');
+    enviar();
+  };
+  reconocimiento.onend = function(){ document.getElementById('btn-mic').classList.remove('grabando'); };
+}
+function escuchar(){
+  if(!reconocimiento){ agregarMsg('Tu navegador no soporta voz (usa Chrome/Edge).','sistema'); return; }
+  var btn = document.getElementById('btn-mic');
+  if(btn.classList.contains('grabando')){ reconocimiento.stop(); return; }
+  btn.classList.add('grabando');
+  reconocimiento.start();
+}
+
+// Info bar (se actualiza cada 30s)
+function actualizarInfo(){
+  fetch('/api/status').then(r=>r.json()).then(d=>{
+    var s = d.sistema;
+    document.getElementById('info-hora').textContent = '🕐 '+s.hora;
+    document.getElementById('info-cpu').textContent = '💻 CPU '+s.cpu_uso+'%';
+    document.getElementById('info-ram').textContent = '🧠 RAM '+s.ram_usada_gb+'/'+s.ram_total_gb+'GB';
+    var dot = document.getElementById('dot-status');
+    dot.className = 'dot '+(d.astra.brain_local_online?'on':'off');
+    document.getElementById('status-text').textContent = d.astra.brain_local_online?'Conectada':'Cerebro offline';
+  }).catch(()=>{});
+}
+actualizarInfo();
+setInterval(actualizarInfo, 30000);
+
+// Mensaje inicial
+agregarMsg('Buenos días, señor. Soy Astra. Los sistemas están en línea y a su disposición. ¿En qué puedo asistirle?', 'astra');
+</script>
+</body>
+</html>

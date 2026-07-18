@@ -21,3 +21,7 @@ piper-tts>=1.2       # voz / TTS offline (voz femenina en español)
 
 # --- Control del sistema (Fase 4) ---
 # pyautogui>=0.9
+
+
+# --- Interfaz Web (Fase Web) ---
+aiohttp>=3.9           # servidor web para la interfaz JARVIS
