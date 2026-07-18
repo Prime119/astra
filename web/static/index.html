@@ -159,36 +159,36 @@ if(window.speechSynthesis){
 
 function hablar(texto){
   if(!vozActiva || !window.speechSynthesis) return;
-  // NO decir mensajes de error en voz alta
   if(texto.includes('timed out') || texto.includes('[Astra]') || texto.includes('Error')) return;
-  // Limpiar: quitar asteriscos, markdown, signos innecesarios, código, etc.
   var limpio = texto
-    .replace(/```[\s\S]*?```/g,'')     // bloques de código
-    .replace(/\*\*/g,'')                // **negritas**
-    .replace(/\*/g,'')                  // *itálicas*
-    .replace(/#/g,'')                   // encabezados
-    .replace(/- /g, ', ')              // listas con guión → pausa natural
-    .replace(/•/g, ', ')               // bullet points
-    .replace(/[🚫⚠️🔥⚡\[\]{}|_~`]/g,'')  // emojis y markdown
-    .replace(/\(.*?\)/g,'')            // paréntesis y contenido
-    .replace(/https?:\/\/\S+/g,'')     // URLs
-    .replace(/\n+/g, '. ')             // saltos de línea → puntos (pausa)
-    .replace(/\.+/g, '.')              // múltiples puntos → uno
-    .replace(/,+/g, ',')              // múltiples comas → una
-    .replace(/\s+/g, ' ')             // espacios múltiples
-    .trim().slice(0, 500);
+    .replace(/```[\s\S]*?```/g,'')
+    .replace(/\*\*/g,'').replace(/\*/g,'').replace(/#/g,'')
+    .replace(/- /g, ', ').replace(/•/g, ', ')
+    .replace(/[🚫⚠️🔥⚡\[\]{}|_~`]/g,'')
+    .replace(/\(.*?\)/g,'').replace(/https?:\/\/\S+/g,'')
+    .replace(/\n+/g, ' ').replace(/\.+/g, '.').replace(/,+/g, ',')
+    .replace(/\s+/g, ' ').trim().slice(0, 600);
   if(!limpio || limpio.length < 3) return;
-  var u = new SpeechSynthesisUtterance(limpio);
-  u.lang = 'es-MX';
-  u.rate = 1.1;    // un poco más rápido (natural, no robótica)
-  u.pitch = 1.25;  // femenino y joven
-  u.volume = 0.9;
-  if(vozFemenina) u.voice = vozFemenina;
-  u.onstart = function(){ disco.className='hablando'; };
-  u.onend = function(){ disco.className=''; };
+  // Dividir en frases cortas (elimina las pausas largas entre puntos)
+  var frases = limpio.split(/(?<=[.!?])\s+/).filter(f => f.trim().length > 2);
+  if(frases.length === 0) frases = [limpio];
+  disco.className = 'hablando';
+  var idx = 0;
+  function leerSiguiente(){
+    if(idx >= frases.length){ disco.className=''; return; }
+    var u = new SpeechSynthesisUtterance(frases[idx]);
+    u.lang = 'es-MX';
+    u.rate = 1.15;
+    u.pitch = 1.2;
+    u.volume = 0.95;
+    if(vozFemenina) u.voice = vozFemenina;
+    u.onend = function(){ idx++; leerSiguiente(); };
+    u.onerror = function(){ idx++; leerSiguiente(); };
+    speechSynthesis.speak(u);
+  }
   speechSynthesis.cancel();
-  speechSynthesis.speak(u);
-}
+  leerSiguiente();
+}}
 
 function toggleVoz(){
   vozActiva = !vozActiva;
