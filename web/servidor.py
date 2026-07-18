@@ -280,25 +280,40 @@ async def handle_chat(request):
     # Detectar si pide info del sistema
     t = texto.lower()
     
-    # === SIMULACIONES 3D ===
-    sim_triggers = ["simulación", "simulacion", "simula", "holograma", "3d", "universo",
-                    "planeta", "sistema solar", "galaxia", "átomo", "molécula", "partículas",
-                    "esfera", "cubo", "geometría", "órbita", "tierra", "luna", "sol"]
-    if any(w in t for w in sim_triggers) and any(w in t for w in ["crea", "genera", "haz", "muestra", "hazme", "quiero"]):
+    # === SIMULACIONES 3D (detección agresiva — si menciona algo 3D, hacerlo YA) ===
+    sim_temas = ["simulación", "simulacion", "simula", "holograma", "3d",
+                 "universo", "planeta", "sistema solar", "galaxia", "átomo", "atomo",
+                 "molécula", "molecula", "partículas", "particulas",
+                 "esfera", "cubo", "geometría", "geometria", "órbita", "orbita",
+                 "tierra", "luna", "sol", "estrellas", "estrella", "nebulosa",
+                 "quantum", "cuántic", "cuantic"]
+    sim_acciones = ["crea", "genera", "haz", "muestra", "hazme", "quiero", "dame",
+                    "pon", "hazlo", "créa", "creame", "créame", "ponme", "simula",
+                    "hacer", "ver", "mostrar", "una", "un", "básic", "basic",
+                    "sí", "si", "va", "dale", "órale", "orale", "a ver"]
+    
+    # Si menciona UN tema de simulación, es suficiente para lanzar
+    tiene_tema = any(w in t for w in sim_temas)
+    tiene_accion = any(w in t for w in sim_acciones)
+    # También detectar si es una confirmación a algo de simulación previo
+    es_confirmacion = t.strip() in ["sí", "si", "va", "dale", "hazlo", "sí hazlo",
+                                     "si hazlo", "ok", "claro", "órale", "a ver"]
+    
+    if tiene_tema and (tiene_accion or len(t) < 60):
         # Determinar tipo de simulación
         sim_type = "universo"  # default
-        if any(w in t for w in ["sistema solar", "planeta", "sol", "tierra", "luna", "órbita"]):
+        if any(w in t for w in ["sistema solar", "planeta", "sol", "tierra", "luna", "órbita", "orbita"]):
             sim_type = "sistema_solar"
-        elif any(w in t for w in ["galaxia", "estrellas"]):
+        elif any(w in t for w in ["galaxia", "galaxias"]):
             sim_type = "galaxia"
         elif any(w in t for w in ["átomo", "atomo", "molécula", "molecula", "electr"]):
             sim_type = "atomo"
-        elif any(w in t for w in ["partícula", "particula", "quantum", "cuántic"]):
+        elif any(w in t for w in ["partícula", "particula", "quantum", "cuántic", "cuantic"]):
             sim_type = "particulas"
-        elif any(w in t for w in ["cubo", "geometr", "esfera", "pirámide"]):
+        elif any(w in t for w in ["cubo", "geometr", "esfera", "pirámide", "piramide", "toroide"]):
             sim_type = "geometria"
         
-        respuesta = f"Listo, generando la simulación. Mira la pantalla."
+        respuesta = "Listo, mira la pantalla."
         emocion_actual = astra.emotions.state.emocion
         audio_url = await generar_audio_edge(respuesta, emocion_actual)
         return web.json_response({
