@@ -74,6 +74,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;
     <button id="btn-mic" onclick="escuchar()">🎙️</button>
     <input id="input" placeholder="Escribe algo o presiona el micrófono..." />
     <button onclick="enviar()">ENVIAR</button>
+    <button id="btn-voz" onclick="toggleVoz()" title="Voz activada (clic para silenciar)" style="background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-size:16px;width:44px;border-radius:10px;cursor:pointer;">🔊</button>
   </div>
   <div id="info-bar">
     <span id="info-hora"></span>
@@ -115,15 +116,55 @@ function enviar(){
 }
 input.addEventListener('keydown', e=>{ if(e.key==='Enter') enviar(); });
 
-// Voz TTS (navegador)
+// Voz TTS (navegador) — VOZ FEMENINA, natural
 var vozActiva = true;
+var vozFemenina = null;
+
+// Buscar la mejor voz femenina en español al cargar
+function buscarVozFemenina(){
+  var voces = speechSynthesis.getVoices();
+  // Prioridad: Microsoft Sabina > Google español femenina > cualquier es-MX femenina > cualquier es femenina
+  var prioridad = [
+    v => v.name.includes('Sabina'),
+    v => v.name.includes('Dalia'),
+    v => v.name.includes('Elvira'),
+    v => v.name.toLowerCase().includes('female') && v.lang.startsWith('es'),
+    v => v.lang === 'es-MX' && !v.name.toLowerCase().includes('male'),
+    v => v.lang.startsWith('es') && !v.name.toLowerCase().includes('male'),
+    v => v.lang.startsWith('es'),
+  ];
+  for(var p of prioridad){
+    var found = voces.find(p);
+    if(found){ vozFemenina = found; console.log('Voz seleccionada:', found.name); return; }
+  }
+}
+if(window.speechSynthesis){
+  speechSynthesis.onvoiceschanged = buscarVozFemenina;
+  buscarVozFemenina();
+}
+
 function hablar(texto){
   if(!vozActiva || !window.speechSynthesis) return;
-  var limpio = texto.replace(/```[\s\S]*?```/g,'').replace(/[🚫⚠️🔥⚡]/g,'').slice(0,300);
+  var limpio = texto.replace(/```[\s\S]*?```/g,'').replace(/[🚫⚠️🔥⚡\[\]]/g,'').replace(/\(.*?\)/g,'').slice(0,400);
   var u = new SpeechSynthesisUtterance(limpio);
-  u.lang='es-MX'; u.rate=1.05; u.pitch=0.95;
+  u.lang = 'es-MX';
+  u.rate = 0.95;   // un poco más lento = más natural
+  u.pitch = 1.15;  // pitch más alto = femenino
+  u.volume = 0.9;
+  if(vozFemenina) u.voice = vozFemenina;
+  // Hacer que el disco reaccione mientras habla
+  u.onstart = function(){ disco.className='hablando'; };
+  u.onend = function(){ disco.className=''; };
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
+}
+
+function toggleVoz(){
+  vozActiva = !vozActiva;
+  var btn = document.getElementById('btn-voz');
+  btn.textContent = vozActiva ? '🔊' : '🔇';
+  btn.title = vozActiva ? 'Voz activada (clic para silenciar)' : 'Voz silenciada (clic para activar)';
+  if(!vozActiva) speechSynthesis.cancel();
 }
 
 // Voz STT (micrófono)
@@ -164,8 +205,10 @@ function actualizarInfo(){
 actualizarInfo();
 setInterval(actualizarInfo, 30000);
 
-// Mensaje inicial
-agregarMsg('Buenos días, señor. Soy Astra. Los sistemas están en línea y a su disposición. ¿En qué puedo asistirle?', 'astra');
+// Mensaje inicial (se dice hablado)
+var saludo = 'Buenos días, señor. Soy Astra. Los sistemas están en línea y a su disposición. ¿En qué puedo asistirle?';
+agregarMsg(saludo, 'astra');
+setTimeout(function(){ hablar(saludo); }, 1000); // esperar 1s para que carguen las voces
 </script>
 </body>
 </html>

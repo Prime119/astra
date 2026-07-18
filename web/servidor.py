@@ -84,7 +84,10 @@ async def handle_static(request):
 
 async def handle_chat(request):
     """Endpoint principal de chat con Astra."""
-    data = await request.json()
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"respuesta": "No entendí el mensaje. Intenta de nuevo."})
     texto = data.get("texto", "").strip()
     if not texto:
         return web.json_response({"respuesta": ""})
@@ -116,10 +119,20 @@ async def handle_chat(request):
         respuesta = f"Son las {ahora.strftime('%H:%M')} del {ahora.strftime('%d de %B de %Y')}."
         return web.json_response({"respuesta": respuesta})
 
-    # Chat normal con el LLM
+    # Chat normal con el LLM (con tolerancia a errores ortográficos)
+    # Instruir al LLM que interprete palabras mal escritas por contexto
+    texto_con_instruccion = (
+        "IMPORTANTE: Si el usuario escribe con errores ortográficos o palabras mal escritas, "
+        "interpreta lo que quiso decir por contexto y responde normalmente. "
+        "NO le corrijas la ortografía ni menciones el error. Solo responde al contenido.\n\n"
+        f"Usuario dice: {texto}"
+    )
     loop = asyncio.get_event_loop()
-    respuesta = await loop.run_in_executor(None, astra.handle, texto)
-    return web.json_response({"respuesta": respuesta})
+    try:
+        respuesta = await loop.run_in_executor(None, astra.handle, texto_con_instruccion)
+    except Exception as e:
+        respuesta = f"Disculpa, tuve un problema al procesar eso. Error: {e}"
+    return web.json_response({"respuesta": str(respuesta)})
 
 
 async def handle_status(request):
