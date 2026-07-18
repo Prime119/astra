@@ -164,6 +164,53 @@ def buscar_archivos(patron: str, directorio: str = None) -> str:
         return f"Error buscando: {e}"
 
 
+async def buscar_en_internet(query: str, astra_instance) -> str:
+    """Busca información en internet y la guarda en la memoria de Astra para aprender."""
+    try:
+        import httpx as hx
+        # Usar DuckDuckGo Instant Answer API (gratis, sin API key)
+        r = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: hx.get(
+                "https://api.duckduckgo.com/",
+                params={"q": query, "format": "json", "no_html": "1", "skip_disambig": "1"},
+                timeout=10.0
+            )
+        )
+        data = r.json()
+        
+        # Extraer información relevante
+        info_parts = []
+        if data.get("Abstract"):
+            info_parts.append(data["Abstract"])
+        if data.get("Answer"):
+            info_parts.append(data["Answer"])
+        if not info_parts and data.get("RelatedTopics"):
+            for topic in data["RelatedTopics"][:3]:
+                if isinstance(topic, dict) and topic.get("Text"):
+                    info_parts.append(topic["Text"])
+        
+        if info_parts:
+            info = " ".join(info_parts)[:500]
+            # GUARDAR EN MEMORIA (aprendizaje de internet)
+            try:
+                astra_instance.memory.log_episode("internet", f"Búsqueda: {query} | Resultado: {info[:200]}")
+                astra_instance.learning._store_or_update("conocimiento", f"Investigó sobre: {query}")
+            except Exception:
+                pass
+            
+            # Pedir al LLM que resuma la info para el usuario
+            loop = asyncio.get_event_loop()
+            respuesta = await loop.run_in_executor(
+                None, astra_instance.handle,
+                f"[Información encontrada en internet sobre '{query}']: {info}\n\nResume esto de forma clara y breve para el usuario."
+            )
+            return respuesta
+        else:
+            return f"Busqué '{query}' pero no encontré información directa. Puedo intentar de otra forma si quieres."
+    except Exception as e:
+        return f"No pude conectarme a internet para buscar eso. Verifica tu conexión."
+
+
 def limpiar_texto_para_voz(texto: str) -> str:
     """Limpia el texto para que suene natural al hablarlo."""
     import re
@@ -312,6 +359,27 @@ async def handle_chat(request):
             sim_type = "vortice"
         elif any(w in t for w in ["explosión", "explosion", "supernova", "big bang"]):
             sim_type = "explosion"
+        # === INGENIERÍA ===
+        elif any(w in t for w in ["motor", "pistón", "piston", "cilindro", "combustión"]):
+            sim_type = "motor"
+        elif any(w in t for w in ["engranaje", "gear", "mecanismo", "reloj"]):
+            sim_type = "engranajes"
+        elif any(w in t for w in ["circuito", "eléctrico", "electrico", "corriente", "resistencia"]):
+            sim_type = "circuito"
+        elif any(w in t for w in ["puente", "estructura", "viga", "columna", "edificio"]):
+            sim_type = "puente"
+        elif any(w in t for w in ["fluido", "agua", "líquido", "liquido", "hidráulica"]):
+            sim_type = "fluido"
+        elif any(w in t for w in ["péndulo", "pendulo", "oscilación", "oscilacion"]):
+            sim_type = "pendulo"
+        elif any(w in t for w in ["cohete", "propulsión", "nave", "espacial", "lanzamiento"]):
+            sim_type = "cohete"
+        elif any(w in t for w in ["adn", "dna", "célula", "celula", "biología", "genética"]):
+            sim_type = "adn"
+        elif any(w in t for w in ["red neuronal", "neural", "cerebro", "neurona", "sinapsis"]):
+            sim_type = "red_neuronal"
+        elif any(w in t for w in ["turbina", "hélice", "helice", "ventilador", "rotor"]):
+            sim_type = "turbina"
         
         respuesta = "Listo, ahí está tu simulación."
         emocion_actual = astra.emotions.state.emocion
@@ -321,6 +389,24 @@ async def handle_chat(request):
             "audio": audio_url,
             "simulacion": sim_type
         })
+
+    # === BÚSQUEDA EN INTERNET ===
+    busca_triggers = ["busca en internet", "investiga en la web", "googlea", "busca en la red",
+                      "busca en línea", "busca en linea", "qué dice internet sobre",
+                      "busca información sobre", "busca info sobre", "search"]
+    if any(trigger in t for trigger in busca_triggers):
+        # Extraer el tema de búsqueda
+        query = texto
+        for trigger in busca_triggers:
+            if trigger in t:
+                idx = t.index(trigger) + len(trigger)
+                query = texto[idx:].strip()
+                break
+        if query:
+            resultado = await buscar_en_internet(query, astra)
+            emocion_actual = astra.emotions.state.emocion
+            audio_url = await generar_audio_edge(resultado, emocion_actual)
+            return web.json_response({"respuesta": resultado, "audio": audio_url})
 
     # === CREAR ARCHIVOS/DOCUMENTOS ===
     crear_file_triggers = ["crea un archivo", "crea un documento", "genera un archivo",
