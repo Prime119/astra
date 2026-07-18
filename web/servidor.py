@@ -283,31 +283,35 @@ async def handle_chat(request):
     # Detectar si pide info del sistema
     t = texto.lower()
     
-    # === SIMULACIONES/HOLOGRAMAS 3D (genera código Three.js dinámico) ===
+    # === SIMULACIONES/HOLOGRAMAS 3D ===
     sim_keywords = ["simulación", "simulacion", "simula", "holograma", "hologram", "3d"]
     sim_acciones = ["crea", "genera", "haz", "muestra", "hazme", "créame", "creame", "simula", "pon"]
     tiene_sim = any(w in t for w in sim_keywords)
     tiene_acc = any(w in t for w in sim_acciones)
     
     if tiene_sim and tiene_acc:
-        # Pedir al LLM que genere código Three.js para la simulación
-        prompt_sim = (
-            "Genera SOLO código JavaScript puro usando Three.js para crear esta simulación 3D. "
-            "La escena, cámara y renderer ya existen como variables: simScene, simCamera, simRenderer. "
-            "simCamera.position.z ya está en 20. Usa físicas realistas. "
-            "Agrega objetos a simScene. Crea una función 'animarObjetos()' que se llama cada frame. "
-            "NO incluyas explicaciones, solo código JS puro. NO uses import ni require. "
-            "Máximo 40 líneas. Usa THREE.Mesh, THREE.SphereGeometry, THREE.BoxGeometry, etc.\n\n"
-            f"Simulación pedida: {texto}"
-        )
-        loop = asyncio.get_event_loop()
-        codigo_3d = await loop.run_in_executor(None, lambda: astra.brain.think(prompt_sim))
-        
-        # Limpiar el código (quitar markdown si el LLM lo pone)
-        import re
-        codigo_3d = re.sub(r'```(?:javascript|js)?\n?', '', codigo_3d)
-        codigo_3d = re.sub(r'```', '', codigo_3d)
-        codigo_3d = codigo_3d.strip()
+        # Determinar tipo por contenido (templates de alta calidad)
+        sim_type = "particulas"
+        if any(w in t for w in ["agujero negro", "black hole", "singularidad"]):
+            sim_type = "agujero_negro"
+        elif any(w in t for w in ["sistema solar", "planeta", "sol", "tierra", "luna", "órbita"]):
+            sim_type = "sistema_solar"
+        elif any(w in t for w in ["galaxia", "vía láctea", "espiral"]):
+            sim_type = "galaxia"
+        elif any(w in t for w in ["átomo", "atomo", "molécula", "molecula", "electrón", "adn", "dna"]):
+            sim_type = "atomo"
+        elif any(w in t for w in ["universo", "cosmos", "nebulosa", "big bang", "estrellas"]):
+            sim_type = "universo"
+        elif any(w in t for w in ["cubo", "esfera", "geometr", "pirámide", "forma", "toroide"]):
+            sim_type = "geometria"
+        elif any(w in t for w in ["onda", "wave", "frecuencia", "vibración", "cuerdas", "string"]):
+            sim_type = "ondas"
+        elif any(w in t for w in ["campo", "magnético", "eléctrico", "fuerza", "gravedad"]):
+            sim_type = "campo"
+        elif any(w in t for w in ["tornado", "vórtice", "vortice", "espiral", "remolino"]):
+            sim_type = "vortice"
+        elif any(w in t for w in ["explosión", "explosion", "supernova", "big bang"]):
+            sim_type = "explosion"
         
         respuesta = "Listo, ahí está tu simulación."
         emocion_actual = astra.emotions.state.emocion
@@ -315,7 +319,7 @@ async def handle_chat(request):
         return web.json_response({
             "respuesta": respuesta,
             "audio": audio_url,
-            "simulacion_code": codigo_3d
+            "simulacion": sim_type
         })
 
     # === CREAR ARCHIVOS/DOCUMENTOS ===
