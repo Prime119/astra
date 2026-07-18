@@ -6,102 +6,74 @@
 <title>ASTRA</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-:root{--bg:#060a10;--panel:rgba(10,18,28,.85);--border:rgba(79,195,247,.08);--text:#8a9bb0;
+:root{--bg:#030608;--panel:rgba(8,14,22,.9);--border:rgba(79,195,247,.06);--text:#8a9bb0;
   --text-h:#e4ecf5;--cyan:#4fc3f7;--glow:rgba(79,195,247,.25);}
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;
   height:100vh;display:flex;flex-direction:column;overflow:hidden;}
 
-/* === DISCO DE FONDO (grande, centrado, detrás del chat) === */
-#disco-bg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:500px;height:500px;pointer-events:none;z-index:0;opacity:.4;transition:all .6s ease;}
-#disco-bg .ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  border-radius:50%;border:1.5px solid rgba(79,195,247,.12);animation:rotar 12s linear infinite;}
-#disco-bg .r1{width:100%;height:100%;}
-#disco-bg .r2{width:80%;height:80%;border-color:rgba(79,195,247,.08);animation-duration:9s;animation-direction:reverse;border-style:dashed;}
-#disco-bg .r3{width:60%;height:60%;border-color:rgba(79,195,247,.15);animation-duration:6s;border-width:1px;}
-#disco-bg .r4{width:42%;height:42%;border-color:rgba(79,195,247,.06);animation-duration:4s;animation-direction:reverse;border-style:dotted;}
-#disco-bg .r5{width:26%;height:26%;border-color:rgba(79,195,247,.1);animation-duration:3s;}
-#disco-bg .core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:18%;height:18%;border-radius:50%;
-  background:radial-gradient(circle at 40% 40%,rgba(140,210,255,.6),rgba(79,195,247,.25),rgba(21,101,192,.1));
-  box-shadow:0 0 60px rgba(79,195,247,.15),0 0 120px rgba(79,195,247,.05);transition:all .5s ease;}
+/* === 3D CANVAS (fondo holográfico) === */
+#three-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;}
 
-/* Estados del disco */
-#disco-bg.hablando{opacity:.7;}
-#disco-bg.hablando .core{box-shadow:0 0 80px var(--cyan),0 0 160px var(--glow);transform:translate(-50%,-50%) scale(1.4);
-  background:radial-gradient(circle at 40% 40%,rgba(200,240,255,.8),rgba(79,195,247,.5),rgba(21,101,192,.2));}
-#disco-bg.hablando .ring{border-color:rgba(79,195,247,.35);animation-duration:2s;}
-#disco-bg.pensando{opacity:.6;}
-#disco-bg.pensando .core{animation:pulso 1.2s ease-in-out infinite;}
-#disco-bg.pensando .r3{border-color:rgba(79,195,247,.4);animation-duration:2s;}
-@keyframes rotar{from{transform:translate(-50%,-50%) rotate(0deg);}to{transform:translate(-50%,-50%) rotate(360deg);}}
-@keyframes pulso{0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1);}50%{opacity:.3;transform:translate(-50%,-50%) scale(.8);}}
-
-/* === HEADER minimalista === */
-#header{padding:10px 24px;display:flex;align-items:center;gap:12px;
-  border-bottom:1px solid var(--border);backdrop-filter:blur(10px);z-index:10;background:rgba(6,10,16,.8);}
-#header h1{color:var(--cyan);font-size:16px;font-weight:700;letter-spacing:3px;}
+/* === HEADER === */
+#header{padding:10px 24px;display:flex;align-items:center;gap:12px;z-index:10;
+  background:rgba(3,6,8,.7);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+#header h1{color:var(--cyan);font-size:15px;font-weight:600;letter-spacing:4px;
+  text-shadow:0 0 10px rgba(79,195,247,.3);}
 #header .status{margin-left:auto;font-size:10px;color:var(--text);display:flex;align-items:center;gap:6px;}
-#header .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--glow);}
+#header .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
 #header .dot.off{background:#c15f5f;box-shadow:none;}
 
-/* === ZONA DE CHAT (ocupa todo el espacio) === */
+/* === CHAT === */
 #chat-zone{flex:1;display:flex;flex-direction:column;position:relative;z-index:5;overflow:hidden;}
-#chat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:20px 24px;scroll-behavior:smooth;}
-
-/* Scrollbar invisible/integrada */
-#chat::-webkit-scrollbar{width:4px;}
+#chat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:16px 28px;scroll-behavior:smooth;}
+#chat::-webkit-scrollbar{width:3px;}
 #chat::-webkit-scrollbar-track{background:transparent;}
-#chat::-webkit-scrollbar-thumb{background:rgba(79,195,247,.15);border-radius:4px;}
-#chat::-webkit-scrollbar-thumb:hover{background:rgba(79,195,247,.3);}
+#chat::-webkit-scrollbar-thumb{background:rgba(79,195,247,.12);border-radius:3px;}
+#chat::-webkit-scrollbar-thumb:hover{background:rgba(79,195,247,.25);}
 
-/* Mensajes */
-.msg{max-width:70%;padding:12px 18px;border-radius:18px;font-size:13.5px;line-height:1.65;
-  animation:aparecer .3s ease;word-wrap:break-word;}
-.msg-user{align-self:flex-end;background:rgba(79,195,247,.08);border:1px solid rgba(79,195,247,.15);
-  color:var(--text-h);border-bottom-right-radius:4px;}
-.msg-astra{align-self:flex-start;background:rgba(13,21,32,.75);border:1px solid rgba(79,195,247,.1);
-  color:var(--text-h);border-bottom-left-radius:4px;backdrop-filter:blur(4px);}
-.msg-sistema{align-self:center;color:var(--text);font-size:10px;opacity:.5;font-style:italic;}
-@keyframes aparecer{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.msg{max-width:65%;padding:11px 16px;border-radius:16px;font-size:13.5px;line-height:1.6;
+  animation:fadeIn .25s ease;word-wrap:break-word;}
+.msg-user{align-self:flex-end;background:rgba(79,195,247,.06);border:1px solid rgba(79,195,247,.12);
+  color:var(--text-h);border-bottom-right-radius:3px;}
+.msg-astra{align-self:flex-start;background:rgba(10,20,35,.8);border:1px solid rgba(79,195,247,.08);
+  color:var(--text-h);border-bottom-left-radius:3px;backdrop-filter:blur(6px);
+  box-shadow:0 2px 20px rgba(0,0,0,.3);}
+.msg-sistema{align-self:center;color:var(--text);font-size:9.5px;opacity:.4;font-style:italic;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 
-/* === BARRA DE INPUT === */
-#input-bar{padding:12px 24px;display:flex;gap:8px;align-items:center;
-  border-top:1px solid var(--border);backdrop-filter:blur(10px);background:rgba(6,10,16,.8);z-index:10;}
-#input-bar input{flex:1;background:rgba(13,21,32,.6);border:1px solid rgba(79,195,247,.1);
-  color:var(--text-h);padding:12px 16px;border-radius:12px;font-size:13px;outline:none;transition:.2s;}
-#input-bar input:focus{border-color:rgba(79,195,247,.3);box-shadow:0 0 0 3px rgba(79,195,247,.05);}
-.btn-action{background:rgba(13,21,32,.6);border:1px solid rgba(79,195,247,.12);color:var(--cyan);
-  width:40px;height:40px;border-radius:10px;cursor:pointer;font-size:15px;display:flex;
+/* === INPUT BAR === */
+#input-bar{padding:12px 24px;display:flex;gap:8px;align-items:center;z-index:10;
+  background:rgba(3,6,8,.75);backdrop-filter:blur(12px);border-top:1px solid var(--border);}
+#input-bar input{flex:1;background:rgba(10,18,28,.7);border:1px solid rgba(79,195,247,.08);
+  color:var(--text-h);padding:11px 16px;border-radius:12px;font-size:13px;outline:none;transition:.2s;}
+#input-bar input:focus{border-color:rgba(79,195,247,.25);box-shadow:0 0 0 2px rgba(79,195,247,.04);}
+.btn-action{background:rgba(10,18,28,.6);border:1px solid rgba(79,195,247,.1);color:var(--cyan);
+  width:38px;height:38px;border-radius:10px;cursor:pointer;font-size:14px;display:flex;
   align-items:center;justify-content:center;transition:.2s;}
-.btn-action:hover{border-color:rgba(79,195,247,.3);background:rgba(79,195,247,.05);}
-.btn-action.active{background:rgba(79,195,247,.12);border-color:var(--cyan);}
-#btn-send{background:var(--cyan);color:#080c14;border:none;padding:10px 20px;border-radius:10px;
-  font-weight:700;cursor:pointer;font-size:12px;letter-spacing:.5px;transition:.15s;}
-#btn-send:hover{filter:brightness(1.15);}
-#btn-mic.grabando{background:rgba(200,80,80,.2);border-color:#c15f5f;color:#c15f5f;animation:pulso 1s infinite;}
+.btn-action:hover{border-color:rgba(79,195,247,.3);background:rgba(79,195,247,.04);}
+.btn-action.active{background:rgba(79,195,247,.1);border-color:var(--cyan);box-shadow:0 0 8px rgba(79,195,247,.15);}
+#btn-send{background:linear-gradient(135deg,#4fc3f7,#0288d1);color:#fff;border:none;
+  padding:10px 18px;border-radius:10px;font-weight:600;cursor:pointer;font-size:11.5px;
+  letter-spacing:.5px;transition:.15s;box-shadow:0 2px 12px rgba(79,195,247,.2);}
+#btn-send:hover{filter:brightness(1.1);box-shadow:0 4px 20px rgba(79,195,247,.3);}
+#btn-mic.grabando{background:rgba(200,80,80,.15);border-color:#e57373;color:#e57373;animation:pulsoBtn 1.2s infinite;}
+@keyframes pulsoBtn{0%,100%{box-shadow:0 0 0 0 rgba(229,115,115,.3);}50%{box-shadow:0 0 0 8px rgba(229,115,115,0);}}
 
 /* === INFO BAR === */
-#info-bar{padding:6px 24px;display:flex;gap:10px;font-size:9.5px;color:var(--text);
-  justify-content:center;flex-wrap:wrap;opacity:.6;z-index:10;}
-#info-bar span{padding:2px 8px;background:rgba(13,21,32,.5);border-radius:3px;}
+#info-bar{padding:5px 24px;display:flex;gap:10px;font-size:9px;color:var(--text);
+  justify-content:center;flex-wrap:wrap;opacity:.5;z-index:10;}
+#info-bar span{padding:2px 7px;background:rgba(10,18,28,.4);border-radius:3px;}
 
-/* === CÁMARA PREVIEW === */
-#cam-preview{display:none;position:fixed;top:50px;left:20px;width:140px;height:105px;
-  border-radius:10px;border:1px solid rgba(79,195,247,.2);opacity:.75;z-index:20;}
+/* === CÁMARA === */
+#cam-preview{display:none;position:fixed;top:48px;left:16px;width:130px;height:98px;
+  border-radius:8px;border:1px solid rgba(79,195,247,.15);opacity:.8;z-index:20;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);}
 </style>
 </head>
 <body>
 
-<!-- DISCO DE FONDO (grande, centrado) -->
-<div id="disco-bg">
-  <div class="ring r1"></div>
-  <div class="ring r2"></div>
-  <div class="ring r3"></div>
-  <div class="ring r4"></div>
-  <div class="ring r5"></div>
-  <div class="core"></div>
-</div>
+<!-- THREE.JS CANVAS -->
+<canvas id="three-canvas"></canvas>
 
 <!-- HEADER -->
 <div id="header">
@@ -109,12 +81,10 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <div class="status"><span class="dot" id="dot-status"></span><span id="status-text">En línea</span></div>
 </div>
 
-<!-- CHAT (ocupa todo el espacio disponible) -->
-<div id="chat-zone">
-  <div id="chat"></div>
-</div>
+<!-- CHAT -->
+<div id="chat-zone"><div id="chat"></div></div>
 
-<!-- INPUT BAR -->
+<!-- INPUT -->
 <div id="input-bar">
   <button class="btn-action" id="btn-mic" onclick="escuchar()" title="Hablar">🎙️</button>
   <button class="btn-action" id="btn-conv" onclick="toggleConversacion()" title="Conversación continua">💬</button>
@@ -123,20 +93,104 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
   <button class="btn-action" id="btn-cam" onclick="toggleCamara()" title="Cámara">📷</button>
   <button class="btn-action" id="btn-voz" onclick="toggleVoz()" title="Voz">🔊</button>
 </div>
-
-<!-- INFO BAR -->
 <div id="info-bar">
-  <span id="info-emocion"></span>
-  <span id="info-hora"></span>
-  <span id="info-cpu"></span>
-  <span id="info-ram"></span>
+  <span id="info-emocion"></span><span id="info-hora"></span><span id="info-cpu"></span><span id="info-ram"></span>
 </div>
-
-<!-- CÁMARA -->
 <video id="cam-preview" autoplay muted></video>
 
+<!-- THREE.JS CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-var disco = document.getElementById('disco-bg');
+// ======================== THREE.JS 3D ORB ========================
+var scene, camera, renderer, orb, rings=[], particles;
+var orbScale=1, targetScale=1, glowIntensity=0.3, targetGlow=0.3;
+
+function init3D(){
+  var canvas = document.getElementById('three-canvas');
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.z = 4;
+  renderer = new THREE.WebGLRenderer({canvas:canvas, alpha:true, antialias:true});
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+
+  // Orbe central (esfera brillante)
+  var orbGeo = new THREE.SphereGeometry(0.4, 64, 64);
+  var orbMat = new THREE.MeshBasicMaterial({color:0x4fc3f7, transparent:true, opacity:0.15});
+  orb = new THREE.Mesh(orbGeo, orbMat);
+  scene.add(orb);
+
+  // Núcleo interno brillante
+  var coreGeo = new THREE.SphereGeometry(0.15, 32, 32);
+  var coreMat = new THREE.MeshBasicMaterial({color:0xb3e5fc, transparent:true, opacity:0.6});
+  var core = new THREE.Mesh(coreGeo, coreMat);
+  orb.add(core);
+
+  // Anillos holográficos
+  for(var i=0; i<5; i++){
+    var radius = 0.7 + i*0.35;
+    var ringGeo = new THREE.RingGeometry(radius, radius+0.008, 128);
+    var ringMat = new THREE.MeshBasicMaterial({color:0x4fc3f7, transparent:true, opacity:0.08+i*0.02, side:THREE.DoubleSide});
+    var ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI/2 + (i*0.15);
+    ring.rotation.y = i*0.3;
+    rings.push(ring);
+    scene.add(ring);
+  }
+
+  // Partículas flotantes
+  var pGeo = new THREE.BufferGeometry();
+  var pCount = 200;
+  var positions = new Float32Array(pCount*3);
+  for(var i=0;i<pCount*3;i++) positions[i]=(Math.random()-0.5)*6;
+  pGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+  var pMat = new THREE.PointsMaterial({color:0x4fc3f7, size:0.015, transparent:true, opacity:0.4});
+  particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  window.addEventListener('resize', function(){
+    camera.aspect=window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight);
+  });
+  animate3D();
+}
+
+function animate3D(){
+  requestAnimationFrame(animate3D);
+  var t = Date.now()*0.001;
+
+  // Animar orbe
+  orbScale += (targetScale-orbScale)*0.05;
+  orb.scale.set(orbScale,orbScale,orbScale);
+  orb.material.opacity = 0.1 + glowIntensity*0.2;
+  orb.children[0].material.opacity = 0.3 + glowIntensity*0.5;
+
+  // Animar anillos
+  for(var i=0;i<rings.length;i++){
+    rings[i].rotation.z += (0.002+i*0.001) * (i%2===0?1:-1);
+    rings[i].rotation.x += 0.001;
+    rings[i].material.opacity = (0.06+i*0.015) + glowIntensity*0.1;
+  }
+
+  // Partículas
+  particles.rotation.y += 0.0003;
+  particles.rotation.x += 0.0001;
+
+  // Suavizar glow
+  glowIntensity += (targetGlow-glowIntensity)*0.04;
+
+  renderer.render(scene,camera);
+}
+
+// Estados del orbe 3D
+function orb3D_hablar(){ targetScale=1.3; targetGlow=0.8; }
+function orb3D_pensar(){ targetScale=0.85; targetGlow=0.5; }
+function orb3D_idle(){ targetScale=1; targetGlow=0.3; }
+
+init3D();
+
+// ======================== CHAT LOGIC ========================
 var chat = document.getElementById('chat');
 var input = document.getElementById('input');
 
@@ -153,127 +207,102 @@ function enviar(){
   if(!texto) return;
   input.value = '';
   agregarMsg(texto, 'user');
-  disco.className = 'pensando';
+  orb3D_pensar();
 
   fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({texto:texto})})
     .then(r=>r.json()).then(d=>{
-      disco.className = 'hablando';
+      orb3D_hablar();
       agregarMsg(d.respuesta, 'astra');
       hablar(d.respuesta, d.audio);
-      setTimeout(()=>{ if(disco.className==='hablando') disco.className=''; }, 8000);
+      setTimeout(()=>{ orb3D_idle(); }, 8000);
     }).catch(e=>{
-      disco.className = '';
+      orb3D_idle();
       agregarMsg('Error de conexión: '+e, 'sistema');
     });
 }
 input.addEventListener('keydown', e=>{ if(e.key==='Enter') enviar(); });
 
-// === VOZ TTS ===
-var vozActiva = true;
-var audioActual = null;
-
-fetch('/api/status').then(r=>r.json()).then(d=>{
-  console.log('Edge TTS:', d.edge_tts ? 'ON' : 'OFF');
-}).catch(()=>{});
+// ======================== VOZ TTS ========================
+var vozActiva=true, audioActual=null;
 
 function hablar(texto, audioUrl){
   if(!vozActiva) return;
-  if(texto.includes('timed out') || texto.includes('[Astra]') || texto.includes('Error:')) return;
-  if(audioUrl){
-    console.log('🎵 Audio neuronal:', audioUrl);
-    reproducirAudio(audioUrl);
-    return;
-  }
-  console.log('⚠️ Sin audio del backend, usando navegador');
+  if(texto.includes('timed out')||texto.includes('[Astra]')||texto.includes('Error:')) return;
+  if(audioUrl){ reproducirAudio(audioUrl); return; }
   hablarNavegador(texto);
 }
-
 function reproducirAudio(url){
-  if(audioActual){ audioActual.pause(); audioActual = null; }
-  disco.className = 'hablando';
-  audioActual = new Audio(url);
-  audioActual.onended = function(){ disco.className = ''; audioActual = null; };
-  audioActual.onerror = function(){ disco.className = ''; audioActual = null; };
-  audioActual.play().catch(function(){ disco.className = ''; });
+  if(audioActual){audioActual.pause();audioActual=null;}
+  orb3D_hablar();
+  audioActual=new Audio(url);
+  audioActual.onended=function(){orb3D_idle();audioActual=null;};
+  audioActual.onerror=function(){orb3D_idle();audioActual=null;};
+  audioActual.play().catch(function(){orb3D_idle();});
 }
 
-var vozFem = null;
+var vozFem=null;
 function buscarVoz(){
-  var voces = speechSynthesis.getVoices();
-  if(!voces||!voces.length) return;
-  // Buscar la mejor voz femenina (evitar masculinas)
-  var masc = ['raul','jorge','diego','pedro','alvaro','pablo','saul','alonso','arnau','hector'];
-  var candidatas = voces.filter(function(v){
-    if(!v.lang.startsWith('es')) return false;
-    var n = v.name.toLowerCase();
-    return !masc.some(function(m){ return n.includes(m); });
-  });
-  // Priorizar online/natural
-  var online = candidatas.find(function(v){ var n=v.name.toLowerCase(); return n.includes('online')||n.includes('natural'); });
-  vozFem = online || candidatas[0] || null;
-  if(vozFem) console.log('Voz fallback:', vozFem.name);
+  var voces=speechSynthesis.getVoices(); if(!voces||!voces.length)return;
+  var masc=['raul','jorge','diego','pedro','alvaro','pablo','saul','alonso','arnau','hector'];
+  var c=voces.filter(function(v){if(!v.lang.startsWith('es'))return false;var n=v.name.toLowerCase();return!masc.some(function(m){return n.includes(m);});});
+  var o=c.find(function(v){var n=v.name.toLowerCase();return n.includes('online')||n.includes('natural');});
+  vozFem=o||c[0]||null;
 }
-if(window.speechSynthesis){ speechSynthesis.onvoiceschanged=buscarVoz; buscarVoz(); setTimeout(buscarVoz,1000); setTimeout(buscarVoz,3000); }
+if(window.speechSynthesis){speechSynthesis.onvoiceschanged=buscarVoz;buscarVoz();setTimeout(buscarVoz,1500);}
 
 function hablarNavegador(texto){
-  if(!window.speechSynthesis) return;
+  if(!window.speechSynthesis)return;
   var l=texto.replace(/[*#\[\]{}`<>]/g,'').replace(/\n/g,', ').trim();
-  if(l.length>400)l=l.substring(0,400);
-  if(l.length<3) return;
-  speechSynthesis.cancel(); disco.className='hablando';
-  var u=new SpeechSynthesisUtterance(l); u.lang='es-MX'; u.rate=1.05; u.pitch=1.1;
-  if(vozFem) u.voice=vozFem;
-  u.onend=function(){disco.className='';}; u.onerror=function(){disco.className='';};
+  if(l.length>400)l=l.substring(0,400); if(l.length<3)return;
+  speechSynthesis.cancel(); orb3D_hablar();
+  var u=new SpeechSynthesisUtterance(l);u.lang='es-MX';u.rate=1.08;u.pitch=1.15;
+  if(vozFem)u.voice=vozFem;
+  u.onend=function(){orb3D_idle();}; u.onerror=function(){orb3D_idle();};
   speechSynthesis.speak(u);
 }
 
 function toggleVoz(){
-  vozActiva=!vozActiva;
-  var b=document.getElementById('btn-voz');
-  b.textContent=vozActiva?'🔊':'🔇';
-  b.classList.toggle('active',vozActiva);
-  if(!vozActiva){ if(audioActual){audioActual.pause();audioActual=null;} speechSynthesis.cancel(); disco.className=''; }
+  vozActiva=!vozActiva; var b=document.getElementById('btn-voz');
+  b.textContent=vozActiva?'🔊':'🔇'; b.classList.toggle('active',vozActiva);
+  if(!vozActiva){if(audioActual){audioActual.pause();audioActual=null;}speechSynthesis.cancel();orb3D_idle();}
 }
 
-// === STT (micrófono) ===
-var reconocimiento=null, modoConversacion=false;
+// ======================== STT ========================
+var reconocimiento=null,modoConversacion=false;
 var Recon=window.SpeechRecognition||window.webkitSpeechRecognition;
 if(Recon){
-  reconocimiento=new Recon(); reconocimiento.lang='es-MX'; reconocimiento.continuous=false;
-  reconocimiento.onresult=function(e){ input.value=e.results[0][0].transcript; document.getElementById('btn-mic').classList.remove('grabando'); enviar(); };
-  reconocimiento.onend=function(){ document.getElementById('btn-mic').classList.remove('grabando');
-    if(modoConversacion){ var w=setInterval(function(){ if(!audioActual&&disco.className!=='hablando'){clearInterval(w);setTimeout(function(){if(modoConversacion)iniciarEscucha();},500);}},300); }
-  };
-  reconocimiento.onerror=function(e){ document.getElementById('btn-mic').classList.remove('grabando');
-    if(modoConversacion&&e.error!=='aborted') setTimeout(function(){if(modoConversacion)iniciarEscucha();},1000);
-  };
+  reconocimiento=new Recon();reconocimiento.lang='es-MX';reconocimiento.continuous=false;
+  reconocimiento.onresult=function(e){input.value=e.results[0][0].transcript;document.getElementById('btn-mic').classList.remove('grabando');enviar();};
+  reconocimiento.onend=function(){document.getElementById('btn-mic').classList.remove('grabando');
+    if(modoConversacion){var w=setInterval(function(){if(!audioActual){clearInterval(w);setTimeout(function(){if(modoConversacion)iniciarEscucha();},400);}},200);}};
+  reconocimiento.onerror=function(e){document.getElementById('btn-mic').classList.remove('grabando');
+    if(modoConversacion&&e.error!=='aborted')setTimeout(function(){if(modoConversacion)iniciarEscucha();},800);};
 }
-function iniciarEscucha(){ if(!reconocimiento)return; try{reconocimiento.start();document.getElementById('btn-mic').classList.add('grabando');}catch(e){} }
-function escuchar(){ if(!reconocimiento){agregarMsg('Navegador sin soporte de voz.','sistema');return;}
-  var b=document.getElementById('btn-mic'); if(b.classList.contains('grabando')){reconocimiento.stop();return;} b.classList.add('grabando'); reconocimiento.start(); }
-function toggleConversacion(){ modoConversacion=!modoConversacion; var b=document.getElementById('btn-conv');
+function iniciarEscucha(){if(!reconocimiento)return;try{reconocimiento.start();document.getElementById('btn-mic').classList.add('grabando');}catch(e){}}
+function escuchar(){if(!reconocimiento){agregarMsg('Sin soporte de voz.','sistema');return;}
+  var b=document.getElementById('btn-mic');if(b.classList.contains('grabando')){reconocimiento.stop();return;}b.classList.add('grabando');reconocimiento.start();}
+function toggleConversacion(){modoConversacion=!modoConversacion;var b=document.getElementById('btn-conv');
   b.classList.toggle('active',modoConversacion);
-  if(modoConversacion){agregarMsg('Modo conversación activado. Habla libremente.','sistema');iniciarEscucha();}
-  else{try{reconocimiento.stop();}catch(e){} document.getElementById('btn-mic').classList.remove('grabando');agregarMsg('Modo conversación desactivado.','sistema');}
-}
+  if(modoConversacion){agregarMsg('Conversación activada.','sistema');iniciarEscucha();}
+  else{try{reconocimiento.stop();}catch(e){}document.getElementById('btn-mic').classList.remove('grabando');}}
 
-// === CÁMARA ===
-var camaraActiva=false, streamCam=null, usuarioPresente=true, intCam=null;
-function toggleCamara(){ camaraActiva?desactivarCam():activarCam(); }
+// ======================== CÁMARA ========================
+var camaraActiva=false,streamCam=null,usuarioPresente=true,intCam=null;
+function toggleCamara(){camaraActiva?desactivarCam():activarCam();}
 function activarCam(){
   navigator.mediaDevices.getUserMedia({video:true}).then(function(s){
-    streamCam=s; var v=document.getElementById('cam-preview'); v.srcObject=s; v.style.display='block';
-    camaraActiva=true; document.getElementById('btn-cam').classList.add('active');
+    streamCam=s;var v=document.getElementById('cam-preview');v.srcObject=s;v.style.display='block';
+    camaraActiva=true;document.getElementById('btn-cam').classList.add('active');
     setTimeout(function(){enviarVision('camara_activada');},1500);
     intCam=setInterval(monitorPresencia,5000);
-  }).catch(function(e){agregarMsg('No pude acceder a la cámara: '+e.message,'sistema');});
+  }).catch(function(e){agregarMsg('Cámara no disponible: '+e.message,'sistema');});
 }
 function desactivarCam(){
   if(streamCam){streamCam.getTracks().forEach(function(t){t.stop();});streamCam=null;}
   if(intCam){clearInterval(intCam);intCam=null;}
   document.getElementById('cam-preview').style.display='none';
-  camaraActiva=false; document.getElementById('btn-cam').classList.remove('active');
+  camaraActiva=false;document.getElementById('btn-cam').classList.remove('active');
 }
 function enviarVision(ev){
   fetch('/api/vision',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -286,7 +315,7 @@ function monitorPresencia(){
   if(n!==usuarioPresente){usuarioPresente=n;enviarVision(n?'usuario_volvio':'usuario_se_fue');}
 }
 
-// === INFO BAR ===
+// ======================== INFO BAR ========================
 var EMOJIS={neutral:'😐',feliz:'😊',emocionada:'🤩',divertida:'😄',curiosa:'🤔',orgullosa:'😌',
   apasionada:'🔥',triste:'😢',frustrada:'😤',enojada:'😠',preocupada:'😟',estresada:'😰',
   cansada:'😴',nostalgica:'🥺',satisfecha:'☺️',impaciente:'⏳'};
@@ -301,12 +330,12 @@ function actualizarInfo(){
     if(d.astra.emotions){var e=d.astra.emotions;document.getElementById('info-emocion').textContent=(EMOJIS[e.emocion]||'😐')+' '+e.descripcion;}
   }).catch(()=>{});
 }
-actualizarInfo(); setInterval(actualizarInfo,30000);
+actualizarInfo();setInterval(actualizarInfo,30000);
 
-// === SALUDO INICIAL ===
-var h=new Date().getHours(), saludo;
-if(h>=5&&h<12) saludo='Buenos días, sistemas en línea. ¿En qué te ayudo?';
-else if(h>=12&&h<19) saludo='Buenas tardes, todo operativo. ¿Qué necesitas?';
+// ======================== SALUDO ========================
+var h=new Date().getHours(),saludo;
+if(h>=5&&h<12)saludo='Buenos días, sistemas en línea. ¿En qué te ayudo?';
+else if(h>=12&&h<19)saludo='Buenas tardes, todo operativo. ¿Qué necesitas?';
 else saludo='Buenas noches, aquí estoy. ¿En qué te ayudo?';
 agregarMsg(saludo,'astra');
 setTimeout(function(){

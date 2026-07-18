@@ -185,25 +185,24 @@ def limpiar_texto_para_voz(texto: str) -> str:
 
 
 # Configuración de voz por emoción (rate y pitch de edge-tts)
-# rate: "+X%" más rápido, "-X%" más lento
-# pitch: "+XHz" más agudo, "-XHz" más grave
+# NOTA: pitch base "+10Hz" para sonar más joven/femenina (antes era +0Hz que sonaba grave)
 VOZ_POR_EMOCION = {
-    "neutral":     {"rate": "+5%",  "pitch": "+0Hz"},
-    "feliz":       {"rate": "+10%", "pitch": "+15Hz"},     # más rápida y aguda = alegre
-    "emocionada":  {"rate": "+15%", "pitch": "+20Hz"},     # rápida y energética
-    "apasionada":  {"rate": "+12%", "pitch": "+10Hz"},     # energética pero con peso
-    "divertida":   {"rate": "+8%",  "pitch": "+18Hz"},     # ligera, juguetona
-    "curiosa":     {"rate": "+5%",  "pitch": "+8Hz"},      # ligeramente arriba
-    "orgullosa":   {"rate": "+3%",  "pitch": "+5Hz"},      # segura, pausada
-    "satisfecha":  {"rate": "+2%",  "pitch": "+5Hz"},      # tranquila, contenta
-    "triste":      {"rate": "-10%", "pitch": "-15Hz"},     # lenta y grave = melancolía
-    "nostalgica":  {"rate": "-8%",  "pitch": "-10Hz"},     # pausada, reflexiva
-    "frustrada":   {"rate": "+12%", "pitch": "-5Hz"},      # rápida pero grave = exasperación
-    "enojada":     {"rate": "+15%", "pitch": "-20Hz"},     # rápida y grave = enojo
-    "impaciente":  {"rate": "+18%", "pitch": "-5Hz"},      # muy rápida, cortante
-    "preocupada":  {"rate": "-3%",  "pitch": "-8Hz"},      # más lenta, seria
-    "estresada":   {"rate": "+10%", "pitch": "-10Hz"},     # rápida y tensa
-    "cansada":     {"rate": "-15%", "pitch": "-12Hz"},     # lenta y baja energía
+    "neutral":     {"rate": "+8%",  "pitch": "+10Hz"},     # base joven y natural
+    "feliz":       {"rate": "+12%", "pitch": "+20Hz"},     # alegre, ligera
+    "emocionada":  {"rate": "+15%", "pitch": "+25Hz"},     # energética
+    "apasionada":  {"rate": "+12%", "pitch": "+18Hz"},     # entusiasta con peso
+    "divertida":   {"rate": "+10%", "pitch": "+22Hz"},     # juguetona
+    "curiosa":     {"rate": "+8%",  "pitch": "+15Hz"},     # interesada
+    "orgullosa":   {"rate": "+5%",  "pitch": "+12Hz"},     # segura
+    "satisfecha":  {"rate": "+5%",  "pitch": "+12Hz"},     # contenta
+    "triste":      {"rate": "-5%",  "pitch": "+2Hz"},      # más lenta pero no grave
+    "nostalgica":  {"rate": "-3%",  "pitch": "+5Hz"},      # pausada
+    "frustrada":   {"rate": "+12%", "pitch": "+5Hz"},      # rápida, tensa
+    "enojada":     {"rate": "+15%", "pitch": "+0Hz"},      # rápida, seria
+    "impaciente":  {"rate": "+18%", "pitch": "+8Hz"},      # muy rápida
+    "preocupada":  {"rate": "+0%",  "pitch": "+5Hz"},      # seria
+    "estresada":   {"rate": "+10%", "pitch": "+3Hz"},      # tensa
+    "cansada":     {"rate": "-8%",  "pitch": "+5Hz"},      # lenta pero no grave
 }
 
 
@@ -450,12 +449,11 @@ async def handle_vision(request):
         return web.json_response({"respuesta": None, "audio": None})
     
     evento = data.get("evento", "")
-    frame = data.get("frame")  # base64 JPEG (para futuro procesamiento de visión)
+    frame = data.get("frame")
     
     respuesta = None
     
     if evento == "camara_activada":
-        # Verificar si ya conocemos al usuario
         nombre_usuario = astra.memory.recall("nombre_usuario")
         if nombre_usuario:
             respuesta = f"Hola {nombre_usuario}, ya te veo. ¿En qué te ayudo?"
@@ -463,14 +461,23 @@ async def handle_vision(request):
             respuesta = "Ya te puedo ver. Oye, no me has dicho tu nombre. ¿Cómo te llamas?"
     
     elif evento == "usuario_volvio":
-        nombre_usuario = astra.memory.recall("nombre_usuario")
-        if nombre_usuario:
-            respuesta = f"Bienvenido de vuelta, {nombre_usuario}. ¿En qué seguimos?"
-        else:
-            respuesta = "Hey, ya regresaste. ¿En qué te ayudo?"
+        # Solo saludar si el usuario estuvo ausente más de 10 minutos
+        ultima = astra.memory.recall("ultima_ausencia")
+        ahora = datetime.now().timestamp()
+        if ultima and (ahora - float(ultima)) > 600:  # 600 seg = 10 min
+            nombre_usuario = astra.memory.recall("nombre_usuario")
+            if nombre_usuario:
+                respuesta = f"Hey {nombre_usuario}, ya regresaste. ¿En qué seguimos?"
+            else:
+                respuesta = "Ya estás de vuelta. ¿En qué te ayudo?"
+        # Si fueron menos de 10 min, no decir nada
     
     elif evento == "usuario_se_fue":
-        # No responder cuando se va (solo registrar)
+        # Registrar cuándo se fue (para saber si fueron >10 min)
+        try:
+            astra.memory.remember("ultima_ausencia", str(datetime.now().timestamp()))
+        except Exception:
+            pass
         respuesta = None
     
     if respuesta:
