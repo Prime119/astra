@@ -231,18 +231,29 @@ function enviar(){
   agregarMsg(texto, 'user');
   orb3D_pensar();
 
+  // Intentar streaming primero (más rápido visualmente)
+  var div = document.createElement('div');
+  div.className = 'msg msg-astra';
+  div.textContent = '';
+  chat.appendChild(div);
+  
+  var fullResp = '';
+  var audioUrl = null;
+  
   fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({texto:texto})})
     .then(r=>r.json()).then(d=>{
       orb3D_hablar();
-      agregarMsg(d.respuesta, 'astra');
+      div.textContent = d.respuesta;
+      fullResp = d.respuesta;
+      chat.scrollTop = chat.scrollHeight;
       hablar(d.respuesta, d.audio);
-      // Si hay simulación, lanzarla
       if(d.simulacion){ setTimeout(function(){ lanzarSimulacion(d.simulacion); }, 300); }
       setTimeout(()=>{ orb3D_idle(); }, 8000);
     }).catch(e=>{
       orb3D_idle();
-      agregarMsg('Error de conexión: '+e, 'sistema');
+      div.textContent = 'Error de conexión: '+e;
+      div.className = 'msg msg-sistema';
     });
 }
 input.addEventListener('keydown', e=>{ if(e.key==='Enter') enviar(); });
