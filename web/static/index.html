@@ -395,6 +395,18 @@ function actualizarInfo(){
 }
 actualizarInfo();setInterval(actualizarInfo,30000);
 
+// === COMPANION MODE: polling de sugerencias proactivas ===
+setInterval(function(){
+  fetch('/api/proactive').then(r=>r.json()).then(d=>{
+    if(d.sugerencias && d.sugerencias.length > 0){
+      d.sugerencias.forEach(function(s){
+        agregarMsg(s.mensaje, 'astra');
+        hablar(s.mensaje, null);
+      });
+    }
+  }).catch(function(){});
+}, 15000); // cada 15 segundos
+
 // ======================== SIMULACIONES 3D ========================
 var simScene=null,simCamera=null,simRenderer=null,simAnimId=null,animarObjetos=null;
 function cerrarSimulacion(){document.getElementById('sim-panel').style.display='none';if(simAnimId)cancelAnimationFrame(simAnimId);simAnimId=null;animarObjetos=null;if(simRenderer){simRenderer.dispose();simRenderer=null;}simScene=null;}
