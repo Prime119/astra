@@ -1,44 +1,39 @@
 """
-Capa 2 — Cerebro cognitivo.
+Capa 2 — Cerebro cognitivo multi-modelo.
 
-Cliente para servidor LLM local (Ollama, API en http://127.0.0.1:11434).
-Auto-detecta el hardware y selecciona el modelo MÁS RÁPIDO disponible.
-La inteligencia viene del aprendizaje continuo, no del tamaño del modelo.
+Auto-detecta modelos instalados en Ollama y usa el más eficiente según la tarea:
+- Conversación rápida → modelo pequeño (1.5b) para velocidad
+- Preguntas complejas → modelo mediano (3b+) para profundidad
+- Código → modelo coder especializado
 
-Prioridad: VELOCIDAD > profundidad
+La inteligencia REAL viene del aprendizaje continuo + personalidad + emociones,
+no del tamaño del modelo. Un modelo pequeño con buen contexto supera a uno grande sin contexto.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 
-# Modelos ordenados por VELOCIDAD (más rápido primero)
-# Astra prioriza velocidad. La inteligencia viene del aprendizaje.
-MODELOS_POR_VELOCIDAD = {
-    "ligera": [
-        "qwen2.5:1.5b-instruct",  # Ultra rápido, ideal para conversación
-        "qwen2.5:3b-instruct",    # Rápido, más capaz
-    ],
-    "recomendada": [
-        "qwen2.5:3b-instruct",    # Rápido en hardware medio
-        "qwen2.5:7b-instruct",    # Más capaz si hay RAM
-    ],
-    "potente": [
-        "qwen2.5:7b-instruct",    # Rápido con GPU
-        "qwen2.5:14b-instruct",   # Máxima capacidad
-    ],
-}
+# Prioridad de modelos por TIPO DE TAREA (más rápido primero en cada categoría)
+# Astra elegirá el primero que encuentre instalado en cada lista
+MODELOS_CONVERSACION_RAPIDA = [
+    "qwen2.5:1.5b-instruct",    # Ultra rápido (~1 seg)
+    "qwen2.5:0.5b-instruct",    # Si existe, aún más rápido
+]
 
-# Todos los modelos que Astra puede usar (para auto-detección)
-MODELOS_COMPATIBLES = [
-    "qwen2.5:0.5b-instruct",
-    "qwen2.5:1.5b-instruct",
-    "qwen2.5:3b-instruct",
-    "qwen2.5:7b-instruct",
-    "qwen2.5:14b-instruct",
-    "qwen2.5-coder:1.5b",
-    "qwen2.5-coder:3b",
-    "qwen2.5-coder:7b",
+MODELOS_CONVERSACION_PROFUNDA = [
+    "astra-qwen2.5:3b",         # Custom de Astra (si existe, prioridad máxima)
+    "qwen2.5:3b-instruct",      # Capaz y estable
+    "qwen2.5:3b",               # Base
+    "qwen2.5:7b-instruct",      # Si la PC aguanta
+    "qwen2.5:14b-instruct",     # Para PCs potentes
+]
+
+MODELOS_CODIGO = [
+    "qwen2.5-coder:3b",         # Especializado en código
+    "qwen2.5-coder:1.5b",       # Coder rápido
+    "qwen2.5-coder:7b",         # Coder potente
+    "qwen2.5:3b-instruct",      # Fallback si no hay coder
 ]
 
 Message = dict[str, str]
@@ -47,11 +42,11 @@ Message = dict[str, str]
 @dataclass
 class BrainConfig:
     local_endpoint: str = "http://127.0.0.1:11434"
-    local_model: str = "qwen2.5:1.5b-instruct"  # Default: el más rápido
-    coder_model: str = "qwen2.5-coder:3b"
-    temperature: float = 0.4  # Un poco más creativo para conversación natural
-    cloud_boost_enabled: bool = False
-    timeout_s: float = 120.0  # 2 min (modelos pequeños son rápidos)
+    modelo_rapido: str = "qwen2.5:1.5b-instruct"      # Para saludos/simple
+    modelo_profundo: str = "qwen2.5:3b-instruct"      # Para preguntas complejas
+    modelo_coder: str = "qwen2.5-coder:3b"            # Para código
+    temperature: float = 0.4
+    timeout_s: float = 120.0
 
 
 class Brain:
@@ -59,81 +54,77 @@ class Brain:
         self.config = config
         self.system_prompt = system_prompt
         self._available_cache: bool | None = None
-        self._model_resolved: bool = False
+        self._installed_models: list[str] = []
 
     @classmethod
     def from_app_config(cls, cfg, system_prompt: str) -> "Brain":
         bc = BrainConfig(
             local_endpoint=cfg.get("brain", "local_endpoint", default="http://127.0.0.1:11434"),
             temperature=float(cfg.get("brain", "temperature", default=0.4)),
-            cloud_boost_enabled=bool(cfg.get("brain", "cloud_boost", "enabled", default=False)),
         )
         instance = cls(bc, system_prompt)
-        # Auto-detectar el mejor modelo al arrancar
-        instance._auto_select_model(cfg.hardware.tier)
+        instance._auto_configure()
         return instance
 
-    def _auto_select_model(self, tier: str) -> None:
+    def _auto_configure(self) -> None:
         """
-        Auto-selecciona el modelo MÁS RÁPIDO disponible en Ollama.
-        Prioridad: velocidad > profundidad.
-        La inteligencia viene del aprendizaje, no del tamaño del modelo.
+        Auto-detecta modelos en Ollama y asigna el mejor para cada tarea.
+        Prioridad: velocidad para conversación, especialización para código.
         """
-        # Obtener modelos instalados en Ollama
-        installed = self.available_models()
+        self._installed_models = self._fetch_models()
         
-        if not installed:
-            # Ollama no responde o no hay modelos — usar default
-            self.config.local_model = "qwen2.5:1.5b-instruct"
-            self.config.coder_model = "qwen2.5-coder:3b"
-            print(f"   ⚠️ No pude detectar modelos. Usando default: {self.config.local_model}")
+        if not self._installed_models:
+            print("   ⚠️ No detecté modelos en Ollama. Usando defaults.")
             return
         
-        print(f"   Modelos instalados en Ollama: {', '.join(installed)}")
+        print(f"   Modelos detectados: {', '.join(self._installed_models)}")
         
-        # Buscar el mejor modelo de conversación (prioridad: velocidad)
-        preferidos = MODELOS_POR_VELOCIDAD.get(tier, MODELOS_POR_VELOCIDAD["ligera"])
+        # Asignar modelo rápido (conversación simple)
+        self.config.modelo_rapido = self._encontrar_mejor(
+            MODELOS_CONVERSACION_RAPIDA, fallback="qwen2.5:1.5b-instruct"
+        )
         
-        modelo_elegido = None
-        for modelo in preferidos:
-            # Buscar coincidencia parcial (Ollama puede tener :latest u otros tags)
-            for instalado in installed:
-                if modelo.split(":")[0] in instalado and modelo.split(":")[1].split("-")[0] in instalado:
-                    modelo_elegido = instalado
-                    break
-                # Match exacto
-                if modelo == instalado or modelo in instalado:
-                    modelo_elegido = instalado
-                    break
-            if modelo_elegido:
-                break
+        # Asignar modelo profundo (preguntas complejas)
+        self.config.modelo_profundo = self._encontrar_mejor(
+            MODELOS_CONVERSACION_PROFUNDA, fallback=self.config.modelo_rapido
+        )
         
-        # Si no encontró los preferidos, usar cualquier qwen instalado
-        if not modelo_elegido:
-            for instalado in installed:
-                if "qwen" in instalado.lower():
-                    modelo_elegido = instalado
-                    break
+        # Asignar modelo coder
+        self.config.modelo_coder = self._encontrar_mejor(
+            MODELOS_CODIGO, fallback=self.config.modelo_profundo
+        )
         
-        # Último fallback: primer modelo disponible
-        if not modelo_elegido and installed:
-            modelo_elegido = installed[0]
-        
-        if modelo_elegido:
-            self.config.local_model = modelo_elegido
-            print(f"   ✅ Modelo auto-seleccionado: {modelo_elegido} (tier: {tier}, prioridad: velocidad)")
-        
-        # Seleccionar modelo coder
-        for instalado in installed:
-            if "coder" in instalado.lower():
-                self.config.coder_model = instalado
-                break
-        
-        self._model_resolved = True
+        print(f"   ✅ Rápido: {self.config.modelo_rapido}")
+        print(f"   ✅ Profundo: {self.config.modelo_profundo}")
+        print(f"   ✅ Código: {self.config.modelo_coder}")
+
+    def _encontrar_mejor(self, prioridad: list[str], fallback: str) -> str:
+        """Busca el primer modelo de la lista de prioridad que esté instalado."""
+        for modelo in prioridad:
+            for instalado in self._installed_models:
+                # Match exacto o parcial (por tag)
+                if modelo == instalado or modelo == instalado.split(":latest")[0]:
+                    return instalado
+                # Match por nombre base
+                if modelo.replace("-instruct", "") in instalado:
+                    return instalado
+        # Si no encontró ninguno preferido, usar el fallback
+        return fallback if fallback in self._installed_models else (
+            self._installed_models[0] if self._installed_models else fallback
+        )
+
+    def _fetch_models(self) -> list[str]:
+        """Consulta a Ollama qué modelos tiene instalados."""
+        try:
+            import httpx
+            r = httpx.get(f"{self.config.local_endpoint}/api/tags", timeout=3.0)
+            data = r.json()
+            return [m.get("name", "") for m in data.get("models", [])]
+        except Exception:
+            return []
 
     # ---------------------------------------------------------------- estado
     def is_local_available(self) -> bool:
-        """Comprueba si hay un servidor Ollama local respondiendo (con cache)."""
         if self._available_cache is not None:
             return self._available_cache
         try:
@@ -145,34 +136,38 @@ class Brain:
         return self._available_cache
 
     def available_models(self) -> list[str]:
-        """Lista los modelos instalados en Ollama."""
-        try:
-            import httpx
-            r = httpx.get(f"{self.config.local_endpoint}/api/tags", timeout=3.0)
-            data = r.json()
-            return [m.get("name", "") for m in data.get("models", [])]
-        except Exception:
-            return []
+        if self._installed_models:
+            return self._installed_models
+        return self._fetch_models()
 
     def get_model_info(self) -> dict:
-        """Info del modelo actual para mostrar en status."""
         return {
-            "modelo": self.config.local_model,
-            "coder": self.config.coder_model,
-            "endpoint": self.config.local_endpoint,
-            "auto_detected": self._model_resolved,
+            "rapido": self.config.modelo_rapido,
+            "profundo": self.config.modelo_profundo,
+            "coder": self.config.modelo_coder,
+            "instalados": self._installed_models,
         }
 
     # --------------------------------------------------------------- inferencia
-    def chat(self, history: list[Message], *, coding: bool = False, max_tokens: int = 0) -> str:
+    def chat(self, history: list[Message], *, coding: bool = False, 
+             max_tokens: int = 0, deep: bool = False) -> str:
         """
-        Envía la conversación al modelo local y devuelve la respuesta.
-        max_tokens: si > 0, limita la respuesta (para respuestas rápidas).
+        Envía la conversación al modelo local.
+        - coding=True → usa modelo coder
+        - deep=True → usa modelo profundo (preguntas complejas)
+        - default → usa modelo rápido (velocidad)
         """
         if not self.is_local_available():
             return "No encuentro mi cerebro local. Verifica que Ollama esté corriendo."
 
-        model = self.config.coder_model if coding else self.config.local_model
+        # Seleccionar modelo según tipo de tarea
+        if coding:
+            model = self.config.modelo_coder
+        elif deep:
+            model = self.config.modelo_profundo
+        else:
+            model = self.config.modelo_rapido
+
         messages: list[Message] = [{"role": "system", "content": self.system_prompt}]
         messages.extend(history)
 
@@ -201,5 +196,5 @@ class Brain:
             return f"Tuve un problema al pensar: {exc}"
 
     def think(self, prompt: str, *, coding: bool = False) -> str:
-        """Atajo de un solo turno (sin historial)."""
+        """Atajo de un solo turno (sin historial). Usa modelo rápido."""
         return self.chat([{"role": "user", "content": prompt}], coding=coding)
