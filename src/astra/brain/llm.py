@@ -32,7 +32,7 @@ class BrainConfig:
     coder_model: str = "qwen2.5-coder:7b"
     temperature: float = 0.3
     cloud_boost_enabled: bool = False
-    timeout_s: float = 120.0
+    timeout_s: float = 180.0  # 3 minutos (modelos pequeños en PCs con poca RAM tardan)
 
 
 class Brain:

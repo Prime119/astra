@@ -123,20 +123,23 @@ var vozFemenina = null;
 // Buscar la mejor voz femenina en español al cargar
 function buscarVozFemenina(){
   var voces = speechSynthesis.getVoices();
-  // Prioridad: Microsoft Sabina > Google español femenina > cualquier es-MX femenina > cualquier es femenina
+  // Prioridad: voces naturales/jóvenes primero
   var prioridad = [
-    v => v.name.includes('Sabina'),
-    v => v.name.includes('Dalia'),
-    v => v.name.includes('Elvira'),
+    v => v.name.includes('Larissa'),   // Microsoft Larissa (joven, natural)
+    v => v.name.includes('Dalia'),     // Microsoft Dalia (MX, natural)
+    v => v.name.includes('Sabina'),    // Microsoft Sabina (española)
+    v => v.name.includes('Elvira'),    // Microsoft Elvira
+    v => v.name.includes('Nuria'),     // Google Nuria
     v => v.name.toLowerCase().includes('female') && v.lang.startsWith('es'),
-    v => v.lang === 'es-MX' && !v.name.toLowerCase().includes('male'),
-    v => v.lang.startsWith('es') && !v.name.toLowerCase().includes('male'),
+    v => v.lang === 'es-MX',
+    v => v.lang === 'es-US',
     v => v.lang.startsWith('es'),
   ];
   for(var p of prioridad){
     var found = voces.find(p);
-    if(found){ vozFemenina = found; console.log('Voz seleccionada:', found.name); return; }
+    if(found){ vozFemenina = found; console.log('Voz:', found.name, found.lang); return; }
   }
+  console.log('Voces disponibles:', voces.filter(v=>v.lang.startsWith('es')).map(v=>v.name+' ('+v.lang+')'));
 }
 if(window.speechSynthesis){
   speechSynthesis.onvoiceschanged = buscarVozFemenina;
@@ -145,11 +148,14 @@ if(window.speechSynthesis){
 
 function hablar(texto){
   if(!vozActiva || !window.speechSynthesis) return;
-  var limpio = texto.replace(/```[\s\S]*?```/g,'').replace(/[🚫⚠️🔥⚡\[\]]/g,'').replace(/\(.*?\)/g,'').slice(0,400);
+  // NO decir mensajes de error en voz alta
+  if(texto.includes('timed out') || texto.includes('[Astra]') || texto.includes('Error')) return;
+  var limpio = texto.replace(/```[\s\S]*?```/g,'').replace(/[🚫⚠️🔥⚡\[\]]/g,'').replace(/\(.*?\)/g,'').replace(/—.*$/,'').slice(0,400);
+  if(!limpio.trim()) return;
   var u = new SpeechSynthesisUtterance(limpio);
   u.lang = 'es-MX';
-  u.rate = 0.95;   // un poco más lento = más natural
-  u.pitch = 1.15;  // pitch más alto = femenino
+  u.rate = 1.0;    // velocidad natural
+  u.pitch = 1.3;   // más agudo = más joven y femenino
   u.volume = 0.9;
   if(vozFemenina) u.voice = vozFemenina;
   // Hacer que el disco reaccione mientras habla
@@ -205,10 +211,14 @@ function actualizarInfo(){
 actualizarInfo();
 setInterval(actualizarInfo, 30000);
 
-// Mensaje inicial (se dice hablado)
-var saludo = 'Buenos días, señor. Soy Astra. Los sistemas están en línea y a su disposición. ¿En qué puedo asistirle?';
+// Mensaje inicial (depende de la hora y se dice hablado)
+var hora = new Date().getHours();
+var saludo;
+if(hora >= 5 && hora < 12) saludo = 'Buenos días. Soy Astra, los sistemas están en línea. ¿En qué puedo ayudarte?';
+else if(hora >= 12 && hora < 19) saludo = 'Buenas tardes. Soy Astra, todo operativo. ¿Qué necesitas?';
+else saludo = 'Buenas noches. Soy Astra, aquí estoy. ¿En qué te ayudo?';
 agregarMsg(saludo, 'astra');
-setTimeout(function(){ hablar(saludo); }, 1000); // esperar 1s para que carguen las voces
+setTimeout(function(){ hablar(saludo); }, 1500);
 </script>
 </body>
 </html>

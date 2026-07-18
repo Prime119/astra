@@ -34,6 +34,15 @@ astra = Astra.boot()
 print(f"   Cerebro: {'✅ Online' if astra.brain.is_local_available() else '❌ Offline'}")
 print(f"   Hardware: {astra.config.hardware.tier} ({astra.config.hardware.ram_gb}GB RAM)")
 
+# Precalentar el modelo (la primera respuesta siempre tarda más)
+if astra.brain.is_local_available():
+    print("   ⏳ Precalentando modelo (para que la primera respuesta sea rápida)...")
+    try:
+        astra.brain.think("hola")
+        print("   ✅ Modelo precalentado")
+    except Exception:
+        print("   ⚠️ No se pudo precalentar (la primera respuesta tardará más)")
+
 
 # === CAPACIDADES DEL SISTEMA ===
 def obtener_info_sistema() -> dict:
