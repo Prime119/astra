@@ -18,15 +18,17 @@
   "brain": {
     "mode": "local",
     "local_endpoint": "http://127.0.0.1:11434",
-    "local_model": "qwen2.5:3b-instruct",
-    "local_coder_model": "qwen2.5-coder:7b",
+    "local_model": "auto",
+    "local_coder_model": "auto",
     "cloud_boost": {
       "enabled": false,
       "provider": "none",
-      "note": "Modo Boost (nivel frontera) desactivado por defecto. Requiere internet + API key."
+      "note": "Modo Boost desactivado. La inteligencia viene del aprendizaje local."
     },
-    "temperature": 0.3,
-    "auto_scale_by_hardware": true
+    "temperature": 0.4,
+    "auto_scale_by_hardware": true,
+    "priority": "speed",
+    "note_priority": "speed = modelo más rápido | depth = modelo más capaz"
   },
   "personality": {
     "honesty": 90,
