@@ -84,6 +84,13 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 <!-- CHAT -->
 <div id="chat-zone"><div id="chat"></div></div>
 
+<!-- PANEL DE SIMULACIÓN 3D (se muestra cuando Astra genera una) -->
+<div id="sim-panel" style="display:none;position:fixed;top:45px;left:0;right:0;bottom:80px;z-index:15;background:rgba(3,6,8,.95);">
+  <canvas id="sim-canvas" style="width:100%;height:100%;"></canvas>
+  <button onclick="cerrarSimulacion()" style="position:absolute;top:10px;right:15px;background:rgba(200,80,80,.8);color:#fff;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;z-index:16;">CERRAR</button>
+  <div id="sim-label" style="position:absolute;bottom:15px;left:50%;transform:translateX(-50%);color:var(--cyan);font-size:11px;opacity:.7;"></div>
+</div>
+
 <!-- INPUT -->
 <div id="input-bar">
   <button class="btn-action" id="btn-mic" onclick="escuchar()" title="Hablar">🎙️</button>
@@ -230,6 +237,8 @@ function enviar(){
       orb3D_hablar();
       agregarMsg(d.respuesta, 'astra');
       hablar(d.respuesta, d.audio);
+      // Si hay simulación, lanzarla
+      if(d.simulacion){ setTimeout(function(){ lanzarSimulacion(d.simulacion); }, 500); }
       setTimeout(()=>{ orb3D_idle(); }, 8000);
     }).catch(e=>{
       orb3D_idle();
@@ -357,6 +366,166 @@ function actualizarInfo(){
   }).catch(()=>{});
 }
 actualizarInfo();setInterval(actualizarInfo,30000);
+
+// ======================== SIMULACIONES 3D ========================
+var simScene=null, simCamera=null, simRenderer=null, simAnimId=null, simObjects=[];
+
+function cerrarSimulacion(){
+  document.getElementById('sim-panel').style.display='none';
+  if(simAnimId) cancelAnimationFrame(simAnimId);
+  simAnimId=null;
+  if(simRenderer){simRenderer.dispose();simRenderer=null;}
+  simScene=null; simObjects=[];
+}
+
+function lanzarSimulacion(tipo){
+  var panel=document.getElementById('sim-panel');
+  panel.style.display='block';
+  var canvas=document.getElementById('sim-canvas');
+  
+  // Limpiar simulación anterior
+  if(simAnimId) cancelAnimationFrame(simAnimId);
+  simObjects=[];
+  
+  simScene=new THREE.Scene();
+  simCamera=new THREE.PerspectiveCamera(60,canvas.clientWidth/canvas.clientHeight,0.1,1000);
+  simRenderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});
+  simRenderer.setSize(canvas.clientWidth,canvas.clientHeight);
+  simRenderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+
+  if(tipo==='sistema_solar') crearSistemaSolar();
+  else if(tipo==='galaxia') crearGalaxia();
+  else if(tipo==='atomo') crearAtomo();
+  else if(tipo==='particulas') crearParticulas();
+  else if(tipo==='geometria') crearGeometria();
+  else crearUniverso();
+  
+  document.getElementById('sim-label').textContent='Simulación: '+tipo.replace('_',' ');
+  animarSimulacion();
+}
+
+function crearUniverso(){
+  simCamera.position.z=50;
+  // Estrellas de fondo
+  var g=new THREE.BufferGeometry();var p=new Float32Array(3000*3);
+  for(var i=0;i<9000;i++) p[i]=(Math.random()-0.5)*200;
+  g.setAttribute('position',new THREE.BufferAttribute(p,3));
+  simScene.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:0.3})));
+  // Nebulosas (esferas translúcidas de colores)
+  var colores=[0x4fc3f7,0x7c4dff,0xff4081,0x69f0ae,0xffd740];
+  for(var i=0;i<8;i++){
+    var s=new THREE.Mesh(new THREE.SphereGeometry(2+Math.random()*4,16,16),
+      new THREE.MeshBasicMaterial({color:colores[i%5],transparent:true,opacity:0.15+Math.random()*0.1}));
+    s.position.set((Math.random()-0.5)*60,(Math.random()-0.5)*40,(Math.random()-0.5)*30);
+    simScene.add(s); simObjects.push({obj:s,speed:0.001+Math.random()*0.002});
+  }
+}
+
+function crearSistemaSolar(){
+  simCamera.position.z=30; simCamera.position.y=10;simCamera.lookAt(0,0,0);
+  // Sol
+  var sol=new THREE.Mesh(new THREE.SphereGeometry(2,32,32),new THREE.MeshBasicMaterial({color:0xffdd00}));
+  simScene.add(sol);
+  // Luz
+  simScene.add(new THREE.PointLight(0xffdd00,2,100));
+  // Planetas
+  var planetas=[{r:4,size:0.3,color:0x888888,speed:0.02},{r:5.5,size:0.5,color:0xffaa33,speed:0.015},
+    {r:7,size:0.55,color:0x4488ff,speed:0.01},{r:9,size:0.4,color:0xff4444,speed:0.008},
+    {r:12,size:1.2,color:0xddaa66,speed:0.005},{r:15,size:1,color:0xddcc88,speed:0.003}];
+  planetas.forEach(function(p){
+    var mesh=new THREE.Mesh(new THREE.SphereGeometry(p.size,16,16),new THREE.MeshBasicMaterial({color:p.color}));
+    // Órbita visible
+    var orbitGeo=new THREE.RingGeometry(p.r-0.02,p.r+0.02,64);
+    var orbit=new THREE.Mesh(orbitGeo,new THREE.MeshBasicMaterial({color:0x333333,side:THREE.DoubleSide}));
+    orbit.rotation.x=Math.PI/2; simScene.add(orbit);
+    simScene.add(mesh);
+    simObjects.push({obj:mesh,radius:p.r,speed:p.speed,angle:Math.random()*6.28});
+  });
+}
+
+function crearGalaxia(){
+  simCamera.position.z=40;simCamera.position.y=15;simCamera.lookAt(0,0,0);
+  var g=new THREE.BufferGeometry();var count=5000;var pos=new Float32Array(count*3);var cols=new Float32Array(count*3);
+  for(var i=0;i<count;i++){
+    var angle=Math.random()*Math.PI*6;var r=2+Math.random()*20;
+    var spiral=angle*0.5;
+    pos[i*3]=Math.cos(angle+spiral)*r+(Math.random()-0.5)*2;
+    pos[i*3+1]=(Math.random()-0.5)*1.5;
+    pos[i*3+2]=Math.sin(angle+spiral)*r+(Math.random()-0.5)*2;
+    var c=new THREE.Color().setHSL(0.55+Math.random()*0.15,0.8,0.5+Math.random()*0.4);
+    cols[i*3]=c.r;cols[i*3+1]=c.g;cols[i*3+2]=c.b;
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  g.setAttribute('color',new THREE.BufferAttribute(cols,3));
+  var stars=new THREE.Points(g,new THREE.PointsMaterial({size:0.15,vertexColors:true}));
+  simScene.add(stars);simObjects.push({obj:stars,speed:0.002});
+  // Centro brillante
+  simScene.add(new THREE.Mesh(new THREE.SphereGeometry(1,16,16),new THREE.MeshBasicMaterial({color:0xffffff})));
+}
+
+function crearAtomo(){
+  simCamera.position.z=12;
+  // Núcleo
+  var nucleo=new THREE.Mesh(new THREE.SphereGeometry(0.8,32,32),new THREE.MeshBasicMaterial({color:0xff4444}));
+  simScene.add(nucleo);
+  // Electrones
+  for(var i=0;i<5;i++){
+    var e=new THREE.Mesh(new THREE.SphereGeometry(0.15,16,16),new THREE.MeshBasicMaterial({color:0x4fc3f7}));
+    simScene.add(e);
+    // Órbita
+    var og=new THREE.RingGeometry(2.5+i*0.8,2.5+i*0.8+0.03,64);
+    var o=new THREE.Mesh(og,new THREE.MeshBasicMaterial({color:0x224466,transparent:true,opacity:0.3,side:THREE.DoubleSide}));
+    o.rotation.x=Math.random()*Math.PI;o.rotation.y=Math.random()*Math.PI;
+    simScene.add(o);
+    simObjects.push({obj:e,radius:2.5+i*0.8,speed:0.03-i*0.004,angle:Math.random()*6.28,tilt:o.rotation.x,tiltY:o.rotation.y});
+  }
+}
+
+function crearParticulas(){
+  simCamera.position.z=20;
+  var g=new THREE.BufferGeometry();var count=2000;var pos=new Float32Array(count*3);
+  for(var i=0;i<count*3;i++) pos[i]=(Math.random()-0.5)*30;
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  var pts=new THREE.Points(g,new THREE.PointsMaterial({color:0x4fc3f7,size:0.08,transparent:true,opacity:0.7}));
+  simScene.add(pts);simObjects.push({obj:pts,speed:0.003,type:'particulas'});
+}
+
+function crearGeometria(){
+  simCamera.position.z=8;
+  var shapes=[
+    new THREE.Mesh(new THREE.BoxGeometry(1.5,1.5,1.5),new THREE.MeshBasicMaterial({color:0x4fc3f7,wireframe:true})),
+    new THREE.Mesh(new THREE.OctahedronGeometry(1.2),new THREE.MeshBasicMaterial({color:0x7c4dff,wireframe:true})),
+    new THREE.Mesh(new THREE.TorusGeometry(1,0.3,16,32),new THREE.MeshBasicMaterial({color:0xff4081,wireframe:true})),
+  ];
+  shapes.forEach(function(s,i){s.position.x=(i-1)*3.5;simScene.add(s);simObjects.push({obj:s,speed:0.01+i*0.005});});
+}
+
+function animarSimulacion(){
+  if(!simScene){return;}
+  simAnimId=requestAnimationFrame(animarSimulacion);
+  simObjects.forEach(function(item){
+    if(item.radius!==undefined){
+      // Órbita
+      item.angle+=item.speed;
+      if(item.tilt!==undefined){
+        // Átomo 3D
+        item.obj.position.x=Math.cos(item.angle)*item.radius;
+        item.obj.position.y=Math.sin(item.angle)*item.radius*Math.sin(item.tilt);
+        item.obj.position.z=Math.sin(item.angle)*item.radius*Math.cos(item.tilt);
+      } else {
+        item.obj.position.x=Math.cos(item.angle)*item.radius;
+        item.obj.position.z=Math.sin(item.angle)*item.radius;
+      }
+    } else if(item.type==='particulas'){
+      item.obj.rotation.y+=item.speed;
+      item.obj.rotation.x+=item.speed*0.5;
+    } else if(item.obj.rotation){
+      item.obj.rotation.y+=item.speed;
+      item.obj.rotation.x+=item.speed*0.3;
+    }
+  });
+  simRenderer.render(simScene,simCamera);
+}
 
 // ======================== SALUDO ========================
 var h=new Date().getHours(),saludo;

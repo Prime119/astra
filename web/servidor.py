@@ -279,6 +279,34 @@ async def handle_chat(request):
 
     # Detectar si pide info del sistema
     t = texto.lower()
+    
+    # === SIMULACIONES 3D ===
+    sim_triggers = ["simulación", "simulacion", "simula", "holograma", "3d", "universo",
+                    "planeta", "sistema solar", "galaxia", "átomo", "molécula", "partículas",
+                    "esfera", "cubo", "geometría", "órbita", "tierra", "luna", "sol"]
+    if any(w in t for w in sim_triggers) and any(w in t for w in ["crea", "genera", "haz", "muestra", "hazme", "quiero"]):
+        # Determinar tipo de simulación
+        sim_type = "universo"  # default
+        if any(w in t for w in ["sistema solar", "planeta", "sol", "tierra", "luna", "órbita"]):
+            sim_type = "sistema_solar"
+        elif any(w in t for w in ["galaxia", "estrellas"]):
+            sim_type = "galaxia"
+        elif any(w in t for w in ["átomo", "atomo", "molécula", "molecula", "electr"]):
+            sim_type = "atomo"
+        elif any(w in t for w in ["partícula", "particula", "quantum", "cuántic"]):
+            sim_type = "particulas"
+        elif any(w in t for w in ["cubo", "geometr", "esfera", "pirámide"]):
+            sim_type = "geometria"
+        
+        respuesta = f"Listo, generando la simulación. Mira la pantalla."
+        emocion_actual = astra.emotions.state.emocion
+        audio_url = await generar_audio_edge(respuesta, emocion_actual)
+        return web.json_response({
+            "respuesta": respuesta,
+            "audio": audio_url,
+            "simulacion": sim_type
+        })
+
     if any(w in t for w in ["sistema", "ram", "cpu", "disco", "hardware", "computadora", "pc"]):
         info = obtener_info_sistema()
         contexto = (f"[INFO DEL SISTEMA: {info['os']}, CPU al {info['cpu_uso']}%, "
