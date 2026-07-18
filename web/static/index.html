@@ -123,71 +123,170 @@ function enviar(){
 }
 input.addEventListener('keydown', e=>{ if(e.key==='Enter') enviar(); });
 
-// Voz TTS (navegador) — VOZ FEMENINA, natural
+// Voz TTS (navegador) — VOZ FEMENINA NATURAL
 var vozActiva = true;
 var vozFemenina = null;
+var vozesListas = false;
 
-// Buscar la mejor voz femenina en español al cargar
+// Nombres femeninos conocidos de Microsoft Edge (español)
+var VOCES_FEMENINAS = ['dalia','larissa','sabina','nuria','elvira','marina','irene',
+  'abril','carlota','paloma','elena','ximena','renata','lupe','beatriz','lucia','sofia'];
+// Nombres masculinos a EVITAR
+var VOCES_MASCULINAS = ['raul','jorge','arnau','diego','pedro','alvaro','pablo',
+  'saul','alonso','guillermo','hector','gerardo','cecilio','fernando','yago','liwei'];
+
+function esVozFemenina(v){
+  var n = v.name.toLowerCase();
+  // Si contiene un nombre femenino conocido, es femenina
+  if(VOCES_FEMENINAS.some(f => n.includes(f))) return true;
+  // Si contiene un nombre masculino, NO es femenina
+  if(VOCES_MASCULINAS.some(m => n.includes(m))) return false;
+  // Voces "Online (Natural)" en Edge con nombre "undefined" — 
+  // Filtrar por locale: es-MX femeninas son Dalia/Larissa, pero como no tiene nombre,
+  // preferir las que NO sean es-MX (que suelen ser masculinas como Jorge)
+  // Para voces sin nombre claro, asumir femenina si lang es es-MX (Dalia es default femenina en MX)
+  if(n.includes('undefined') || n.includes('online')){
+    // Edge en es-MX tiene Dalia(F) y Jorge(M) como Online Natural
+    // No podemos distinguir, así que las marcamos como "tal vez"
+    return null; // indeterminado
+  }
+  return null; // no podemos determinar
+}
+
 function buscarVozFemenina(){
   var voces = speechSynthesis.getVoices();
-  // Prioridad: voces ONLINE/NATURAL (neuronales, suenan humanas)
-  var prioridad = [
-    v => v.name.includes('Dalia') && v.name.includes('Online'),
-    v => v.name.includes('Larissa') && v.name.includes('Online'),
-    v => v.name.includes('Online') && v.name.includes('Natural') && v.lang === 'es-MX',
-    v => v.name.includes('Online') && v.name.includes('Natural') && v.lang.startsWith('es'),
-    v => v.name.includes('Natural') && v.lang === 'es-MX',
-    v => v.name.includes('Natural') && v.lang.startsWith('es'),
-    v => v.name.includes('Online') && v.lang === 'es-MX',
-    v => v.name.includes('Online') && v.lang.startsWith('es'),
-    v => v.name.includes('Sabina'),
-    v => v.lang === 'es-MX' && !v.name.includes('Raul'),
-    v => v.lang.startsWith('es'),
-  ];
-  for(var p of prioridad){
-    var found = voces.find(p);
-    if(found){ vozFemenina = found; console.log('Voz seleccionada:', found.name, found.lang); return; }
+  if(!voces || voces.length === 0) return;
+  
+  console.log('Voces disponibles:', voces.length);
+  voces.forEach(function(v){ console.log('  -', v.name, '|', v.lang, '|', v.localService?'local':'online'); });
+
+  // Paso 1: Buscar voces neuronales/online femeninas confirmadas en español
+  var candidatas = [];
+  
+  // Prioridad máxima: voz ONLINE femenina confirmada en es-MX
+  for(var i=0; i<voces.length; i++){
+    var v = voces[i];
+    if(!v.lang.startsWith('es')) continue;
+    var n = v.name.toLowerCase();
+    var fem = esVozFemenina(v);
+    var esOnline = n.includes('online') || n.includes('natural') || !v.localService;
+    
+    // Puntuar la voz
+    var score = 0;
+    if(fem === true) score += 100;    // confirmada femenina
+    if(fem === false) score -= 1000;  // confirmada masculina, RECHAZAR
+    if(esOnline) score += 50;         // neuronal/online suena mejor
+    if(v.lang === 'es-MX') score += 30; // preferir MX
+    if(n.includes('dalia')) score += 200;   // Dalia es la mejor voz femenina MX
+    if(n.includes('larissa')) score += 180; // Larissa (BR) suena bien en español
+    if(n.includes('nuria')) score += 170;   // Nuria es-ES buena
+    if(n.includes('elvira')) score += 160;  // Elvira es-ES
+    if(n.includes('sabina')) score += 150;  // Sabina es-MX local
+    if(n.includes('marina')) score += 140;  // Marina
+    
+    if(score > 0) candidatas.push({voz: v, score: score});
   }
-  // Si nada, usar la primera es-MX que no sea Raul
-  var fallback = voces.find(v => v.lang === 'es-MX' && !v.name.toLowerCase().includes('raul'));
-  if(fallback){ vozFemenina = fallback; console.log('Voz (fallback):', fallback.name); }
+  
+  // Ordenar por score descendente
+  candidatas.sort(function(a,b){ return b.score - a.score; });
+  
+  if(candidatas.length > 0){
+    vozFemenina = candidatas[0].voz;
+    console.log('✅ Voz seleccionada:', vozFemenina.name, '|', vozFemenina.lang, '| Score:', candidatas[0].score);
+    vozesListas = true;
+    return;
+  }
+  
+  // Paso 2: Fallback — cualquier voz es-MX que no sea Raúl
+  var fb = voces.find(function(v){ 
+    return v.lang === 'es-MX' && !v.name.toLowerCase().includes('raul') && !v.name.toLowerCase().includes('jorge');
+  });
+  if(fb){
+    vozFemenina = fb;
+    console.log('⚠️ Voz fallback:', fb.name, fb.lang);
+    vozesListas = true;
+    return;
+  }
+  
+  // Paso 3: Cualquier voz en español
+  var ultima = voces.find(function(v){ return v.lang.startsWith('es'); });
+  if(ultima){
+    vozFemenina = ultima;
+    console.log('⚠️ Voz última opción:', ultima.name, ultima.lang);
+    vozesListas = true;
+  }
 }
+
+// Cargar voces (Edge las carga asíncronamente)
 if(window.speechSynthesis){
   speechSynthesis.onvoiceschanged = buscarVozFemenina;
   buscarVozFemenina();
+  // Edge a veces tarda, reintentar
+  setTimeout(buscarVozFemenina, 500);
+  setTimeout(buscarVozFemenina, 1500);
+  setTimeout(buscarVozFemenina, 3000);
 }
 
 function hablar(texto){
   if(!vozActiva || !window.speechSynthesis) return;
-  if(texto.includes('timed out') || texto.includes('[Astra]') || texto.includes('Error')) return;
+  // No leer errores ni mensajes del sistema
+  if(texto.includes('timed out') || texto.includes('[Astra]') || texto.includes('Error:') || texto.includes('error:')) return;
+  
+  // Limpiar el texto para que suene natural al hablarlo
   var limpio = texto
-    .replace(/```[\s\S]*?```/g,'')
-    .replace(/\*\*/g,'').replace(/\*/g,'').replace(/#/g,'')
-    .replace(/- /g, ', ').replace(/•/g, ', ')
-    .replace(/[🚫⚠️🔥⚡\[\]{}|_~`]/g,'')
-    .replace(/\(.*?\)/g,'').replace(/https?:\/\/\S+/g,'')
-    .replace(/\n+/g, ' ').replace(/\.+/g, '.').replace(/,+/g, ',')
-    .replace(/\s+/g, ' ').trim().slice(0, 600);
+    .replace(/```[\s\S]*?```/g,'')           // bloques de código
+    .replace(/\*\*/g,'').replace(/\*/g,'')    // asteriscos markdown
+    .replace(/#/g,'')                          // hashes
+    .replace(/- /g, ', ').replace(/•/g, ', ') // viñetas a comas
+    .replace(/[🚫⚠️🔥⚡💻🧠🕐📊\[\]{}|_~`<>]/g,'') // emojis y símbolos
+    .replace(/\(.*?\)/g,'')                    // paréntesis
+    .replace(/https?:\/\/\S+/g,'')            // URLs
+    .replace(/\n+/g, '. ')                     // saltos de línea a pausas
+    .replace(/\.{2,}/g, '.')                   // múltiples puntos
+    .replace(/,{2,}/g, ',')                    // múltiples comas
+    .replace(/:\s/g, ', ')                     // dos puntos a coma
+    .replace(/;\s/g, ', ')                     // punto y coma a coma
+    .replace(/\s+/g, ' ')                      // espacios múltiples
+    .trim();
+  
+  // Limitar longitud para no tardar demasiado
+  if(limpio.length > 500) limpio = limpio.substring(0, 500);
   if(!limpio || limpio.length < 3) return;
-  // Dividir en frases cortas (elimina las pausas largas entre puntos)
-  var frases = limpio.split(/(?<=[.!?])\s+/).filter(f => f.trim().length > 2);
+  
+  // Dividir en frases naturales (por punto, exclamación, interrogación)
+  // pero mantener frases de al menos 10 chars para evitar fragmentos muy cortos
+  var fragmentos = limpio.split(/(?<=[.!?])\s+/);
+  var frases = [];
+  var buffer = '';
+  for(var i=0; i<fragmentos.length; i++){
+    buffer += (buffer ? ' ' : '') + fragmentos[i].trim();
+    if(buffer.length >= 15 || i === fragmentos.length - 1){
+      if(buffer.trim().length > 2) frases.push(buffer.trim());
+      buffer = '';
+    }
+  }
   if(frases.length === 0) frases = [limpio];
+  
   disco.className = 'hablando';
   var idx = 0;
+  
   function leerSiguiente(){
-    if(idx >= frases.length){ disco.className=''; return; }
+    if(idx >= frases.length){ disco.className = ''; return; }
     var u = new SpeechSynthesisUtterance(frases[idx]);
     u.lang = 'es-MX';
-    u.rate = 1.15;
-    u.pitch = 1.2;
-    u.volume = 0.95;
+    // Configuración para voz femenina natural y fluida
+    u.rate = 1.08;   // ligeramente rápido, suena más joven/natural
+    u.pitch = 1.15;  // un poco más agudo = más femenino sin sonar artificial
+    u.volume = 1.0;
     if(vozFemenina) u.voice = vozFemenina;
-    u.onend = function(){ idx++; leerSiguiente(); };
-    u.onerror = function(){ idx++; leerSiguiente(); };
+    u.onend = function(){ idx++; setTimeout(leerSiguiente, 80); }; // pausa mínima entre frases
+    u.onerror = function(){ idx++; setTimeout(leerSiguiente, 50); };
     speechSynthesis.speak(u);
   }
+  
   speechSynthesis.cancel();
-  leerSiguiente();
+  // Pequeño delay para que cancel() surta efecto
+  setTimeout(function(){ leerSiguiente(); }, 100);
 }
 
 function toggleVoz(){

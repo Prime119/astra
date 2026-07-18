@@ -16,6 +16,7 @@ import sys
 import platform
 import subprocess
 import webbrowser
+import threading
 import psutil
 from pathlib import Path
 from datetime import datetime
@@ -28,20 +29,31 @@ sys.path.insert(0, str(RAIZ / "src"))
 
 from astra.core.orchestrator import Astra
 
-# Inicializar Astra
+# Inicializar Astra (rápido, solo configura)
 print("🌟 Iniciando Astra...")
 astra = Astra.boot()
-print(f"   Cerebro: {'✅ Online' if astra.brain.is_local_available() else '❌ Offline'}")
+cerebro_online = astra.brain.is_local_available()
+print(f"   Cerebro: {'✅ Online' if cerebro_online else '❌ Offline'}")
 print(f"   Hardware: {astra.config.hardware.tier} ({astra.config.hardware.ram_gb}GB RAM)")
 
-# Precalentar el modelo (la primera respuesta siempre tarda más)
-if astra.brain.is_local_available():
-    print("   ⏳ Precalentando modelo (para que la primera respuesta sea rápida)...")
+# Precalentar el modelo EN SEGUNDO PLANO (no bloquea el servidor)
+modelo_listo = threading.Event()
+
+def _precalentar():
+    """Calienta el modelo en un hilo separado para que el servidor arranque al instante."""
+    if not cerebro_online:
+        modelo_listo.set()
+        return
+    print("   ⏳ Precalentando modelo en segundo plano...")
     try:
         astra.brain.think("hola")
-        print("   ✅ Modelo precalentado")
+        print("   ✅ Modelo precalentado — listo para responder rápido")
     except Exception:
         print("   ⚠️ No se pudo precalentar (la primera respuesta tardará más)")
+    modelo_listo.set()
+
+# Lanzar precalentamiento en hilo separado
+threading.Thread(target=_precalentar, daemon=True).start()
 
 
 # === CAPACIDADES DEL SISTEMA ===
@@ -100,6 +112,11 @@ async def handle_chat(request):
     texto = data.get("texto", "").strip()
     if not texto:
         return web.json_response({"respuesta": ""})
+
+    # Si el modelo aún está precalentándose, esperar un poco
+    if not modelo_listo.is_set():
+        # Esperar hasta 5 segundos; si no termina, continuar de todos modos
+        modelo_listo.wait(timeout=5.0)
 
     # Detectar si pide info del sistema
     t = texto.lower()
