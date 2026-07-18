@@ -180,7 +180,12 @@ fetch('/api/status').then(r=>r.json()).then(d=>{
 function hablar(texto, audioUrl){
   if(!vozActiva) return;
   if(texto.includes('timed out') || texto.includes('[Astra]') || texto.includes('Error:')) return;
-  if(audioUrl){ reproducirAudio(audioUrl); return; }
+  if(audioUrl){
+    console.log('🎵 Audio neuronal:', audioUrl);
+    reproducirAudio(audioUrl);
+    return;
+  }
+  console.log('⚠️ Sin audio del backend, usando navegador');
   hablarNavegador(texto);
 }
 
@@ -195,11 +200,21 @@ function reproducirAudio(url){
 
 var vozFem = null;
 function buscarVoz(){
-  var v = speechSynthesis.getVoices();
-  if(!v||!v.length) return;
-  vozFem = v.find(function(x){ return x.lang.startsWith('es') && !x.name.toLowerCase().match(/raul|jorge|diego|pedro/); });
+  var voces = speechSynthesis.getVoices();
+  if(!voces||!voces.length) return;
+  // Buscar la mejor voz femenina (evitar masculinas)
+  var masc = ['raul','jorge','diego','pedro','alvaro','pablo','saul','alonso','arnau','hector'];
+  var candidatas = voces.filter(function(v){
+    if(!v.lang.startsWith('es')) return false;
+    var n = v.name.toLowerCase();
+    return !masc.some(function(m){ return n.includes(m); });
+  });
+  // Priorizar online/natural
+  var online = candidatas.find(function(v){ var n=v.name.toLowerCase(); return n.includes('online')||n.includes('natural'); });
+  vozFem = online || candidatas[0] || null;
+  if(vozFem) console.log('Voz fallback:', vozFem.name);
 }
-if(window.speechSynthesis){ speechSynthesis.onvoiceschanged=buscarVoz; buscarVoz(); setTimeout(buscarVoz,1000); }
+if(window.speechSynthesis){ speechSynthesis.onvoiceschanged=buscarVoz; buscarVoz(); setTimeout(buscarVoz,1000); setTimeout(buscarVoz,3000); }
 
 function hablarNavegador(texto){
   if(!window.speechSynthesis) return;
