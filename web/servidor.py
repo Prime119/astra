@@ -337,10 +337,39 @@ async def handle_chat(request):
     except Exception:
         memoria_ctx = ""
     
+    # Detectar si el usuario dice su nombre (para recordarlo)
+    import re
+    nombre_patterns = [
+        r"(?:me llamo|soy|mi nombre es|dime|llámame)\s+(\w+)",
+        r"(?:soy)\s+(\w+)",
+    ]
+    for pat in nombre_patterns:
+        match = re.search(pat, t)
+        if match:
+            nombre = match.group(1).capitalize()
+            if len(nombre) > 2 and nombre.lower() not in ["astra", "un", "una", "el", "la", "tu"]:
+                try:
+                    astra.memory.remember("nombre_usuario", nombre)
+                except Exception:
+                    pass
+                break
+    
+    # Incluir nombre del usuario si lo conocemos
+    nombre_usuario = None
+    try:
+        nombre_usuario = astra.memory.recall("nombre_usuario")
+    except Exception:
+        pass
+    
     # Chat normal con el LLM (instrucción mínima para no saturar el contexto)
     texto_final = texto
+    contexto_extra = ""
+    if nombre_usuario:
+        contexto_extra += f"[El usuario se llama {nombre_usuario}. Llámalo por su nombre.]\n"
     if memoria_ctx:
-        texto_final = f"[Recuerdas del usuario: {memoria_ctx}]\n\n{texto}"
+        contexto_extra += f"[Recuerdas: {memoria_ctx}]\n"
+    if contexto_extra:
+        texto_final = f"{contexto_extra}\n{texto}"
     
     loop = asyncio.get_event_loop()
     try:
@@ -413,6 +442,45 @@ async def handle_memory(request):
     })
 
 
+async def handle_vision(request):
+    """Procesa eventos de la cámara/visión."""
+    try:
+        data = await request.json()
+    except Exception:
+        return web.json_response({"respuesta": None, "audio": None})
+    
+    evento = data.get("evento", "")
+    frame = data.get("frame")  # base64 JPEG (para futuro procesamiento de visión)
+    
+    respuesta = None
+    
+    if evento == "camara_activada":
+        # Verificar si ya conocemos al usuario
+        nombre_usuario = astra.memory.recall("nombre_usuario")
+        if nombre_usuario:
+            respuesta = f"Hola {nombre_usuario}, ya te veo. ¿En qué te ayudo?"
+        else:
+            respuesta = "Ya te puedo ver. Oye, no me has dicho tu nombre. ¿Cómo te llamas?"
+    
+    elif evento == "usuario_volvio":
+        nombre_usuario = astra.memory.recall("nombre_usuario")
+        if nombre_usuario:
+            respuesta = f"Bienvenido de vuelta, {nombre_usuario}. ¿En qué seguimos?"
+        else:
+            respuesta = "Hey, ya regresaste. ¿En qué te ayudo?"
+    
+    elif evento == "usuario_se_fue":
+        # No responder cuando se va (solo registrar)
+        respuesta = None
+    
+    if respuesta:
+        emocion_actual = astra.emotions.state.emocion
+        audio_url = await generar_audio_edge(respuesta, emocion_actual)
+        return web.json_response({"respuesta": respuesta, "audio": audio_url})
+    
+    return web.json_response({"respuesta": None, "audio": None})
+
+
 # === APP ===
 async def on_startup(app):
     loop = asyncio.get_event_loop()
@@ -427,6 +495,7 @@ def main():
     app.router.add_get("/static/audio/{name}", handle_audio_static)
     app.router.add_post("/api/chat", handle_chat)
     app.router.add_post("/api/tts", handle_tts)
+    app.router.add_post("/api/vision", handle_vision)
     app.router.add_get("/api/status", handle_status)
     app.router.add_get("/api/memory", handle_memory)
 

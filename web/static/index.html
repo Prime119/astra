@@ -295,9 +295,11 @@ function toggleConversacion(){
   }
 }
 
-// === CÁMARA ===
+// === CÁMARA + VISIÓN ===
 var camaraActiva = false;
 var streamCamara = null;
+var usuarioPresente = true; // si el usuario está mirando la pantalla
+var intervaloCamara = null;
 
 function toggleCamara(){
   if(camaraActiva){
@@ -320,6 +322,10 @@ function activarCamara(){
       btn.style.borderColor = 'var(--cyan)';
       btn.title = 'Cámara ACTIVA (clic para desactivar)';
       agregarMsg('Cámara activada. Ahora puedo verte.', 'sistema');
+      // Enviar frame al backend para que sepa que hay cámara
+      setTimeout(function(){ enviarFrameCamara('camara_activada'); }, 1500);
+      // Monitorear presencia cada 5 segundos
+      intervaloCamara = setInterval(monitorearPresencia, 5000);
     })
     .catch(function(e){
       agregarMsg('No pude acceder a la cámara: ' + e.message, 'sistema');
@@ -331,6 +337,7 @@ function desactivarCamara(){
     streamCamara.getTracks().forEach(function(t){ t.stop(); });
     streamCamara = null;
   }
+  if(intervaloCamara){ clearInterval(intervaloCamara); intervaloCamara = null; }
   var video = document.getElementById('cam-preview');
   video.style.display = 'none';
   video.srcObject = null;
@@ -339,18 +346,47 @@ function desactivarCamara(){
   btn.style.background = 'var(--panel)';
   btn.style.borderColor = 'var(--border)';
   btn.title = 'Activar cámara (Astra te puede ver)';
-  agregarMsg('Cámara desactivada.', 'sistema');
 }
 
-// Capturar frame de la cámara (se puede usar para enviar al backend)
 function capturarFrame(){
   if(!camaraActiva || !streamCamara) return null;
   var video = document.getElementById('cam-preview');
+  if(!video.videoWidth) return null;
   var canvas = document.createElement('canvas');
   canvas.width = video.videoWidth || 320;
   canvas.height = video.videoHeight || 240;
   canvas.getContext('2d').drawImage(video, 0, 0);
-  return canvas.toDataURL('image/jpeg', 0.5);
+  return canvas.toDataURL('image/jpeg', 0.4);
+}
+
+function enviarFrameCamara(evento){
+  var frame = capturarFrame();
+  fetch('/api/vision', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({frame: frame, evento: evento})})
+    .then(r=>r.json()).then(d=>{
+      if(d.respuesta){
+        agregarMsg(d.respuesta, 'astra');
+        hablar(d.respuesta, d.audio);
+      }
+    }).catch(function(){});
+}
+
+// Detección de presencia: usa la visibilidad de la página
+// Si el usuario cambia de pestaña o minimiza, Astra lo sabe
+function monitorearPresencia(){
+  var nuevoEstado = document.hasFocus();
+  if(nuevoEstado !== usuarioPresente){
+    usuarioPresente = nuevoEstado;
+    // Notificar al backend del cambio de atención
+    fetch('/api/vision', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({frame: null, evento: nuevoEstado ? 'usuario_volvio' : 'usuario_se_fue'})})
+      .then(r=>r.json()).then(d=>{
+        if(d.respuesta && nuevoEstado){
+          agregarMsg(d.respuesta, 'astra');
+          hablar(d.respuesta, d.audio);
+        }
+      }).catch(function(){});
+  }
 }
 
 // Info bar (se actualiza cada 30s)
