@@ -84,6 +84,7 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;
     <button id="btn-voz" onclick="toggleVoz()" title="Voz activada (clic para silenciar)" style="background:var(--panel);border:1px solid var(--border);color:var(--cyan);font-size:16px;width:44px;border-radius:10px;cursor:pointer;">🔊</button>
   </div>
   <div id="info-bar">
+    <span id="info-emocion"></span>
     <span id="info-hora"></span>
     <span id="info-cpu"></span>
     <span id="info-ram"></span>
@@ -244,6 +245,11 @@ function escuchar(){
 }
 
 // Info bar (se actualiza cada 30s)
+var EMOJI_EMOCIONES = {
+  neutral:'😐', feliz:'😊', emocionada:'🤩', divertida:'😄', curiosa:'🤔',
+  orgullosa:'😌', apasionada:'🔥', triste:'😢', frustrada:'😤', enojada:'😠',
+  preocupada:'😟', estresada:'😰', cansada:'😴', nostalgica:'🥺', satisfecha:'☺️', impaciente:'⏳'
+};
 function actualizarInfo(){
   fetch('/api/status').then(r=>r.json()).then(d=>{
     var s = d.sistema;
@@ -253,6 +259,12 @@ function actualizarInfo(){
     var dot = document.getElementById('dot-status');
     dot.className = 'dot '+(d.astra.brain_local_online?'on':'off');
     document.getElementById('status-text').textContent = d.astra.brain_local_online?'Conectada':'Cerebro offline';
+    // Mostrar emoción actual
+    if(d.astra.emotions){
+      var em = d.astra.emotions;
+      var emoji = EMOJI_EMOCIONES[em.emocion] || '😐';
+      document.getElementById('info-emocion').textContent = emoji + ' ' + em.descripcion;
+    }
   }).catch(()=>{});
 }
 actualizarInfo();
