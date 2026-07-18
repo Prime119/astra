@@ -227,26 +227,31 @@ async def handle_chat(request):
         return web.json_response({"respuesta": respuesta, "audio": audio_url})
 
     # Incluir contexto de memoria/aprendizajes para que Astra recuerde
-    memoria_ctx = astra.get_learning_context()
+    try:
+        memoria_ctx = astra.get_learning_context()
+    except Exception:
+        memoria_ctx = ""
     
-    # Chat normal con el LLM
-    texto_con_instruccion = (
-        "IMPORTANTE: Si el usuario escribe con errores ortográficos o palabras mal escritas, "
-        "interpreta lo que quiso decir por contexto y responde normalmente. "
-        "NO le corrijas la ortografía ni menciones el error. Solo responde al contenido.\n\n"
-    )
+    # Chat normal con el LLM (instrucción mínima para no saturar el contexto)
+    texto_final = texto
     if memoria_ctx:
-        texto_con_instruccion += f"[MEMORIA - Cosas que recuerdas del usuario]:\n{memoria_ctx}\n\n"
-    texto_con_instruccion += f"Usuario dice: {texto}"
+        texto_final = f"[Recuerdas del usuario: {memoria_ctx}]\n\n{texto}"
     
     loop = asyncio.get_event_loop()
     try:
-        respuesta = await loop.run_in_executor(None, astra.handle, texto_con_instruccion)
+        respuesta = await loop.run_in_executor(None, astra.handle, texto_final)
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         respuesta = f"Disculpa, tuve un problema al procesar eso."
 
-    # Aprendizaje autónomo: extraer hechos relevantes de la conversación
-    asyncio.ensure_future(_aprender_de_conversacion(texto, respuesta))
+    # Aprendizaje autónomo en background (best-effort, no bloquea respuesta)
+    try:
+        asyncio.get_event_loop().call_soon(
+            lambda: asyncio.ensure_future(_aprender_de_conversacion(texto, respuesta))
+        )
+    except Exception:
+        pass
     
     # Generar audio con voz neuronal
     audio_url = await generar_audio_edge(respuesta)

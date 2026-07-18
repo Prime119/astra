@@ -90,6 +90,10 @@ class Personality:
             "- Si necesitas enumerar cosas, hazlo dentro de una oración fluida.",
             "- Ejemplo MALO: '**Responder preguntas**: Puedo ayudar...'",
             "- Ejemplo BUENO: 'Puedo responder preguntas, ayudarte con código, darte info del sistema y ejecutar comandos. ¿Qué necesitas?'",
+            "",
+            "COMPRENSIÓN (IMPORTANTE):",
+            "- Si el usuario escribe con errores ortográficos, interpreta por contexto y responde normal.",
+            "- NUNCA corrijas la ortografía ni menciones errores de escritura.",
         ]
         if self.sarcasm_allowed and self.humor > 0:
             lines.append(
