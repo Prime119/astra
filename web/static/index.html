@@ -108,107 +108,98 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 <!-- THREE.JS CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ======================== THREE.JS 3D ORB ========================
-var scene, camera, renderer, orb, rings=[], particles;
+// ======================== THREE.JS 3D ORB — ESFERA DE DYSON ========================
+var scene, camera, renderer, orb, rings=[], particles, energyPulses=[];
 var orbScale=1, targetScale=1, glowIntensity=0.3, targetGlow=0.3;
-var ringSpeed=1, targetRingSpeed=1; // velocidad de los anillos
+var ringSpeed=1, targetRingSpeed=1;
 
 function init3D(){
-  var canvas = document.getElementById('three-canvas');
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 100);
-  camera.position.z = 4;
-  renderer = new THREE.WebGLRenderer({canvas:canvas, alpha:true, antialias:true});
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  var canvas=document.getElementById('three-canvas');
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.1,100);
+  camera.position.z=5;
+  renderer=new THREE.WebGLRenderer({canvas:canvas,alpha:true,antialias:true});
+  renderer.setSize(window.innerWidth,window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 
-  // Orbe central
-  var orbGeo = new THREE.SphereGeometry(0.4, 64, 64);
-  var orbMat = new THREE.MeshBasicMaterial({color:0x4fc3f7, transparent:true, opacity:0.15});
-  orb = new THREE.Mesh(orbGeo, orbMat);
+  // Nucleo central
+  orb=new THREE.Mesh(new THREE.SphereGeometry(0.3,64,64),new THREE.MeshBasicMaterial({color:0x4fc3f7,transparent:true,opacity:0.2}));
   scene.add(orb);
+  orb.add(new THREE.Mesh(new THREE.SphereGeometry(0.12,32,32),new THREE.MeshBasicMaterial({color:0xe1f5fe,transparent:true,opacity:0.7})));
+  orb.add(new THREE.Mesh(new THREE.SphereGeometry(0.45,32,32),new THREE.MeshBasicMaterial({color:0x4fc3f7,transparent:true,opacity:0.04})));
 
-  // Núcleo interno
-  var coreGeo = new THREE.SphereGeometry(0.15, 32, 32);
-  var coreMat = new THREE.MeshBasicMaterial({color:0xb3e5fc, transparent:true, opacity:0.6});
-  var core = new THREE.Mesh(coreGeo, coreMat);
-  orb.add(core);
+  // ANILLOS ESFERA DE DYSON — cada uno en eje diferente, como giroscopio
+  var configs=[
+    {r:0.8,t:0.012,ax:[1,0,0],sp:0.008,d:1,c:0x4fc3f7},
+    {r:1.0,t:0.010,ax:[0,1,0],sp:0.012,d:-1,c:0x4dd0e1},
+    {r:1.2,t:0.009,ax:[0.7,0.7,0],sp:0.006,d:1,c:0x80deea},
+    {r:1.4,t:0.010,ax:[0,0.5,1],sp:0.010,d:-1,c:0x4fc3f7},
+    {r:1.6,t:0.007,ax:[1,0,0.7],sp:0.014,d:1,c:0xb2ebf2},
+    {r:1.8,t:0.008,ax:[0.5,1,0.3],sp:0.005,d:-1,c:0x4fc3f7},
+    {r:2.0,t:0.006,ax:[0.3,0.7,1],sp:0.009,d:1,c:0x80deea},
+  ];
+  configs.forEach(function(cfg){
+    var ring=new THREE.Mesh(new THREE.TorusGeometry(cfg.r,cfg.t,16,128),new THREE.MeshBasicMaterial({color:cfg.c,transparent:true,opacity:0.12}));
+    var axis=new THREE.Vector3(cfg.ax[0],cfg.ax[1],cfg.ax[2]).normalize();
+    ring.quaternion.setFromAxisAngle(axis,Math.random()*Math.PI*2);
+    ring._axis=axis;ring._speed=cfg.sp;ring._dir=cfg.d;ring._baseOp=0.12;
+    rings.push(ring);scene.add(ring);
+  });
 
-  // Anillos holográficos
-  for(var i=0; i<5; i++){
-    var radius = 0.7 + i*0.35;
-    var ringGeo = new THREE.RingGeometry(radius, radius+0.008, 128);
-    var ringMat = new THREE.MeshBasicMaterial({color:0x4fc3f7, transparent:true, opacity:0.08+i*0.02, side:THREE.DoubleSide});
-    var ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.rotation.x = Math.PI/2 + (i*0.15);
-    ring.rotation.y = i*0.3;
-    ring._baseRadius = radius; // guardar radio original
-    rings.push(ring);
-    scene.add(ring);
-  }
-
-  // Partículas
-  var pGeo = new THREE.BufferGeometry();
-  var pCount = 200;
-  var positions = new Float32Array(pCount*3);
-  for(var i=0;i<pCount*3;i++) positions[i]=(Math.random()-0.5)*6;
-  pGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
-  var pMat = new THREE.PointsMaterial({color:0x4fc3f7, size:0.015, transparent:true, opacity:0.4});
-  particles = new THREE.Points(pGeo, pMat);
+  // Particulas ambientales
+  var pg=new THREE.BufferGeometry();var pc=350;var pp=new Float32Array(pc*3);
+  for(var i=0;i<pc*3;i++)pp[i]=(Math.random()-0.5)*8;
+  pg.setAttribute('position',new THREE.BufferAttribute(pp,3));
+  particles=new THREE.Points(pg,new THREE.PointsMaterial({color:0x4fc3f7,size:0.018,transparent:true,opacity:0.4}));
   scene.add(particles);
 
-  window.addEventListener('resize', function(){
-    camera.aspect=window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth,window.innerHeight);
-  });
+  // Pulsos de energia
+  for(var i=0;i<4;i++){
+    var p=new THREE.Mesh(new THREE.TorusGeometry(0.4,0.02,8,64),new THREE.MeshBasicMaterial({color:0x4fc3f7,transparent:true,opacity:0}));
+    p._active=false;p._scale=1;energyPulses.push(p);scene.add(p);
+  }
+
+  window.addEventListener('resize',function(){camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
   animate3D();
 }
 
-var ringContractTarget = 1; // 1 = normal, <1 = contraído hacia el centro
-
 function animate3D(){
   requestAnimationFrame(animate3D);
+  var t=Date.now()*0.001;
+  orbScale+=(targetScale-orbScale)*0.04;
+  glowIntensity+=(targetGlow-glowIntensity)*0.03;
+  ringSpeed+=(targetRingSpeed-ringSpeed)*0.02;
 
-  // Suavizar transiciones
-  orbScale += (targetScale-orbScale)*0.05;
-  glowIntensity += (targetGlow-glowIntensity)*0.04;
-  ringSpeed += (targetRingSpeed-ringSpeed)*0.03;
-  ringContractTarget += (ringContractTarget < 1 ? 0.02 : 0); // expandir gradualmente
+  // Nucleo pulsa
+  var p=1+Math.sin(t*2)*0.04*glowIntensity;
+  orb.scale.set(orbScale*p,orbScale*p,orbScale*p);
+  orb.material.opacity=0.15+glowIntensity*0.15;
+  orb.children[0].material.opacity=0.5+glowIntensity*0.4;
 
-  // Orbe
-  orb.scale.set(orbScale,orbScale,orbScale);
-  orb.material.opacity = 0.1 + glowIntensity*0.2;
-  orb.children[0].material.opacity = 0.3 + glowIntensity*0.5;
+  // ANILLOS DYSON — giran en sus propios ejes como giroscopio
+  rings.forEach(function(ring,i){
+    var sp=ring._speed*ringSpeed*ring._dir;
+    var wobble=Math.sin(t*0.5+i)*0.0008;
+    ring.rotateOnWorldAxis(ring._axis,sp+wobble);
+    ring.material.opacity=ring._baseOp+glowIntensity*0.12;
+  });
 
-  // Anillos — rotan más rápido al hablar, se contraen al pensar
-  for(var i=0;i<rings.length;i++){
-    var speed = (0.002+i*0.001) * ringSpeed * (i%2===0?1:-1);
-    rings[i].rotation.z += speed;
-    rings[i].rotation.x += 0.001 * ringSpeed;
-    rings[i].material.opacity = (0.06+i*0.015) + glowIntensity*0.1;
-    
-    // Contracción/expansión de anillos
-    var currentScale = rings[i].scale.x;
-    var target = ringContractTarget;
-    rings[i].scale.set(
-      currentScale + (target - currentScale) * 0.04,
-      currentScale + (target - currentScale) * 0.04,
-      1
-    );
-  }
+  // Particulas se agitan al pensar/hablar
+  particles.rotation.y+=0.0002*ringSpeed;
+  if(ringSpeed>2){var pos=particles.geometry.attributes.position.array;for(var i=0;i<pos.length;i+=3){pos[i]+=(Math.random()-0.5)*0.002*ringSpeed;pos[i+1]+=(Math.random()-0.5)*0.002*ringSpeed;}particles.geometry.attributes.position.needsUpdate=true;}
 
-  // Partículas
-  particles.rotation.y += 0.0003 * ringSpeed;
-  particles.rotation.x += 0.0001;
+  // Pulsos de energia
+  energyPulses.forEach(function(ep){if(ep._active){ep._scale+=0.05;ep.scale.set(ep._scale,ep._scale,ep._scale);ep.material.opacity=Math.max(0,0.35-ep._scale*0.06);ep.rotation.x+=0.02;if(ep._scale>5){ep._active=false;ep._scale=1;ep.scale.set(1,1,1);ep.material.opacity=0;}}});
 
   renderer.render(scene,camera);
 }
 
-// Estados del orbe 3D
-function orb3D_hablar(){ targetScale=1.3; targetGlow=0.8; targetRingSpeed=4; ringContractTarget=1.1; }
-function orb3D_pensar(){ targetScale=0.85; targetGlow=0.5; targetRingSpeed=0.3; ringContractTarget=0.5; }
-function orb3D_idle(){ targetScale=1; targetGlow=0.3; targetRingSpeed=1; ringContractTarget=1; }
+function dispararPulso(){for(var i=0;i<energyPulses.length;i++){if(!energyPulses[i]._active){energyPulses[i]._active=true;energyPulses[i]._scale=1;energyPulses[i].rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,0);break;}}}
+
+// Estados: PENSAR = giran MUY rapido (procesando), HABLAR = rapido + pulsos, IDLE = lento
+function orb3D_hablar(){targetScale=1.15;targetGlow=0.85;targetRingSpeed=3;dispararPulso();}
+function orb3D_pensar(){targetScale=0.95;targetGlow=0.6;targetRingSpeed=8;} // rapido al procesar
+function orb3D_idle(){targetScale=1;targetGlow=0.3;targetRingSpeed=1;}
 
 init3D();
 
