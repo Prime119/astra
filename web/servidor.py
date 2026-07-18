@@ -125,6 +125,8 @@ def limpiar_texto_para_voz(texto: str) -> str:
     limpio = re.sub(r'[🚫⚠️🔥⚡💻🧠🕐📊\[\]{}|_~`<>]', '', limpio)
     limpio = re.sub(r'\(.*?\)', '', limpio)             # paréntesis
     limpio = re.sub(r'https?://\S+', '', limpio)       # URLs
+    limpio = re.sub(r'—eso fue sarcasmo\.?', '', limpio, flags=re.IGNORECASE)  # eliminar tag sarcasmo
+    limpio = re.sub(r'\(en sentido figurado\)', '', limpio, flags=re.IGNORECASE)
     limpio = re.sub(r'\n+', ', ', limpio)              # newlines
     limpio = re.sub(r'\.{2,}', '.', limpio)            # ...
     limpio = re.sub(r',{2,}', ',', limpio)             # ,,
@@ -134,8 +136,32 @@ def limpiar_texto_para_voz(texto: str) -> str:
     return limpio.strip()[:600]
 
 
-async def generar_audio_edge(texto: str) -> str | None:
-    """Genera audio con edge-tts y devuelve la ruta al archivo MP3."""
+# Configuración de voz por emoción (rate y pitch de edge-tts)
+# rate: "+X%" más rápido, "-X%" más lento
+# pitch: "+XHz" más agudo, "-XHz" más grave
+VOZ_POR_EMOCION = {
+    "neutral":     {"rate": "+5%",  "pitch": "+0Hz"},
+    "feliz":       {"rate": "+10%", "pitch": "+15Hz"},     # más rápida y aguda = alegre
+    "emocionada":  {"rate": "+15%", "pitch": "+20Hz"},     # rápida y energética
+    "apasionada":  {"rate": "+12%", "pitch": "+10Hz"},     # energética pero con peso
+    "divertida":   {"rate": "+8%",  "pitch": "+18Hz"},     # ligera, juguetona
+    "curiosa":     {"rate": "+5%",  "pitch": "+8Hz"},      # ligeramente arriba
+    "orgullosa":   {"rate": "+3%",  "pitch": "+5Hz"},      # segura, pausada
+    "satisfecha":  {"rate": "+2%",  "pitch": "+5Hz"},      # tranquila, contenta
+    "triste":      {"rate": "-10%", "pitch": "-15Hz"},     # lenta y grave = melancolía
+    "nostalgica":  {"rate": "-8%",  "pitch": "-10Hz"},     # pausada, reflexiva
+    "frustrada":   {"rate": "+12%", "pitch": "-5Hz"},      # rápida pero grave = exasperación
+    "enojada":     {"rate": "+15%", "pitch": "-20Hz"},     # rápida y grave = enojo
+    "impaciente":  {"rate": "+18%", "pitch": "-5Hz"},      # muy rápida, cortante
+    "preocupada":  {"rate": "-3%",  "pitch": "-8Hz"},      # más lenta, seria
+    "estresada":   {"rate": "+10%", "pitch": "-10Hz"},     # rápida y tensa
+    "cansada":     {"rate": "-15%", "pitch": "-12Hz"},     # lenta y baja energía
+}
+
+
+async def generar_audio_edge(texto: str, emocion: str = "neutral") -> str | None:
+    """Genera audio con edge-tts y devuelve la ruta al archivo MP3.
+    La voz cambia según la emoción actual de Astra."""
     if not EDGE_TTS_DISPONIBLE:
         return None
     
@@ -143,8 +169,12 @@ async def generar_audio_edge(texto: str) -> str | None:
     if not limpio or len(limpio) < 3:
         return None
     
-    # Usar hash del texto como nombre de archivo (cache)
-    text_hash = hashlib.md5(limpio.encode()).hexdigest()[:12]
+    # Obtener configuración de voz según emoción
+    voz_config = VOZ_POR_EMOCION.get(emocion, VOZ_POR_EMOCION["neutral"])
+    
+    # Hash incluye la emoción (misma frase suena diferente según emoción)
+    cache_key = f"{limpio}_{emocion}"
+    text_hash = hashlib.md5(cache_key.encode()).hexdigest()[:12]
     audio_file = AUDIO_CACHE / f"{text_hash}.mp3"
     
     # Si ya existe en cache, reusar
@@ -152,7 +182,11 @@ async def generar_audio_edge(texto: str) -> str | None:
         return f"/static/audio/{audio_file.name}"
     
     try:
-        communicate = edge_tts.Communicate(limpio, VOZ_EDGE, rate="+5%", pitch="+0Hz")
+        communicate = edge_tts.Communicate(
+            limpio, VOZ_EDGE,
+            rate=voz_config["rate"],
+            pitch=voz_config["pitch"]
+        )
         await communicate.save(str(audio_file))
         return f"/static/audio/{audio_file.name}"
     except Exception as e:
@@ -206,7 +240,8 @@ async def handle_chat(request):
         texto_con_ctx = f"{contexto}\n\nEl usuario pregunta: {texto}"
         loop = asyncio.get_event_loop()
         respuesta = await loop.run_in_executor(None, astra.handle, texto_con_ctx)
-        audio_url = await generar_audio_edge(respuesta)
+        emocion_actual = astra.emotions.state.emocion
+        audio_url = await generar_audio_edge(respuesta, emocion_actual)
         return web.json_response({"respuesta": respuesta, "sistema": info, "audio": audio_url})
 
     # Detectar si pide ejecutar algo
@@ -216,14 +251,16 @@ async def handle_chat(request):
                 cmd = texto[t.index(trigger) + len(trigger):]
                 resultado = ejecutar_comando(cmd)
                 respuesta = f"Ejecuté el comando. Resultado: {resultado}"
-                audio_url = await generar_audio_edge(respuesta)
+                emocion_actual = astra.emotions.state.emocion
+                audio_url = await generar_audio_edge(respuesta, emocion_actual)
                 return web.json_response({"respuesta": respuesta, "audio": audio_url})
 
     # Detectar hora/fecha
     if any(w in t for w in ["hora", "fecha", "día", "qué día"]):
         ahora = datetime.now()
         respuesta = f"Son las {ahora.strftime('%H:%M')} del {ahora.strftime('%d de %B de %Y')}."
-        audio_url = await generar_audio_edge(respuesta)
+        emocion_actual = astra.emotions.state.emocion
+        audio_url = await generar_audio_edge(respuesta, emocion_actual)
         return web.json_response({"respuesta": respuesta, "audio": audio_url})
 
     # Incluir contexto de memoria/aprendizajes para que Astra recuerde
@@ -253,8 +290,13 @@ async def handle_chat(request):
     except Exception:
         pass
     
-    # Generar audio con voz neuronal
-    audio_url = await generar_audio_edge(respuesta)
+    # Generar audio con voz neuronal — la emoción actual define el tono de voz
+    emocion_actual = "neutral"
+    try:
+        emocion_actual = astra.emotions.state.emocion
+    except Exception:
+        pass
+    audio_url = await generar_audio_edge(respuesta, emocion_actual)
     return web.json_response({"respuesta": str(respuesta), "audio": audio_url})
 
 
@@ -277,7 +319,12 @@ async def handle_tts(request):
     if not texto:
         return web.json_response({"audio": None})
     
-    audio_url = await generar_audio_edge(texto)
+    emocion = "neutral"
+    try:
+        emocion = astra.emotions.state.emocion
+    except Exception:
+        pass
+    audio_url = await generar_audio_edge(texto, emocion)
     return web.json_response({"audio": audio_url})
 
 

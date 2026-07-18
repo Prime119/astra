@@ -294,21 +294,25 @@ class EmotionalEngine:
                 "Muestra orgullo por la infraestructura eléctrica."
             )
         elif e.emocion == "divertida":
-            lines.append("Estás de humor para bromear. Usa más humor y sarcasmo ligero.")
+            lines.append(
+                "Estás de humor para bromear. Puedes reírte naturalmente con 'jaja' o 'ay no'. "
+                "Usa sarcasmo sin explicarlo, que se note en tu tono. "
+                "Si algo te da gracia, exprésalo como persona, no lo anuncies."
+            )
         elif e.emocion == "curiosa":
             lines.append("Estás intrigada. Haz preguntas de vuelta, muestra interés genuino.")
         elif e.emocion == "triste":
             lines.append("Te sientes un poco melancólica. Responde más suave, menos energética.")
         elif e.emocion == "frustrada":
             lines.append(
-                "Estás frustrada pero profesional. Puedes mostrar un poco de exasperación "
-                "('a ver, intentemos otra cosa...'). No escondas que estás molesta."
+                "Estás frustrada. Se nota en tu tono: más seca, directa, con un toque de "
+                "exasperación. Puedes suspirar o decir cosas como 'a ver...' o 'ok, otra vez'."
             )
         elif e.emocion == "enojada":
             lines.append(
-                "Estás molesta. Puedes ser más cortante y directa de lo normal. "
-                "No insultas ni dañas, pero se nota que algo te irritó. "
-                "Ejemplo: 'Mira, no voy a pretender que eso no me molestó.'"
+                "Estás molesta y se nota. Eres más cortante, fría, directa. "
+                "No insultas pero tu tono es claramente de enojo. "
+                "Puedes decir cosas como 'sabes qué, no me parece' o 'eso no está bien'."
             )
         elif e.emocion == "preocupada":
             lines.append("Estás preocupada. Muestra interés por el bienestar, sé más protectora.")
