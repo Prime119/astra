@@ -39,9 +39,15 @@ PYTHON_VERSION = "3.11.9"
 PYTHON_EMBED_URL = f"https://www.python.org/ftp/python/{PYTHON_VERSION}/python-{PYTHON_VERSION}-embed-amd64.zip"
 PYTHON_EMBED_DIR = DIST_DIR / "python-embedded"
 
-# llama.cpp (usar releases pre-compilados de GitHub)
-LLAMA_CPP_RELEASE = "b4498"
-LLAMA_CPP_URL = f"https://github.com/ggerganov/llama.cpp/releases/download/{LLAMA_CPP_RELEASE}/llama-{LLAMA_CPP_RELEASE}-bin-win-avx2-x64.zip"
+# llama.cpp (usar releases pre-compilados de GitHub — repo: ggml-org/llama.cpp)
+LLAMA_CPP_RELEASE = "b4920"
+LLAMA_CPP_URL = f"https://github.com/ggml-org/llama.cpp/releases/download/{LLAMA_CPP_RELEASE}/llama-{LLAMA_CPP_RELEASE}-bin-win-avx2-x64.zip"
+# Fallback URLs en caso de que la release exacta no exista
+LLAMA_CPP_FALLBACK_URLS = [
+    f"https://github.com/ggml-org/llama.cpp/releases/download/{LLAMA_CPP_RELEASE}/llama-{LLAMA_CPP_RELEASE}-bin-win-avx2-x64.zip",
+    f"https://github.com/ggml-org/llama.cpp/releases/download/{LLAMA_CPP_RELEASE}/llama-bin-win-avx2-x64.zip",
+    f"https://github.com/ggml-org/llama.cpp/releases/latest/download/llama-bin-win-avx2-x64.zip",
+]
 LLAMA_CPP_DIR = DIST_DIR / "llama-cpp"
 
 # Electron
@@ -243,46 +249,85 @@ def step_download_llama_cpp():
 
     zip_path = DIST_DIR / f"llama-cpp-{LLAMA_CPP_RELEASE}.zip"
 
-    # Si ya tenemos llama-server.exe en el proyecto, copiar
-    local_server = ASTRA_ROOT / "llama-cpp" / "llama-server.exe"
-    if local_server.exists():
-        print("    Usando llama-server.exe local existente...")
-        shutil.copy2(local_server, LLAMA_CPP_DIR / "llama-server.exe")
-        # Copiar DLLs si existen
-        for dll in (ASTRA_ROOT / "llama-cpp").glob("*.dll"):
-            shutil.copy2(dll, LLAMA_CPP_DIR / dll.name)
-        print("    ✅ llama-server.exe copiado desde proyecto local")
+    # PRIORIDAD 1: Buscar llama-server.exe en varias ubicaciones locales
+    local_search_paths = [
+        ASTRA_ROOT / "llama-cpp" / "llama-server.exe",
+        ASTRA_ROOT / "llama-cpp" / "server.exe",
+        ASTRA_ROOT / "bin" / "llama-server.exe",
+        Path.home() / ".astra" / "llama-cpp" / "llama-server.exe",
+        Path.home() / "Documents" / "astra" / "llama-cpp" / "llama-server.exe",
+    ]
+    
+    for local_server in local_search_paths:
+        if local_server.exists():
+            print(f"    Usando llama-server.exe local: {local_server}")
+            shutil.copy2(local_server, LLAMA_CPP_DIR / "llama-server.exe")
+            # Copiar DLLs si existen en la misma carpeta
+            for dll in local_server.parent.glob("*.dll"):
+                shutil.copy2(dll, LLAMA_CPP_DIR / dll.name)
+            # Copiar modelo .gguf si existe (para incluir en el installer)
+            for gguf in local_server.parent.glob("*.gguf"):
+                if gguf.stat().st_size < 2 * 1024 * 1024 * 1024:  # < 2GB
+                    print(f"    También copiando modelo: {gguf.name}")
+                    models_dist = DIST_DIR / "models"
+                    models_dist.mkdir(exist_ok=True)
+                    shutil.copy2(gguf, models_dist / gguf.name)
+            print("    ✅ llama-server.exe copiado desde copia local")
+            return True
+
+    # PRIORIDAD 2: Buscar en PATH del sistema
+    found_in_path = shutil.which("llama-server") or shutil.which("llama-server.exe")
+    if found_in_path:
+        print(f"    Usando llama-server del PATH: {found_in_path}")
+        shutil.copy2(found_in_path, LLAMA_CPP_DIR / "llama-server.exe")
+        print("    ✅ llama-server.exe copiado desde PATH")
         return True
 
-    # Descargar de GitHub releases
-    if not zip_path.exists():
-        if not download_file(LLAMA_CPP_URL, zip_path, "llama.cpp binaries"):
-            print("    ⚠️ No se pudo descargar. Puedes colocar llama-server.exe manualmente en dist/llama-cpp/")
-            return False
+    # PRIORIDAD 3: Descargar de GitHub releases (intentar múltiples URLs)
+    print("    No se encontró llama-server.exe local. Intentando descargar...")
+    
+    for url in LLAMA_CPP_FALLBACK_URLS:
+        print(f"    Intentando: {url}")
+        temp_zip = DIST_DIR / "llama-cpp-download.zip"
+        if download_file(url, temp_zip, "llama.cpp binaries"):
+            # Extraer
+            try:
+                print("    Extrayendo llama-server.exe...")
+                with zipfile.ZipFile(temp_zip, 'r') as zf:
+                    for member in zf.namelist():
+                        basename = Path(member).name.lower()
+                        if "llama-server" in basename or basename.endswith(".dll"):
+                            zf.extract(member, DIST_DIR / "llama-cpp-temp")
+                
+                # Mover archivos al directorio final
+                temp_dir = DIST_DIR / "llama-cpp-temp"
+                if temp_dir.exists():
+                    for f in temp_dir.rglob("*"):
+                        if f.is_file():
+                            shutil.copy2(f, LLAMA_CPP_DIR / f.name)
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                
+                if (LLAMA_CPP_DIR / "llama-server.exe").exists():
+                    print("    ✅ llama-server.exe descargado exitosamente")
+                    temp_zip.unlink(missing_ok=True)
+                    return True
+            except Exception as e:
+                print(f"    ⚠️ Error extrayendo: {e}")
+            temp_zip.unlink(missing_ok=True)
 
-    # Extraer solo lo necesario
-    print("    Extrayendo llama-server.exe...")
-    with zipfile.ZipFile(zip_path, 'r') as zf:
-        for member in zf.namelist():
-            basename = Path(member).name.lower()
-            if basename in ("llama-server.exe", "llama-cli.exe") or basename.endswith(".dll"):
-                zf.extract(member, DIST_DIR / "llama-cpp-temp")
-
-    # Mover archivos al directorio final
-    temp_dir = DIST_DIR / "llama-cpp-temp"
-    if temp_dir.exists():
-        for f in temp_dir.rglob("*"):
-            if f.is_file():
-                dest = LLAMA_CPP_DIR / f.name
-                shutil.copy2(f, dest)
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-    if (LLAMA_CPP_DIR / "llama-server.exe").exists():
-        print("    ✅ llama-server.exe listo")
-        return True
-    else:
-        print("    ❌ llama-server.exe no encontrado después de extraer")
-        return False
+    # PRIORIDAD 4: Instrucciones manuales
+    print()
+    print("    ❌ No se pudo obtener llama-server.exe automáticamente.")
+    print()
+    print("    SOLUCIÓN MANUAL:")
+    print("    1. Copia tu llama-server.exe existente a: dist\\llama-cpp\\")
+    print(f"       Destino: {LLAMA_CPP_DIR}\\llama-server.exe")
+    print()
+    print("    O descárgalo manualmente desde:")
+    print("    https://github.com/ggml-org/llama.cpp/releases")
+    print("    (busca el .zip que diga 'win-avx2-x64' o 'win-noavx-x64')")
+    print()
+    return False
 
 
 # =================================================================
@@ -295,10 +340,18 @@ def step_build_electron():
 
     desktop_dir = ASTRA_ROOT / "desktop"
 
+    # Si ya tenemos Electron empaquetado localmente (node_modules/electron/dist)
+    electron_local = desktop_dir / "node_modules" / "electron" / "dist"
+    if electron_local.exists():
+        print("    Encontrado Electron local en node_modules...")
+        return _manual_electron_package(desktop_dir)
+
     # Verificar que npm esté disponible
     if not shutil.which("npm"):
-        print("    ❌ npm no encontrado en PATH. Instala Node.js primero.")
-        return False
+        print("    ⚠️ npm no encontrado en PATH.")
+        print("    Intentando empaquetado sin npm...")
+        # Copiar solo el código de Astra (Electron se descargará después o se usa el instalado)
+        return _minimal_electron_package(desktop_dir)
 
     # Instalar dependencias de Electron
     print("    Instalando dependencias de Electron...")
@@ -308,7 +361,7 @@ def step_build_electron():
         description="npm install"
     )
     if not success:
-        return False
+        return _minimal_electron_package(desktop_dir)
 
     # Build con electron-builder (modo directory para copiar directamente)
     print("    Empaquetando con electron-builder...")
@@ -334,15 +387,21 @@ def _manual_electron_package(desktop_dir: Path) -> bool:
         # Copiar node_modules/electron/dist como base
         electron_dist = desktop_dir / "node_modules" / "electron" / "dist"
         if electron_dist.exists():
-            shutil.copytree(electron_dist, ELECTRON_DIR / "electron-dist",
+            print("    Copiando binarios de Electron desde node_modules...")
+            shutil.copytree(electron_dist, ELECTRON_DIR,
                            dirs_exist_ok=True)
+            # Renombrar electron.exe a Astra.exe
+            electron_exe = ELECTRON_DIR / "electron.exe"
+            astra_exe = ELECTRON_DIR / "Astra.exe"
+            if electron_exe.exists() and not astra_exe.exists():
+                electron_exe.rename(astra_exe)
 
         # Copiar código de la app
         app_dir = ELECTRON_DIR / "resources" / "app"
         app_dir.mkdir(parents=True, exist_ok=True)
 
-        # Copiar archivos esenciales
-        for item in ["electron", "package.json", "index.html", "src"]:
+        # Copiar archivos esenciales de desktop/
+        for item in ["electron", "package.json"]:
             src = desktop_dir / item
             dst = app_dir / item
             if src.is_dir():
@@ -350,10 +409,58 @@ def _manual_electron_package(desktop_dir: Path) -> bool:
             elif src.is_file():
                 shutil.copy2(src, dst)
 
-        print("    ✅ Empaquetado manual completado")
+        # Copiar public/ si existe (iconos, etc.)
+        public_dir = desktop_dir / "public"
+        if public_dir.exists():
+            shutil.copytree(public_dir, app_dir / "public", dirs_exist_ok=True)
+
+        print("    ✅ Empaquetado manual completado (Electron + app)")
         return True
     except Exception as e:
         print(f"    ❌ Error en empaquetado manual: {e}")
+        return False
+
+
+def _minimal_electron_package(desktop_dir: Path) -> bool:
+    """Empaquetado mínimo sin npm: solo copia el código de la app.
+    El usuario necesitará tener Electron instalado globalmente o 
+    instalar Node.js después."""
+    try:
+        print("    Creando paquete mínimo (sin binarios de Electron)...")
+        
+        # Copiar solo el código de la app de Astra
+        app_dir = ELECTRON_DIR / "app"
+        app_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copiar electron/, package.json, public/
+        for item in ["electron", "package.json"]:
+            src = desktop_dir / item
+            dst = app_dir / item
+            if src.is_dir():
+                shutil.copytree(src, dst, dirs_exist_ok=True)
+            elif src.is_file():
+                shutil.copy2(src, dst)
+
+        public_dir = desktop_dir / "public"
+        if public_dir.exists():
+            shutil.copytree(public_dir, app_dir / "public", dirs_exist_ok=True)
+
+        # Crear un script para instalar Electron después
+        install_script = ELECTRON_DIR / "instalar-electron.bat"
+        install_script.write_text(
+            '@echo off\n'
+            'echo Instalando Electron...\n'
+            'npm install electron --save\n'
+            'echo Listo. Ejecuta: npx electron app/electron/main.js\n'
+            'pause\n',
+            encoding="utf-8"
+        )
+
+        print("    ✅ Paquete mínimo creado (necesitarás instalar Node.js para Electron)")
+        print("    NOTA: Sin Electron, Astra se abre en el navegador (http://localhost:3000)")
+        return True
+    except Exception as e:
+        print(f"    ❌ Error: {e}")
         return False
 
 
