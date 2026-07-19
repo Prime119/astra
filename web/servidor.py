@@ -354,6 +354,14 @@ def notificar(titulo: str, mensaje: str) -> str:
         return f"Error al enviar notificación: {e}"
 
 
+async def _investigar_para_sim(tema: str):
+    """Investiga en internet sobre un tema antes de hacer una simulación (en background)."""
+    try:
+        await buscar_en_internet(f"cómo funciona {tema} partes componentes", astra)
+    except Exception:
+        pass
+
+
 def _limpiar_respuesta(respuesta: str) -> str:
     """Post-procesamiento: elimina saludos repetidos y frases robóticas del modelo."""
     import re
@@ -688,6 +696,14 @@ async def handle_chat(request):
     tiene_acc = any(w in t for w in sim_acciones)
     
     if tiene_sim and tiene_acc:
+        # Investigar en internet ANTES de crear la simulación (para aprender)
+        try:
+            tema_buscar = texto.replace("crea", "").replace("genera", "").replace("haz", "").replace("simula", "").replace("simulación", "").replace("holograma", "").strip()
+            if tema_buscar and len(tema_buscar) > 3:
+                asyncio.ensure_future(_investigar_para_sim(tema_buscar))
+        except Exception:
+            pass
+        
         # Determinar tipo por contenido (templates de alta calidad)
         sim_type = "particulas"
         if any(w in t for w in ["agujero negro", "black hole", "singularidad"]):
@@ -1233,6 +1249,80 @@ async def _stop_companion(app):
             pass
 
 
+# === AUTO-INVESTIGACIÓN (Astra aprende sola en segundo plano) ===
+_auto_learn_running = False
+_TEMAS_AUTO_APRENDIZAJE = [
+    "cómo funciona un motor de combustión interna",
+    "qué es una red neuronal artificial",
+    "cómo funciona la gravedad",
+    "estructura de una célula humana",
+    "cómo funciona un reactor nuclear",
+    "principios de aerodinámica",
+    "cómo funciona la memoria humana",
+    "qué es la teoría de cuerdas",
+    "cómo funciona un procesador de computadora",
+    "principios de la mecánica cuántica",
+    "cómo se forma una estrella",
+    "funcionamiento de un circuito eléctrico",
+    "cómo funciona internet",
+    "principios de inteligencia artificial",
+    "cómo funciona el ADN",
+]
+
+async def _auto_learn_loop(app):
+    """Background task: Astra investiga y aprende por su cuenta cuando está idle."""
+    global _auto_learn_running
+    _auto_learn_running = True
+    tema_idx = 0
+    
+    while _auto_learn_running:
+        # Esperar 10 minutos entre investigaciones
+        await asyncio.sleep(600)
+        
+        try:
+            # Solo investigar si el usuario lleva MÁS de 10 minutos sin interactuar
+            tiempo_idle = time.time() - _last_user_activity
+            if tiempo_idle < 600:
+                continue  # Usuario activo, no molestar
+            
+            # Elegir tema
+            tema = _TEMAS_AUTO_APRENDIZAJE[tema_idx % len(_TEMAS_AUTO_APRENDIZAJE)]
+            tema_idx += 1
+            
+            print(f"   🧠 Auto-aprendizaje: investigando '{tema}'...")
+            
+            # Buscar en internet
+            try:
+                resultado = await buscar_en_internet(tema, astra)
+                if resultado and "no encontré" not in resultado.lower():
+                    # Guardar el conocimiento adquirido
+                    try:
+                        astra.memory.log_episode("auto_aprendizaje", f"Investigué: {tema}")
+                    except Exception:
+                        pass
+                    print(f"   ✅ Aprendido sobre: {tema}")
+                else:
+                    print(f"   ⚠️ No encontré info sobre: {tema}")
+            except Exception:
+                pass  # Si falla internet, seguir
+                
+        except Exception:
+            pass
+
+
+async def _start_auto_learn(app):
+    app['auto_learn_task'] = asyncio.ensure_future(_auto_learn_loop(app))
+
+async def _stop_auto_learn(app):
+    global _auto_learn_running
+    _auto_learn_running = False
+    task = app.get('auto_learn_task')
+    if task:
+        task.cancel()
+        try: await task
+        except asyncio.CancelledError: pass
+
+
 # === APP ===
 async def on_startup(app):
     # Solo abrir navegador si NO estamos en modo desktop
@@ -1245,7 +1335,9 @@ def main():
     app = web.Application()
     app.on_startup.append(on_startup)
     app.on_startup.append(_start_companion)
+    app.on_startup.append(_start_auto_learn)
     app.on_cleanup.append(_stop_companion)
+    app.on_cleanup.append(_stop_auto_learn)
     app.router.add_get("/", handle_index)
     app.router.add_get("/static/{name}", handle_static)
     app.router.add_get("/static/audio/{name}", handle_audio_static)

@@ -13,14 +13,18 @@ let pythonProcess
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 900,
-    minHeight: 600,
-    frame: false, // Sin barra de título (custom titlebar)
+    width: 480,
+    height: 680,
+    minWidth: 380,
+    minHeight: 500,
+    frame: true, // Con barra de título estándar de Windows (cerrar/min/max)
     transparent: false,
     backgroundColor: '#030608',
     icon: path.join(__dirname, '../public/icon.png'),
+    alwaysOnTop: false,
+    resizable: true,
+    movable: true,
+    title: 'ASTRA',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -73,6 +77,27 @@ ipcMain.on('window-maximize', () => {
 })
 ipcMain.on('window-close', () => mainWindow?.close())
 
+// IPC: abrir simulación en ventana separada
+ipcMain.on('open-simulation', (event, simUrl) => {
+  const simWindow = new BrowserWindow({
+    width: 600,
+    height: 500,
+    minWidth: 400,
+    minHeight: 350,
+    frame: true,
+    title: 'ASTRA — Simulación 3D',
+    backgroundColor: '#030608',
+    resizable: true,
+    movable: true,
+    parent: mainWindow,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    }
+  })
+  simWindow.loadURL(simUrl || 'http://localhost:3000')
+})
+
 app.whenReady().then(() => {
   startPythonBackend()
   // Esperar 2 segundos para que Python arranque
@@ -80,8 +105,10 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
-  if (pythonProcess) pythonProcess.kill()
+  // NO matar Python — sigue aprendiendo en segundo plano
+  // Python se mantiene activo para tareas programadas y auto-investigación
   if (process.platform !== 'darwin') app.quit()
+  // El proceso Python sigue vivo en background
 })
 
 app.on('activate', () => {
