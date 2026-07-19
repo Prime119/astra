@@ -136,11 +136,14 @@ class Astra:
         # Detectar si necesita pensamiento profundo
         deep = self._necesita_profundidad(user_text)
 
-        # Actualizar system prompt con estado emocional actual
+        # Actualizar system prompt con estado emocional actual (solo si cambió)
         try:
-            self.brain.system_prompt = _build_system_prompt(
-                self.constitution, self.personality, self.emotions
-            )
+            nueva_emocion = self.emotions.state.emocion
+            if not hasattr(self, '_last_emotion') or self._last_emotion != nueva_emocion:
+                self.brain.system_prompt = _build_system_prompt(
+                    self.constitution, self.personality, self.emotions
+                )
+                self._last_emotion = nueva_emocion
         except Exception:
             pass
 

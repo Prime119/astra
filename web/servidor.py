@@ -1182,6 +1182,55 @@ async def _aprender_de_conversacion(user_text: str, response: str):
         pass  # Aprendizaje es best-effort, nunca bloquea
 
 
+async def handle_analyze_image(request):
+    """Analiza una imagen enviada por el usuario usando el LLM."""
+    try:
+        reader = await request.multipart()
+        field = await reader.next()
+        
+        if field is None:
+            return web.json_response({"respuesta": "No recibí ninguna imagen.", "audio": None})
+        
+        # Leer el archivo
+        data = await field.read()
+        filename = field.filename or "imagen.jpg"
+        
+        # Guardar temporalmente para referencia
+        import base64
+        img_base64 = base64.b64encode(data).decode('utf-8')
+        img_size_kb = len(data) / 1024
+        
+        # Determinar info básica de la imagen
+        ext = filename.split('.')[-1].lower() if '.' in filename else 'unknown'
+        
+        # Pedir al LLM que "describa" basándose en el contexto
+        # (qwen2.5 no es multimodal, pero podemos dar info técnica)
+        prompt = (
+            f"El usuario me envió una imagen llamada '{filename}' "
+            f"(formato: {ext}, tamaño: {img_size_kb:.0f}KB). "
+            f"Responde de forma breve y natural reconociendo que recibiste la imagen. "
+            f"Si el nombre da pistas sobre el contenido, coméntalas. "
+            f"Pregunta si quiere que hagas algo con ella (buscar similares, describir, etc)."
+        )
+        
+        loop = asyncio.get_event_loop()
+        respuesta = await loop.run_in_executor(None, astra.handle, prompt)
+        respuesta = _limpiar_respuesta(respuesta)
+        
+        # Guardar en memoria que el usuario envió una imagen
+        try:
+            astra.memory.log_episode("imagen_recibida", f"Imagen: {filename} ({img_size_kb:.0f}KB)")
+        except Exception:
+            pass
+        
+        emocion_actual = astra.emotions.state.emocion
+        audio_url = await generar_audio_edge(respuesta, emocion_actual)
+        return web.json_response({"respuesta": respuesta, "audio": audio_url})
+    
+    except Exception as e:
+        return web.json_response({"respuesta": f"Hubo un problema al procesar la imagen.", "audio": None})
+
+
 async def handle_tts(request):
     """Genera audio bajo demanda para un texto dado."""
     try:
@@ -1493,6 +1542,7 @@ def main():
     app.router.add_post("/api/chat/stream", handle_chat_stream)
     app.router.add_post("/api/tts", handle_tts)
     app.router.add_post("/api/vision", handle_vision)
+    app.router.add_post("/api/analyze-image", handle_analyze_image)
     app.router.add_get("/api/status", handle_status)
     app.router.add_get("/api/memory", handle_memory)
     app.router.add_get("/api/proactive", handle_proactive)
