@@ -345,7 +345,13 @@ if(Recon){
     if(modoConversacion&&e.error!=='aborted')setTimeout(function(){if(modoConversacion)iniciarEscucha();},800);};
 }
 function iniciarEscucha(){if(!reconocimiento)return;try{reconocimiento.start();document.getElementById('btn-mic').classList.add('grabando');}catch(e){}}
-function escuchar(){if(!reconocimiento){agregarMsg('Sin soporte de voz.','sistema');return;}
+function escuchar(){
+  if(!reconocimiento){
+    // En Electron, Speech Recognition no funciona - abrir en Edge como alternativa
+    agregarMsg('El micrófono necesita Edge. Abriendo...','sistema');
+    window.open('http://localhost:3000','_blank');
+    return;
+  }
   var b=document.getElementById('btn-mic');if(b.classList.contains('grabando')){reconocimiento.stop();return;}b.classList.add('grabando');reconocimiento.start();}
 function toggleConversacion(){modoConversacion=!modoConversacion;var b=document.getElementById('btn-conv');
   b.classList.toggle('active',modoConversacion);

@@ -2,6 +2,12 @@ const { app, BrowserWindow, ipcMain, Menu, session } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
 
+// === HABILITAR SPEECH RECOGNITION EN ELECTRON ===
+// Electron no soporta Web Speech API por defecto — estos flags lo habilitan
+app.commandLine.appendSwitch('enable-speech-dispatcher')
+app.commandLine.appendSwitch('enable-features', 'WebSpeechAPI')
+app.commandLine.appendSwitch('enable-web-speech-api')
+
 // Suprimir errores de pipe rotos (son inofensivos)
 process.on('uncaughtException', (err) => {
   if (err.code === 'EPIPE' || err.message.includes('EPIPE')) return
@@ -48,12 +54,10 @@ function createWindow() {
   })
 
   // Cargar la interfaz web del backend Python (localhost:3000)
-  const isDev = !app.isPackaged
-  mainWindow.loadURL('http://localhost:3000')
-  
-  if (isDev) {
-    // mainWindow.webContents.openDevTools()
-  }
+  // Usar partition para forzar usar la Speech API
+  mainWindow.loadURL('http://localhost:3000', {
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+  })
 
   mainWindow.on('closed', () => {
     mainWindow = null
