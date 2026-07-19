@@ -976,6 +976,10 @@ async def handle_chat(request):
     nombre_usuario = None
     try:
         nombre_usuario = astra.memory.recall("nombre_usuario")
+        # Validar que el nombre guardado sea válido (no una palabra capturada por error)
+        if nombre_usuario and nombre_usuario.lower() in ["cuales", "cual", "como", "donde", "que", "quien"]:
+            astra.memory.remember("nombre_usuario", None)  # Borrar nombre inválido
+            nombre_usuario = None
     except Exception:
         pass
     
@@ -1190,49 +1194,15 @@ async def handle_export_training(request):
 
 # === COMPANION MODE (Background Task) ===
 async def _companion_mode_loop(app):
-    """Background task que revisa cada 60 segundos si el usuario ha estado idle.
-    Si lleva más de 5 minutos sin interactuar, genera una sugerencia proactiva."""
+    """Background task: ya NO envía mensajes proactivos al usuario.
+    En vez de molestar, Astra usa este tiempo para auto-investigar en silencio."""
     global _companion_running
     _companion_running = True
     
     while _companion_running:
-        await asyncio.sleep(60)  # Revisar cada 60 segundos
-        
-        try:
-            tiempo_idle = time.time() - _last_user_activity
-            # Si el usuario lleva más de 5 minutos (300 seg) sin interactuar
-            if tiempo_idle > 300:
-                # No generar más de una sugerencia por período de idle
-                if len(_proactive_suggestions) < 3:
-                    # Generar sugerencia contextual
-                    try:
-                        info = obtener_info_sistema()
-                        sugerencia = None
-                        
-                        # Sugerencias basadas en estado del sistema
-                        if info["ram_pct"] > 85:
-                            sugerencia = f"Noté que tu RAM está al {info['ram_pct']}%. ¿Quieres que te muestre qué procesos consumen más memoria?"
-                        elif info["cpu_uso"] > 80:
-                            sugerencia = f"Tu CPU está al {info['cpu_uso']}%. Puedo ayudarte a identificar qué la está usando tanto."
-                        elif info["disco_pct"] > 90:
-                            sugerencia = f"Tu disco está al {info['disco_pct']}% de capacidad. ¿Te ayudo a buscar archivos grandes?"
-                        else:
-                            # Sugerencia genérica amigable
-                            hora = datetime.now().hour
-                            if hora >= 22 or hora < 6:
-                                sugerencia = "Ya es tarde. ¿Necesitas algo más antes de descansar?"
-                            elif hora >= 12 and hora <= 14:
-                                sugerencia = "Es hora de comer. ¿Necesitas algo antes de tu break?"
-                            else:
-                                sugerencia = "Llevo un rato sin saber de ti. ¿Todo bien? Aquí estoy si necesitas algo."
-                        
-                        if sugerencia:
-                            _proactive_suggestions.append({
-                                "tipo": "companion",
-                                "mensaje": sugerencia,
-                                "hora": datetime.now().strftime("%H:%M:%S"),
-                                "idle_minutos": round(tiempo_idle / 60, 1)
-                            })
+        await asyncio.sleep(120)
+        # Ya no genera mensajes al usuario — investiga en silencio
+        pass
                     except Exception:
                         pass
         except Exception:

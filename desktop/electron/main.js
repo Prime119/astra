@@ -16,9 +16,9 @@ function createWindow() {
   Menu.setApplicationMenu(null)
 
   mainWindow = new BrowserWindow({
-    width: 480,
-    height: 700,
-    minWidth: 380,
+    width: 1200,
+    height: 800,
+    minWidth: 600,
     minHeight: 500,
     frame: true,
     transparent: false,
@@ -33,6 +33,9 @@ function createWindow() {
       contextIsolation: false,
     }
   })
+
+  // Maximizar al abrir (pantalla completa en PC)
+  mainWindow.maximize()
 
   // Permisos de micrófono y cámara
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
