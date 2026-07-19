@@ -1214,8 +1214,10 @@ async def _stop_companion(app):
 
 # === APP ===
 async def on_startup(app):
-    loop = asyncio.get_event_loop()
-    loop.call_later(1.5, lambda: webbrowser.open("http://localhost:3000"))
+    # Solo abrir navegador si NO estamos en modo desktop
+    if os.environ.get("ASTRA_MODE") != "desktop":
+        loop = asyncio.get_event_loop()
+        loop.call_later(1.5, lambda: webbrowser.open("http://localhost:3000"))
 
 
 def main():

@@ -21,13 +21,12 @@ function createWindow() {
     }
   })
 
-  // En desarrollo, cargar Vite dev server
+  // Cargar la interfaz web del backend Python (localhost:3000)
   const isDev = !app.isPackaged
+  mainWindow.loadURL('http://localhost:3000')
+  
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173')
     // mainWindow.webContents.openDevTools()
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
   mainWindow.on('closed', () => {
