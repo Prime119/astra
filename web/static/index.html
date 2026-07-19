@@ -487,12 +487,18 @@ function animar(){pts.forEach(function(p){p._life+=0.01;var s=p._speed*(1-p._lif
 campo:`cam.position.set(0,8,15);cam.lookAt(0,0,0);for(var x=-4;x<=4;x+=1.5){for(var z=-4;z<=4;z+=1.5){scene.add(new THREE.ArrowHelper(new THREE.Vector3(0,1,0),new THREE.Vector3(x,0,z),1,0x4fc3f7,0.2,0.1));}}
 function animar(){scene.children.forEach(function(c){if(c.isArrowHelper){var t=Date.now()*0.002;c.setDirection(new THREE.Vector3(Math.sin(t+c.position.x),Math.cos(t+c.position.z),0).normalize());}});}`,
 
-motor:`cam.position.set(5,3,10);cam.lookAt(0,0,0);
-var cyl=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,4,32),new THREE.MeshBasicMaterial({color:0x666666,wireframe:true}));scene.add(cyl);
-var piston=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,1,16),new THREE.MeshBasicMaterial({color:0xaaaaaa}));piston.position.y=1;scene.add(piston);
-var rod=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,3,8),new THREE.MeshBasicMaterial({color:0x4fc3f7}));rod.position.y=-1;scene.add(rod);
-var crank=new THREE.Mesh(new THREE.TorusGeometry(1,0.08,8,32),new THREE.MeshBasicMaterial({color:0xff6600}));crank.position.y=-3;crank.rotation.x=Math.PI/2;scene.add(crank);
-function animar(){var t=Date.now()*0.005;piston.position.y=1+Math.sin(t)*1.2;rod.position.y=-0.5+Math.sin(t)*0.6;rod.rotation.z=Math.sin(t)*0.2;crank.rotation.z+=0.05;}`,
+motor:`cam.position.set(8,6,12);cam.lookAt(0,0,0);
+var bloque=new THREE.Mesh(new THREE.BoxGeometry(6,3,3),new THREE.MeshBasicMaterial({color:0x444444,wireframe:true}));bloque.position.y=2;scene.add(bloque);
+var pistones=[];var bielas=[];
+for(var i=0;i<4;i++){var cil=new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.5,2.5,16),new THREE.MeshBasicMaterial({color:0x666666,wireframe:true}));cil.position.set(-2.25+i*1.5,3.5,0);scene.add(cil);
+var p=new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.45,0.4,16),new THREE.MeshBasicMaterial({color:0xcccccc}));p.position.set(-2.25+i*1.5,3,0);scene.add(p);pistones.push(p);
+var b=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,2,8),new THREE.MeshBasicMaterial({color:0x4fc3f7}));b.position.set(-2.25+i*1.5,1.5,0);scene.add(b);bielas.push(b);}
+var crank=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,7,8),new THREE.MeshBasicMaterial({color:0xff6600}));crank.rotation.z=Math.PI/2;scene.add(crank);
+var volante=new THREE.Mesh(new THREE.TorusGeometry(1,0.15,8,32),new THREE.MeshBasicMaterial({color:0x888888}));volante.position.set(3.8,0,0);volante.rotation.y=Math.PI/2;scene.add(volante);
+var pol1=new THREE.Mesh(new THREE.TorusGeometry(0.6,0.08,8,24),new THREE.MeshBasicMaterial({color:0x996633}));pol1.position.set(-3.5,0,1.5);pol1.rotation.y=Math.PI/2;scene.add(pol1);
+var pol2=new THREE.Mesh(new THREE.TorusGeometry(0.4,0.06,8,24),new THREE.MeshBasicMaterial({color:0x996633}));pol2.position.set(-3.5,3,1.5);pol2.rotation.y=Math.PI/2;scene.add(pol2);
+var tubo=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,3,8),new THREE.MeshBasicMaterial({color:0x555555}));tubo.position.set(0,4.5,1.5);tubo.rotation.x=0.7;scene.add(tubo);
+var orden=[0,2,3,1];function animar(){var t=Date.now()*0.004;for(var i=0;i<4;i++){var f=t+orden[i]*Math.PI/2;pistones[i].position.y=3+Math.sin(f)*0.8;bielas[i].position.y=1.5+Math.sin(f)*0.4;bielas[i].rotation.z=Math.sin(f)*0.15;}volante.rotation.x+=0.06;pol1.rotation.x+=0.06;pol2.rotation.x+=0.09;}`,
 
 engranajes:`cam.position.set(0,0,12);
 var gears=[];for(var i=0;i<3;i++){var g=new THREE.Mesh(new THREE.TorusGeometry(1.5-i*0.3,0.3,8,20),new THREE.MeshBasicMaterial({color:[0x4fc3f7,0xff6600,0x69f0ae][i],wireframe:true}));

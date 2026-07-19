@@ -354,6 +354,24 @@ def notificar(titulo: str, mensaje: str) -> str:
         return f"Error al enviar notificación: {e}"
 
 
+def _limpiar_respuesta(respuesta: str) -> str:
+    """Post-procesamiento: elimina saludos repetidos y frases robóticas del modelo."""
+    import re
+    # Eliminar "¡Hola, nombre!" o "Hola, nombre." al inicio
+    respuesta = re.sub(r'^[¡!]?[Hh]ola,?\s*\w+[.!]?\s*', '', respuesta).strip()
+    # Eliminar "¿Cómo estás?" al inicio
+    respuesta = re.sub(r'^¿?[Cc]ómo\s+est[aá]s\??\s*', '', respuesta).strip()
+    # Eliminar "¿En qué puedo ayudarte hoy?" genérico
+    respuesta = re.sub(r'^¿?[Ee]n\s+qu[eé]\s+puedo\s+(ayudarte|ser\s+[uú]til|asistirte)\s*(hoy)?\??\s*', '', respuesta).strip()
+    # Si quedó vacío después de limpiar, dar respuesta genérica
+    if not respuesta or len(respuesta) < 3:
+        respuesta = "Aquí estoy. ¿Qué necesitas?"
+    # Capitalizar primera letra
+    if respuesta[0].islower():
+        respuesta = respuesta[0].upper() + respuesta[1:]
+    return respuesta
+
+
 async def buscar_en_internet(query: str, astra_instance) -> str:
     """Busca información en internet y la guarda en la memoria de Astra para aprender.
     Si DuckDuckGo no devuelve resultados, intenta con Wikipedia."""
@@ -954,6 +972,9 @@ async def handle_chat(request):
         import traceback
         traceback.print_exc()
         respuesta = f"Disculpa, tuve un problema al procesar eso."
+
+    # POST-PROCESAMIENTO: eliminar saludos repetidos que el modelo insiste en poner
+    respuesta = _limpiar_respuesta(respuesta)
 
     # Aprendizaje autónomo en background (best-effort, no bloquea respuesta)
     try:
