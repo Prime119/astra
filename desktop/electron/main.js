@@ -1,6 +1,12 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
+
+// Suprimir errores de pipe rotos (son inofensivos)
+process.on('uncaughtException', (err) => {
+  if (err.code === 'EPIPE' || err.message.includes('EPIPE')) return // ignorar
+  console.error('Error:', err.message)
+})
 
 let mainWindow
 let pythonProcess
@@ -42,15 +48,20 @@ function startPythonBackend() {
   
   pythonProcess = spawn(pythonPath, [scriptPath], {
     cwd: path.join(__dirname, '../..'),
-    env: { ...process.env, ASTRA_MODE: 'desktop' }
+    env: { ...process.env, ASTRA_MODE: 'desktop' },
+    stdio: ['pipe', 'pipe', 'pipe']
   })
 
   pythonProcess.stdout.on('data', (data) => {
-    console.log(`[Python] ${data.toString().trim()}`)
+    try { process.stdout.write(`[Python] ${data.toString().trim()}\n`) } catch(e) {}
   })
 
   pythonProcess.stderr.on('data', (data) => {
-    console.error(`[Python Error] ${data.toString().trim()}`)
+    try { process.stderr.write(`[Python] ${data.toString().trim()}\n`) } catch(e) {}
+  })
+
+  pythonProcess.on('error', (err) => {
+    console.error('Error al iniciar Python:', err.message)
   })
 }
 
