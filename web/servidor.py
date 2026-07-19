@@ -934,28 +934,28 @@ async def handle_chat(request):
         except Exception:
             pass
         
-        # Determinar tipo por contenido (templates de alta calidad)
-        sim_type = "particulas"
-        if any(w in t for w in ["agujero negro", "black hole", "singularidad"]):
-            sim_type = "agujero_negro"
-        elif any(w in t for w in ["sistema solar", "planeta", "sol", "tierra", "luna", "órbita"]):
-            sim_type = "sistema_solar"
-        elif any(w in t for w in ["galaxia", "vía láctea", "espiral"]):
-            sim_type = "galaxia"
-        elif any(w in t for w in ["átomo", "atomo", "molécula", "molecula", "electrón", "adn", "dna"]):
-            sim_type = "atomo"
-        elif any(w in t for w in ["universo", "cosmos", "nebulosa", "big bang", "estrellas"]):
-            sim_type = "universo"
-        elif any(w in t for w in ["cubo", "esfera", "geometr", "pirámide", "forma", "toroide"]):
-            sim_type = "geometria"
-        elif any(w in t for w in ["onda", "wave", "frecuencia", "vibración", "cuerdas", "string"]):
+        # Determinar tipo (solo ingeniería y diseño)
+        sim_type = "circuito"  # default: circuito eléctrico
+        if any(w in t for w in ["motor", "pistón", "piston", "cilindro", "combustión"]):
+            sim_type = "motor"
+        elif any(w in t for w in ["circuito", "eléctrico", "electrico", "corriente", "resistencia", "voltaje"]):
+            sim_type = "circuito"
+        elif any(w in t for w in ["transformador", "bobina", "inductancia", "primario", "secundario"]):
+            sim_type = "transformador"
+        elif any(w in t for w in ["engranaje", "gear", "mecanismo", "reloj", "piñón"]):
+            sim_type = "engranajes"
+        elif any(w in t for w in ["turbina", "hélice", "helice", "ventilador", "rotor", "aspas"]):
+            sim_type = "turbina"
+        elif any(w in t for w in ["puente", "estructura", "viga", "columna", "colgante"]):
+            sim_type = "puente"
+        elif any(w in t for w in ["péndulo", "pendulo", "oscilación", "newton", "oscila"]):
+            sim_type = "pendulo"
+        elif any(w in t for w in ["plano", "arquitect", "blueprint", "diseño", "casa", "edificio"]):
+            sim_type = "plano"
+        elif any(w in t for w in ["onda", "wave", "frecuencia", "vibración", "señal"]):
             sim_type = "ondas"
-        elif any(w in t for w in ["campo", "magnético", "eléctrico", "fuerza", "gravedad"]):
-            sim_type = "campo"
-        elif any(w in t for w in ["tornado", "vórtice", "vortice", "espiral", "remolino"]):
-            sim_type = "vortice"
-        elif any(w in t for w in ["explosión", "explosion", "supernova", "big bang"]):
-            sim_type = "explosion"
+        elif any(w in t for w in ["biela", "manivela", "leva", "mecanismo", "pistón"]):
+            sim_type = "mecanismo"
         # === INGENIERÍA ===
         elif any(w in t for w in ["motor", "pistón", "piston", "cilindro", "combustión"]):
             sim_type = "motor"
