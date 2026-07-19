@@ -362,6 +362,44 @@ async def _investigar_para_sim(tema: str):
         pass
 
 
+def buscar_youtube(query: str) -> str:
+    """Genera un URL de búsqueda de YouTube para reproducir."""
+    encoded = query.replace(" ", "+")
+    return f"https://www.youtube.com/results?search_query={encoded}"
+
+
+def buscar_imagen_web(query: str) -> str:
+    """Genera URL de búsqueda de imágenes."""
+    encoded = query.replace(" ", "+")
+    return f"https://www.google.com/search?q={encoded}&tbm=isch"
+
+
+def abrir_media_local(ruta: str) -> str:
+    """Abre un archivo multimedia local con el programa predeterminado."""
+    try:
+        archivo = Path(ruta)
+        if not archivo.exists():
+            # Buscar en escritorio y documentos
+            for base in [Path.home() / "Desktop", Path.home() / "OneDrive" / "Desktop", 
+                         Path.home() / "Documents", Path.home() / "Downloads",
+                         Path.home() / "Music", Path.home() / "Videos", Path.home() / "Pictures"]:
+                posible = base / ruta
+                if posible.exists():
+                    archivo = posible
+                    break
+        
+        if archivo.exists():
+            if os.name == 'nt':
+                os.startfile(str(archivo))
+            else:
+                subprocess.Popen(["xdg-open", str(archivo)])
+            return f"Abrí {archivo.name}."
+        else:
+            return f"No encontré el archivo '{ruta}'. ¿Puedes darme la ruta completa?"
+    except Exception as e:
+        return f"Error al abrir: {e}"
+
+
 def _limpiar_respuesta(respuesta: str) -> str:
     """Post-procesamiento: elimina saludos repetidos y frases robóticas del modelo."""
     import re
@@ -693,6 +731,72 @@ async def handle_chat(request):
     # Detectar si pide info del sistema
     t = texto.lower()
     
+    # === MULTIMEDIA (videos, música, imágenes) ===
+    media_video = any(w in t for w in ["pon un video", "busca un video", "reproduce video", 
+                      "youtube", "quiero ver", "ponme un video", "pon video"])
+    media_musica = any(w in t for w in ["pon música", "pon musica", "reproduce música",
+                       "ponme una canción", "ponme una cancion", "pon canción", "pon cancion",
+                       "escuchar música", "escuchar musica", "play music"])
+    media_imagen = any(w in t for w in ["muestra imagen", "busca imagen", "muestra foto",
+                       "busca foto", "muéstrame una imagen", "quiero ver imagen"])
+    media_abrir = any(w in t for w in ["abre el archivo", "reproduce el archivo", "abre la imagen",
+                      "abre el video", "abre la canción", "abre la foto"])
+    
+    if media_video or media_musica:
+        # Extraer qué quiere buscar
+        query = texto
+        for trigger in ["pon un video de ", "busca un video de ", "ponme un video de ",
+                        "pon video de ", "youtube ", "quiero ver ",
+                        "pon música de ", "pon musica de ", "ponme una canción de ",
+                        "ponme una cancion de ", "pon canción de ", "pon cancion de ",
+                        "escuchar música de ", "escuchar musica de ", "reproduce "]:
+            if trigger in t:
+                idx = t.index(trigger) + len(trigger)
+                query = texto[idx:].strip()
+                break
+        
+        url = buscar_youtube(query)
+        respuesta = f"Buscando '{query}' en YouTube."
+        emocion_actual = astra.emotions.state.emocion
+        audio_url = await generar_audio_edge(respuesta, emocion_actual)
+        return web.json_response({
+            "respuesta": respuesta,
+            "audio": audio_url,
+            "media": {"tipo": "youtube", "url": url, "query": query}
+        })
+    
+    if media_imagen:
+        query = texto
+        for trigger in ["muestra imagen de ", "busca imagen de ", "muestra foto de ",
+                        "busca foto de ", "muéstrame una imagen de ", "quiero ver imagen de "]:
+            if trigger in t:
+                idx = t.index(trigger) + len(trigger)
+                query = texto[idx:].strip()
+                break
+        url = buscar_imagen_web(query)
+        respuesta = f"Buscando imágenes de '{query}'."
+        emocion_actual = astra.emotions.state.emocion
+        audio_url = await generar_audio_edge(respuesta, emocion_actual)
+        return web.json_response({
+            "respuesta": respuesta,
+            "audio": audio_url,
+            "media": {"tipo": "imagenes", "url": url, "query": query}
+        })
+    
+    if media_abrir:
+        # Extraer ruta del archivo
+        ruta = texto
+        for trigger in ["abre el archivo ", "reproduce el archivo ", "abre la imagen ",
+                        "abre el video ", "abre la canción ", "abre la foto "]:
+            if trigger in t:
+                idx = t.index(trigger) + len(trigger)
+                ruta = texto[idx:].strip()
+                break
+        resultado = abrir_media_local(ruta)
+        emocion_actual = astra.emotions.state.emocion
+        audio_url = await generar_audio_edge(resultado, emocion_actual)
+        return web.json_response({"respuesta": resultado, "audio": audio_url})
+
     # === SIMULACIONES/HOLOGRAMAS 3D ===
     sim_keywords = ["simulación", "simulacion", "simula", "holograma", "hologram", "3d"]
     sim_acciones = ["crea", "genera", "haz", "muestra", "hazme", "créame", "creame", "simula", "pon"]
