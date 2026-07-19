@@ -531,23 +531,77 @@ def limpiar_texto_para_voz(texto: str) -> str:
     """Limpia el texto para que suene natural al hablarlo."""
     import re
     limpio = texto
-    limpio = re.sub(r'```[\s\S]*?```', '', limpio)     # bloques de código
-    limpio = re.sub(r'\*\*', '', limpio)                # negrita
-    limpio = re.sub(r'\*', '', limpio)                  # itálica
-    limpio = re.sub(r'#+ ?', '', limpio)                # headers
-    limpio = re.sub(r'- ', ', ', limpio)                # listas
+    
+    # === PRONUNCIACIÓN CORRECTA DE NOMBRES EN INGLÉS ===
+    # Reemplazar nombres con su pronunciación fonética para que el TTS en español los diga bien
+    pronunciaciones = {
+        "JARVIS": "Yarvis",
+        "Jarvis": "Yarvis",
+        "jarvis": "yarvis",
+        "FRIDAY": "Fraiday",
+        "Friday": "Fraiday",
+        "friday": "fraiday",
+        "EDITH": "Edit",
+        "Edith": "Edit",
+        "KAREN": "Keren",
+        "Karen": "Keren",
+        "TARS": "Tars",
+        "Cortana": "Cortana",
+        "Gideon": "Guídeon",
+        "Optimus": "Óptimus",
+        "Baymax": "Béimax",
+        "Zane": "Zéin",
+        "zane": "zéin",
+        "Cyborg": "Sáiborg",
+        "cyborg": "sáiborg",
+        "Caine": "Kéin",
+        "caine": "kéin",
+        "Joi": "Yoi",
+        "joi": "yoi",
+        "Yui": "Yui",
+        "Shuvi": "Shuvi",
+        "2B": "Tu Bi",
+        # Otros nombres técnicos comunes
+        "Python": "Páiton",
+        "JavaScript": "Yáva Script",
+        "machine learning": "mashín lérning",
+        "Machine Learning": "Mashín Lérning",
+        "deep learning": "dip lérning",
+        "hardware": "járdwer",
+        "software": "sóftwer",
+        "Ollama": "Ollama",
+        "Edge": "Edch",
+        "Three.js": "Tri yei es",
+        "Babylon": "Bábilon",
+        "Electron": "Eléctron",
+        "streaming": "stríming",
+        "Thinking Out Loud": "Zínking Aut Láud",
+        "Fix You": "Fix Yu",
+        "Coldplay": "Cóldplei",
+        "Ed Sheeran": "Ed Shirán",
+    }
+    
+    for nombre, fonetico in pronunciaciones.items():
+        limpio = limpio.replace(nombre, fonetico)
+    
+    # Limpieza normal
+    limpio = re.sub(r'```[\s\S]*?```', '', limpio)
+    limpio = re.sub(r'\*\*', '', limpio)
+    limpio = re.sub(r'\*', '', limpio)
+    limpio = re.sub(r'#+ ?', '', limpio)
+    limpio = re.sub(r'- ', ', ', limpio)
     limpio = re.sub(r'[🚫⚠️🔥⚡💻🧠🕐📊\[\]{}|_~`<>]', '', limpio)
-    limpio = re.sub(r'\(.*?\)', '', limpio)             # paréntesis
-    limpio = re.sub(r'https?://\S+', '', limpio)       # URLs
-    limpio = re.sub(r'—eso fue sarcasmo\.?', '', limpio, flags=re.IGNORECASE)  # eliminar tag sarcasmo
+    limpio = re.sub(r'\(.*?\)', '', limpio)
+    limpio = re.sub(r'https?://\S+', '', limpio)
+    limpio = re.sub(r'—eso fue sarcasmo\.?', '', limpio, flags=re.IGNORECASE)
     limpio = re.sub(r'\(en sentido figurado\)', '', limpio, flags=re.IGNORECASE)
-    limpio = re.sub(r'\n+', ', ', limpio)              # newlines
-    limpio = re.sub(r'\.{2,}', '.', limpio)            # ...
-    limpio = re.sub(r',{2,}', ',', limpio)             # ,,
-    limpio = re.sub(r':\s', ', ', limpio)              # :
-    limpio = re.sub(r';\s', ', ', limpio)              # ;
-    limpio = re.sub(r'\s+', ' ', limpio)               # espacios
-    return limpio.strip()  # Sin límite de caracteres — se divide en partes si es necesario
+    limpio = re.sub(r'\n+', ', ', limpio)
+    limpio = re.sub(r'\.{2,}', '.', limpio)
+    limpio = re.sub(r',{2,}', ',', limpio)
+    limpio = re.sub(r':\s', ', ', limpio)
+    limpio = re.sub(r';\s', ', ', limpio)
+    limpio = re.sub(r'\s+', ' ', limpio)
+    return limpio.strip()
 
 
 # Configuración de voz por emoción (rate y pitch de edge-tts)
