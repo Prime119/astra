@@ -201,11 +201,32 @@ function enviar(){
   agregarMsg(t,'user');orb3D_pensar();
   var div=document.createElement('div');div.className='msg msg-astra';div.textContent='';chat.appendChild(div);
   fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texto:t})})
-    .then(r=>r.json()).then(d=>{orb3D_hablar();div.textContent=d.respuesta;chat.scrollTop=chat.scrollHeight;hablar(d.respuesta,d.audio);
-      if(d.simulacion)setTimeout(()=>lanzarSimulacion(d.simulacion),300);
-      if(d.media)abrirMedia(d.media);
-      setTimeout(orb3D_idle,6000);})
+    .then(r=>r.json()).then(d=>{orb3D_hablar();
+      // Efecto typewriter: escribir letra por letra
+      typewriter(div, d.respuesta, function(){
+        hablar(d.respuesta,d.audio);
+        if(d.simulacion)setTimeout(()=>lanzarSimulacion(d.simulacion),300);
+        if(d.media)abrirMedia(d.media);
+        setTimeout(orb3D_idle,6000);
+      });
+    })
     .catch(e=>{orb3D_idle();div.textContent='Error de conexión.';div.className='msg msg-sistema';});
+}
+
+function typewriter(el, texto, callback){
+  var i=0;
+  var speed = Math.max(8, Math.min(30, 1500/texto.length)); // velocidad adaptativa
+  function escribir(){
+    if(i<texto.length){
+      el.textContent += texto.charAt(i);
+      i++;
+      chat.scrollTop = chat.scrollHeight;
+      setTimeout(escribir, speed);
+    } else {
+      if(callback) callback();
+    }
+  }
+  escribir();
 }
 input.addEventListener('keydown',e=>{if(e.key==='Enter')enviar();});
 

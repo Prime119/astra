@@ -1211,7 +1211,7 @@ async def _aprender_de_conversacion(user_text: str, response: str):
 
 
 async def handle_analyze_image(request):
-    """Analiza una imagen enviada por el usuario usando el LLM."""
+    """Analiza una imagen enviada por el usuario usando LLaVA (modelo de visión)."""
     try:
         reader = await request.multipart()
         field = await reader.next()
@@ -1223,31 +1223,48 @@ async def handle_analyze_image(request):
         data = await field.read()
         filename = field.filename or "imagen.jpg"
         
-        # Guardar temporalmente para referencia
         import base64
         img_base64 = base64.b64encode(data).decode('utf-8')
-        img_size_kb = len(data) / 1024
         
-        # Determinar info básica de la imagen
-        ext = filename.split('.')[-1].lower() if '.' in filename else 'unknown'
-        
-        # Pedir al LLM que "describa" basándose en el contexto
-        # (qwen2.5 no es multimodal, pero podemos dar info técnica)
-        prompt = (
-            f"El usuario me envió una imagen llamada '{filename}' "
-            f"(formato: {ext}, tamaño: {img_size_kb:.0f}KB). "
-            f"Responde de forma breve y natural reconociendo que recibiste la imagen. "
-            f"Si el nombre da pistas sobre el contenido, coméntalas. "
-            f"Pregunta si quiere que hagas algo con ella (buscar similares, describir, etc)."
-        )
-        
-        loop = asyncio.get_event_loop()
-        respuesta = await loop.run_in_executor(None, astra.handle, prompt)
-        respuesta = _limpiar_respuesta(respuesta)
-        
-        # Guardar en memoria que el usuario envió una imagen
+        # Intentar usar LLaVA (modelo de visión) para analizar la imagen
         try:
-            astra.memory.log_episode("imagen_recibida", f"Imagen: {filename} ({img_size_kb:.0f}KB)")
+            import httpx as hx
+            
+            # Enviar a Ollama con modelo de visión
+            payload = {
+                "model": "llava",
+                "prompt": "Describe detalladamente qué ves en esta imagen. Responde en español, de forma natural y breve (2-3 oraciones).",
+                "images": [img_base64],
+                "stream": False
+            }
+            
+            loop = asyncio.get_event_loop()
+            r = await loop.run_in_executor(None, lambda: hx.post(
+                "http://127.0.0.1:11434/api/generate",
+                json=payload,
+                timeout=60.0
+            ))
+            
+            if r.status_code == 200:
+                result = r.json()
+                descripcion = result.get("response", "").strip()
+                if descripcion:
+                    respuesta = _limpiar_respuesta(descripcion)
+                else:
+                    respuesta = f"Recibí tu imagen ({filename}) pero no pude analizarla bien."
+            else:
+                # LLaVA no está disponible — usar análisis básico
+                respuesta = f"Recibí la imagen '{filename}'. No tengo el modelo de visión instalado todavía. Instálalo con: ollama pull llava"
+        
+        except Exception as e:
+            # Sin modelo de visión — dar respuesta basada en metadatos
+            img_size_kb = len(data) / 1024
+            ext = filename.split('.')[-1].lower() if '.' in filename else 'unknown'
+            respuesta = f"Recibí tu imagen '{filename}' ({ext}, {img_size_kb:.0f}KB). Para que pueda verla realmente, necesito el modelo de visión: ollama pull llava"
+        
+        # Guardar en memoria
+        try:
+            astra.memory.log_episode("imagen_recibida", f"Imagen: {filename}")
         except Exception:
             pass
         
@@ -1256,7 +1273,7 @@ async def handle_analyze_image(request):
         return web.json_response({"respuesta": respuesta, "audio": audio_url})
     
     except Exception as e:
-        return web.json_response({"respuesta": f"Hubo un problema al procesar la imagen.", "audio": None})
+        return web.json_response({"respuesta": "Hubo un problema al procesar la imagen.", "audio": None})
 
 
 async def handle_tts(request):
