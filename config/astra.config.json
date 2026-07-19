@@ -17,7 +17,7 @@
   },
   "brain": {
     "mode": "local",
-    "local_endpoint": "http://127.0.0.1:11434",
+    "local_endpoint": "http://127.0.0.1:8080",
     "local_model": "auto",
     "local_coder_model": "auto",
     "cloud_boost": {
