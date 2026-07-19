@@ -1203,10 +1203,6 @@ async def _companion_mode_loop(app):
         await asyncio.sleep(120)
         # Ya no genera mensajes al usuario — investiga en silencio
         pass
-                    except Exception:
-                        pass
-        except Exception:
-            pass
 
 
 async def _start_companion(app):
