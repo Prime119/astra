@@ -354,6 +354,46 @@ def notificar(titulo: str, mensaje: str) -> str:
         return f"Error al enviar notificación: {e}"
 
 
+def _detectar_media_en_respuesta(respuesta: str) -> dict | None:
+    """Detecta si Astra mencionó una canción/video en su respuesta y genera la URL."""
+    import re
+    r = respuesta.lower()
+    
+    # Patrones que indican que Astra está "poniendo" algo
+    play_patterns = [
+        r'"([^"]+)".*(?:de|by)\s+([^.!?,]+)',  # "Canción" de Artista
+        r'(?:aquí tienes|reproduzco|escuchemos|pongo)\s+["\']?([^"\',.!?]+)["\']?\s+(?:de|by)\s+([^.!?,]+)',
+        r'(?:qué tal|te pongo)\s+["\']?([^"\',.!?]+)["\']?\s+(?:de|by)\s+([^.!?,]+)',
+    ]
+    
+    # Buscar menciones de canciones/videos
+    for pat in play_patterns:
+        match = re.search(pat, respuesta, re.IGNORECASE)
+        if match:
+            titulo = match.group(1).strip()
+            artista = match.group(2).strip().rstrip('.')
+            query = f"{titulo} {artista}"
+            encoded = query.replace(" ", "+")
+            return {
+                "tipo": "youtube",
+                "url": f"https://www.youtube.com/results?search_query={encoded}",
+                "query": query
+            }
+    
+    # Detectar si solo menciona una canción entre comillas
+    comillas = re.findall(r'"([^"]{3,40})"', respuesta)
+    if comillas and any(w in r for w in ["canción", "cancion", "tema", "escuch", "reproduc", "pongo"]):
+        query = comillas[0]
+        encoded = query.replace(" ", "+")
+        return {
+            "tipo": "youtube", 
+            "url": f"https://www.youtube.com/results?search_query={encoded}",
+            "query": query
+        }
+    
+    return None
+
+
 async def _investigar_para_sim(tema: str):
     """Investiga en internet sobre un tema antes de hacer una simulación (en background)."""
     try:
@@ -1107,6 +1147,10 @@ async def handle_chat(request):
 
     # POST-PROCESAMIENTO: eliminar saludos repetidos que el modelo insiste en poner
     respuesta = _limpiar_respuesta(respuesta)
+    
+    # POST-PROCESAMIENTO: detectar si la respuesta menciona reproducir algo
+    # Si Astra dice "aquí tienes [canción]" o "reproduzco [video]", abrirlo realmente
+    media_auto = _detectar_media_en_respuesta(respuesta)
 
     # Aprendizaje autónomo en background (best-effort, no bloquea respuesta)
     try:
@@ -1123,7 +1167,10 @@ async def handle_chat(request):
     except Exception:
         pass
     audio_url = await generar_audio_edge(respuesta, emocion_actual)
-    return web.json_response({"respuesta": str(respuesta), "audio": audio_url})
+    result = {"respuesta": str(respuesta), "audio": audio_url}
+    if media_auto:
+        result["media"] = media_auto
+    return web.json_response(result)
 
 
 async def _aprender_de_conversacion(user_text: str, response: str):
