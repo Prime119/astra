@@ -211,7 +211,15 @@ input.addEventListener('keydown',e=>{if(e.key==='Enter')enviar();});
 
 // ======================== VOZ ========================
 var vozActiva=true,audioActual=null,colaAudio=[],reproduciendo=false;
-function hablar(t,url){if(!vozActiva||t.includes('Error'))return;colaAudio.push({t,url});procCola();}
+function hablar(t,url){if(!vozActiva||t.includes('Error'))return;
+  // url puede ser string o array de strings
+  if(Array.isArray(url)){
+    url.forEach(function(u){colaAudio.push({t:'',url:u});});
+  } else {
+    colaAudio.push({t,url});
+  }
+  procCola();
+}
 function procCola(){if(reproduciendo||!colaAudio.length)return;reproduciendo=true;var i=colaAudio.shift();if(i.url){repAudio(i.url);}else{repNav(i.t);}}
 function finAudio(){orb3D_idle();audioActual=null;reproduciendo=false;setTimeout(procCola,150);}
 function repAudio(url){if(audioActual){audioActual.pause();}orb3D_hablar();audioActual=new Audio(url);audioActual.playbackRate=1.1;audioActual.onended=finAudio;audioActual.onerror=finAudio;audioActual.play().catch(finAudio);}

@@ -547,7 +547,7 @@ def limpiar_texto_para_voz(texto: str) -> str:
     limpio = re.sub(r':\s', ', ', limpio)              # :
     limpio = re.sub(r';\s', ', ', limpio)              # ;
     limpio = re.sub(r'\s+', ' ', limpio)               # espacios
-    return limpio.strip()[:600]
+    return limpio.strip()  # Sin límite de caracteres — se divide en partes si es necesario
 
 
 # Configuración de voz por emoción (rate y pitch de edge-tts)
@@ -572,9 +572,8 @@ VOZ_POR_EMOCION = {
 }
 
 
-async def generar_audio_edge(texto: str, emocion: str = "neutral") -> str | None:
-    """Genera audio con edge-tts y devuelve la ruta al archivo MP3.
-    La voz cambia según la emoción actual de Astra."""
+async def generar_audio_edge(texto: str, emocion: str = "neutral") -> str | list | None:
+    """Genera audio con edge-tts. Si el texto es largo, genera múltiples archivos."""
     if not EDGE_TTS_DISPONIBLE:
         return None
     
@@ -582,24 +581,53 @@ async def generar_audio_edge(texto: str, emocion: str = "neutral") -> str | None
     if not limpio or len(limpio) < 3:
         return None
     
-    # Obtener configuración de voz según emoción
     voz_config = VOZ_POR_EMOCION.get(emocion, VOZ_POR_EMOCION["neutral"])
     
-    # Hash incluye la emoción (misma frase suena diferente según emoción)
-    cache_key = f"{limpio}_{emocion}"
+    # Si el texto es corto (< 800 chars), generar un solo audio
+    if len(limpio) <= 800:
+        return await _generar_un_audio(limpio, voz_config, emocion)
+    
+    # Si es largo, dividir en partes por oraciones
+    import re
+    partes = re.split(r'(?<=[.!?])\s+', limpio)
+    # Agrupar partes en chunks de ~600 chars
+    chunks = []
+    chunk_actual = ""
+    for parte in partes:
+        if len(chunk_actual) + len(parte) < 600:
+            chunk_actual += (" " if chunk_actual else "") + parte
+        else:
+            if chunk_actual:
+                chunks.append(chunk_actual)
+            chunk_actual = parte
+    if chunk_actual:
+        chunks.append(chunk_actual)
+    
+    # Generar audio para cada chunk
+    audios = []
+    for chunk in chunks:
+        url = await _generar_un_audio(chunk, voz_config, emocion)
+        if url:
+            audios.append(url)
+    
+    if len(audios) == 1:
+        return audios[0]
+    elif len(audios) > 1:
+        return audios  # Lista de URLs
+    return None
+
+
+async def _generar_un_audio(texto: str, voz_config: dict, emocion: str) -> str | None:
+    """Genera un solo archivo de audio con edge-tts."""
+    cache_key = f"{texto}_{emocion}"
     text_hash = hashlib.md5(cache_key.encode()).hexdigest()[:12]
     audio_file = AUDIO_CACHE / f"{text_hash}.mp3"
     
-    # Si ya existe en cache, reusar
     if audio_file.exists():
         return f"/static/audio/{audio_file.name}"
     
     try:
-        communicate = edge_tts.Communicate(
-            limpio, VOZ_EDGE,
-            rate=voz_config["rate"],
-            pitch=voz_config["pitch"]
-        )
+        communicate = edge_tts.Communicate(texto, VOZ_EDGE, rate=voz_config["rate"], pitch=voz_config["pitch"])
         await communicate.save(str(audio_file))
         return f"/static/audio/{audio_file.name}"
     except Exception as e:
