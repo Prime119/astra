@@ -365,17 +365,21 @@ async def _investigar_para_sim(tema: str):
 def _limpiar_respuesta(respuesta: str) -> str:
     """Post-procesamiento: elimina saludos repetidos y frases robóticas del modelo."""
     import re
-    # Eliminar "¡Hola, nombre!" o "Hola, nombre." al inicio
-    respuesta = re.sub(r'^[¡!]?[Hh]ola,?\s*\w+[.!]?\s*', '', respuesta).strip()
+    # Eliminar "¡Hola, nombre!" o "Hola, nombre." al inicio (cualquier nombre)
+    respuesta = re.sub(r'^[¡!]?[Hh]ola,?\s*\w*[.!?]?\s*', '', respuesta).strip()
     # Eliminar "¿Cómo estás?" al inicio
     respuesta = re.sub(r'^¿?[Cc]ómo\s+est[aá]s\??\s*', '', respuesta).strip()
-    # Eliminar "¿En qué puedo ayudarte hoy?" genérico
-    respuesta = re.sub(r'^¿?[Ee]n\s+qu[eé]\s+puedo\s+(ayudarte|ser\s+[uú]til|asistirte)\s*(hoy)?\??\s*', '', respuesta).strip()
+    # Eliminar "¿En qué puedo ayudarte/ser útil/asistirte hoy?"
+    respuesta = re.sub(r'^¿?[Ee]n\s+qu[eé]\s+puedo\s+\w+\s*(hoy)?\??\s*', '', respuesta).strip()
+    # Eliminar "¿Qué puedo hacer por ti/contigo hoy?"
+    respuesta = re.sub(r'^¿?[Qq]u[eé]\s+puedo\s+hacer\s+\w+\s*(hoy)?\??\s*', '', respuesta).strip()
+    # Eliminar "Estoy aquí para ayudarte"
+    respuesta = re.sub(r'^[Ee]stoy\s+(aquí|lista?)\s+para\s+ayudar\w*\.?\s*', '', respuesta).strip()
     # Si quedó vacío después de limpiar, dar respuesta genérica
     if not respuesta or len(respuesta) < 3:
         respuesta = "Aquí estoy. ¿Qué necesitas?"
     # Capitalizar primera letra
-    if respuesta[0].islower():
+    if respuesta and respuesta[0].islower():
         respuesta = respuesta[0].upper() + respuesta[1:]
     return respuesta
 
@@ -950,14 +954,18 @@ async def handle_chat(request):
     # Detectar si el usuario dice su nombre (para recordarlo)
     import re
     nombre_patterns = [
-        r"(?:me llamo|soy|mi nombre es|dime|llámame)\s+(\w+)",
-        r"(?:soy)\s+(\w+)",
+        r"(?:me llamo|mi nombre es|llámame|llamame|dime)\s+(\w+)",
     ]
+    # Palabras que NO son nombres (interrogativas, artículos, etc.)
+    no_nombres = ["astra", "un", "una", "el", "la", "tu", "que", "cual", "cuales",
+                  "como", "donde", "cuando", "quien", "por", "para", "con", "sin",
+                  "hola", "hey", "oye", "mira", "bueno", "bien", "mal", "si", "no",
+                  "puedes", "puede", "hacer", "cómo", "qué", "cuál", "cuáles", "dónde"]
     for pat in nombre_patterns:
         match = re.search(pat, t)
         if match:
             nombre = match.group(1).capitalize()
-            if len(nombre) > 2 and nombre.lower() not in ["astra", "un", "una", "el", "la", "tu"]:
+            if len(nombre) > 2 and nombre.lower() not in no_nombres:
                 try:
                     astra.memory.remember("nombre_usuario", nombre)
                 except Exception:
@@ -1252,21 +1260,44 @@ async def _stop_companion(app):
 # === AUTO-INVESTIGACIÓN (Astra aprende sola en segundo plano) ===
 _auto_learn_running = False
 _TEMAS_AUTO_APRENDIZAJE = [
-    "cómo funciona un motor de combustión interna",
-    "qué es una red neuronal artificial",
-    "cómo funciona la gravedad",
-    "estructura de una célula humana",
-    "cómo funciona un reactor nuclear",
-    "principios de aerodinámica",
-    "cómo funciona la memoria humana",
-    "qué es la teoría de cuerdas",
-    "cómo funciona un procesador de computadora",
-    "principios de la mecánica cuántica",
-    "cómo se forma una estrella",
-    "funcionamiento de un circuito eléctrico",
-    "cómo funciona internet",
-    "principios de inteligencia artificial",
-    "cómo funciona el ADN",
+    # Ingeniería
+    "cómo funciona un motor de combustión interna partes y mecanismo",
+    "cómo funciona una turbina de avión componentes",
+    "cómo funciona un circuito eléctrico resistencia voltaje corriente",
+    "principios de aerodinámica sustentación y arrastre",
+    "cómo funciona un puente colgante ingeniería estructural",
+    "cómo funciona la hidráulica pistones y presión",
+    "tipos de engranajes y mecanismos de transmisión",
+    # Ciencia
+    "qué es una red neuronal artificial capas neuronas pesos",
+    "cómo funciona la gravedad según Einstein relatividad",
+    "estructura de una célula humana organelos función",
+    "cómo funciona un reactor nuclear fisión cadena",
+    "principios de la mecánica cuántica superposición entrelazamiento",
+    "cómo se forma una estrella nebulosa fusión nuclear",
+    "qué es la teoría de cuerdas dimensiones extra",
+    "cómo funciona el ADN replicación transcripción proteínas",
+    # Tecnología
+    "cómo funciona un procesador CPU transistores lógica binaria",
+    "cómo funciona internet protocolos TCP IP DNS routing",
+    "principios de inteligencia artificial machine learning",
+    "cómo funciona una base de datos relacional SQL",
+    "cómo funciona el cifrado encriptación RSA AES",
+    # Expresión y comunicación
+    "técnicas de comunicación efectiva empatía escucha activa",
+    "lenguaje corporal expresiones faciales comunicación no verbal",
+    "cómo expresar emociones de forma saludable inteligencia emocional",
+    "técnicas de humor sarcasmo ironía timing comedia",
+    "cómo dar consejos útiles sin ser condescendiente",
+    # Creatividad
+    "técnicas de diseño 3D modelado poligonal texturas iluminación",
+    "cómo crear simulaciones realistas física partículas",
+    "principios de animación movimiento fluido timing",
+    "cómo funciona un holograma óptica interferencia",
+    # Espacio
+    "agujeros negros disco acreción horizonte de eventos singularidad",
+    "sistema solar planetas lunas asteroides órbitas",
+    "galaxias tipos espiral elíptica irregular formación",
 ]
 
 async def _auto_learn_loop(app):

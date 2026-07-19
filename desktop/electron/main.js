@@ -1,10 +1,10 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu, session } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
 
 // Suprimir errores de pipe rotos (son inofensivos)
 process.on('uncaughtException', (err) => {
-  if (err.code === 'EPIPE' || err.message.includes('EPIPE')) return // ignorar
+  if (err.code === 'EPIPE' || err.message.includes('EPIPE')) return
   console.error('Error:', err.message)
 })
 
@@ -12,12 +12,15 @@ let mainWindow
 let pythonProcess
 
 function createWindow() {
+  // Quitar menú de Electron (File, Edit, View, Window)
+  Menu.setApplicationMenu(null)
+
   mainWindow = new BrowserWindow({
     width: 480,
-    height: 680,
+    height: 700,
     minWidth: 380,
     minHeight: 500,
-    frame: true, // Con barra de título estándar de Windows (cerrar/min/max)
+    frame: true,
     transparent: false,
     backgroundColor: '#030608',
     icon: path.join(__dirname, '../public/icon.png'),
@@ -28,6 +31,16 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+    }
+  })
+
+  // Permisos de micrófono y cámara
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    const allowed = ['media', 'mediaKeySystem', 'geolocation', 'notifications', 'midi', 'pointerLock', 'fullscreen']
+    if (allowed.includes(permission)) {
+      callback(true)
+    } else {
+      callback(false)
     }
   })
 
