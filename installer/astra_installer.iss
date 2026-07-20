@@ -122,28 +122,6 @@ Type: filesandordirs; Name: "{app}\web\static\audio"
 [Code]
 // === PASCAL SCRIPT — Lógica personalizada del instalador ===
 
-var
-  DiskSpacePage: TOutputMsgWizardPage;
-
-// Verificar espacio en disco antes de instalar
-function InitializeSetup(): Boolean;
-var
-  FreeMB: Cardinal;
-begin
-  Result := True;
-  // Verificar al menos 500MB libres para el installer base
-  // Los modelos necesitan más (se descarga después)
-  FreeMB := GetSpaceOnDisk(ExpandConstant('{sd}'), True) div 1048576;
-  if FreeMB < 500 then
-  begin
-    MsgBox('Se necesitan al menos 500 MB de espacio libre para instalar Astra.' + #13#10 +
-           'Espacio disponible: ' + IntToStr(FreeMB) + ' MB' + #13#10 + #13#10 +
-           'Además, necesitarás entre 1-5 GB adicionales para los modelos de IA.',
-           mbError, MB_OK);
-    Result := False;
-  end;
-end;
-
 // Mensaje personalizado al finalizar
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
