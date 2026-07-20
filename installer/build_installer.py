@@ -93,8 +93,14 @@ def download_file(url: str, target: Path, description: str = ""):
         return False
 
 
-def run_command(cmd: list[str], cwd: Path = None, description: str = "") -> bool:
-    """Ejecuta un comando y muestra el resultado."""
+def run_command(cmd: list[str], cwd: Path = None, description: str = "",
+               use_shell: bool = False) -> bool:
+    """Ejecuta un comando y muestra el resultado.
+    
+    Args:
+        use_shell: Si True, ejecuta via shell (necesario para npm/npx en Windows
+                   porque son .cmd y subprocess no los encuentra sin shell=True)
+    """
     if description:
         print(f"    {description}")
     print(f"    $ {' '.join(cmd[:5])}{'...' if len(cmd) > 5 else ''}")
@@ -102,7 +108,8 @@ def run_command(cmd: list[str], cwd: Path = None, description: str = "") -> bool
     try:
         result = subprocess.run(
             cmd, cwd=str(cwd) if cwd else None,
-            capture_output=True, text=True, timeout=300
+            capture_output=True, text=True, timeout=600,
+            shell=use_shell,
         )
         if result.returncode != 0:
             print(f"    ❌ Error (código {result.returncode})")
@@ -111,11 +118,53 @@ def run_command(cmd: list[str], cwd: Path = None, description: str = "") -> bool
             return False
         return True
     except subprocess.TimeoutExpired:
-        print("    ❌ Timeout (>5 min)")
+        print("    ❌ Timeout (>10 min)")
         return False
     except FileNotFoundError:
         print(f"    ❌ Comando no encontrado: {cmd[0]}")
         return False
+
+
+def find_npm() -> str | None:
+    """Encuentra npm en el sistema (Windows: es un .cmd, necesita búsqueda especial)."""
+    # Buscar en PATH directamente
+    npm_path = shutil.which("npm") or shutil.which("npm.cmd")
+    if npm_path:
+        return npm_path
+    
+    # Buscar en ubicaciones comunes de Node.js en Windows
+    common_paths = [
+        Path(os.environ.get("PROGRAMFILES", "")) / "nodejs" / "npm.cmd",
+        Path(os.environ.get("PROGRAMFILES(X86)", "")) / "nodejs" / "npm.cmd",
+        Path(os.environ.get("APPDATA", "")) / "npm" / "npm.cmd",
+        Path.home() / "AppData" / "Roaming" / "nvm" / "npm.cmd",
+    ]
+    
+    # También buscar via NVM (Node Version Manager)
+    nvm_home = os.environ.get("NVM_HOME", "")
+    if nvm_home:
+        nvm_path = Path(nvm_home)
+        # NVM guarda versiones en subdirectorios
+        for node_dir in nvm_path.glob("v*"):
+            npm_candidate = node_dir / "npm.cmd"
+            if npm_candidate.exists():
+                common_paths.insert(0, npm_candidate)
+    
+    # Buscar en PATH extendido (puede no estar en el PATH del subprocess)
+    path_env = os.environ.get("PATH", "")
+    for p in path_env.split(os.pathsep):
+        candidate = Path(p) / "npm.cmd"
+        if candidate.exists():
+            return str(candidate)
+        candidate = Path(p) / "npm"
+        if candidate.exists():
+            return str(candidate)
+    
+    for p in common_paths:
+        if p.exists():
+            return str(p)
+    
+    return None
 
 
 # =================================================================
@@ -335,50 +384,108 @@ def step_download_llama_cpp():
 # =================================================================
 
 def step_build_electron():
-    """Empaqueta la app Electron con electron-builder."""
+    """Empaqueta la app Electron con electron-builder (incluye binarios completos)."""
     print_step(5, 7, "Empaquetando aplicación Electron...")
 
     desktop_dir = ASTRA_ROOT / "desktop"
 
-    # Si ya tenemos Electron empaquetado localmente (node_modules/electron/dist)
-    electron_local = desktop_dir / "node_modules" / "electron" / "dist"
-    if electron_local.exists():
-        print("    Encontrado Electron local en node_modules...")
-        return _manual_electron_package(desktop_dir)
+    # Buscar npm con la función mejorada
+    npm_cmd = find_npm()
 
-    # Verificar que npm esté disponible
-    if not shutil.which("npm"):
-        print("    ⚠️ npm no encontrado en PATH.")
-        print("    Intentando empaquetado sin npm...")
-        # Copiar solo el código de Astra (Electron se descargará después o se usa el instalado)
+    if not npm_cmd:
+        print("    ❌ npm no encontrado en ninguna ubicación.")
+        print("    Verifica que Node.js está instalado.")
+        print("    Intentando con Electron local existente...")
+        # Fallback: si ya hay node_modules de antes, usar eso
+        electron_local = desktop_dir / "node_modules" / "electron" / "dist"
+        if electron_local.exists():
+            return _manual_electron_package(desktop_dir)
         return _minimal_electron_package(desktop_dir)
 
-    # Instalar dependencias de Electron
+    print(f"    npm encontrado: {npm_cmd}")
+
+    # Paso 1: Instalar dependencias (incluyendo electron y electron-builder)
     print("    Instalando dependencias de Electron...")
     success = run_command(
-        ["npm", "install", "--production=false"],
+        [npm_cmd, "install"],
         cwd=desktop_dir,
-        description="npm install"
+        description="npm install",
+        use_shell=True,
     )
     if not success:
+        print("    ⚠️ npm install falló. Intentando empaquetado manual...")
+        electron_local = desktop_dir / "node_modules" / "electron" / "dist"
+        if electron_local.exists():
+            return _manual_electron_package(desktop_dir)
         return _minimal_electron_package(desktop_dir)
 
-    # Build con electron-builder (modo directory para copiar directamente)
-    print("    Empaquetando con electron-builder...")
+    # Paso 2: Verificar que electron se instaló
+    electron_local = desktop_dir / "node_modules" / "electron" / "dist"
+    if not electron_local.exists():
+        print("    ⚠️ Electron binarios no encontrados después de npm install")
+        return _minimal_electron_package(desktop_dir)
+
+    # Paso 3: Intentar electron-builder para paquete profesional
+    npx_cmd = str(Path(npm_cmd).parent / "npx.cmd") if os.name == "nt" else "npx"
+    if not Path(npx_cmd).exists():
+        npx_cmd = str(Path(npm_cmd).parent / "npx")
+    if not Path(npx_cmd).exists():
+        npx_cmd = "npx"
+
+    print("    Empaquetando con electron-builder (esto tarda ~2 min)...")
     success = run_command(
-        ["npx", "electron-builder", "--win", "--dir",
-         "--config.directories.output=" + str(ELECTRON_DIR)],
+        [npx_cmd, "electron-builder", "--win", "--dir"],
         cwd=desktop_dir,
-        description="electron-builder --win --dir"
+        description="electron-builder --win --dir",
+        use_shell=True,
     )
 
-    if not success:
-        # Fallback: copiar archivos necesarios manualmente
-        print("    ⚠️ electron-builder falló. Usando empaquetado manual...")
-        return _manual_electron_package(desktop_dir)
+    if success:
+        # electron-builder genera en desktop/dist/win-unpacked/
+        unpacked_dir = desktop_dir / "dist" / "win-unpacked"
+        if not unpacked_dir.exists():
+            # Buscar en otras rutas posibles
+            for candidate in [
+                desktop_dir / "dist" / "win-unpacked",
+                desktop_dir / "release" / "win-unpacked",
+                desktop_dir / "output" / "win-unpacked",
+            ]:
+                if candidate.exists():
+                    unpacked_dir = candidate
+                    break
 
-    print("    ✅ Electron empaquetado")
-    return True
+        if unpacked_dir.exists():
+            print(f"    Copiando Electron empaquetado desde {unpacked_dir.name}...")
+            # Limpiar destino
+            if ELECTRON_DIR.exists():
+                shutil.rmtree(ELECTRON_DIR, ignore_errors=True)
+            shutil.copytree(unpacked_dir, ELECTRON_DIR, dirs_exist_ok=True)
+
+            # Verificar que Astra.exe existe (electron-builder lo renombra)
+            astra_exe = ELECTRON_DIR / "astra-desktop.exe"
+            generic_exe = ELECTRON_DIR / "Astra.exe"
+            if astra_exe.exists() and not generic_exe.exists():
+                astra_exe.rename(generic_exe)
+            # Buscar cualquier .exe que no sea un helper
+            if not generic_exe.exists():
+                for exe in ELECTRON_DIR.glob("*.exe"):
+                    if "helper" not in exe.name.lower() and "crash" not in exe.name.lower():
+                        exe.rename(generic_exe)
+                        break
+
+            if generic_exe.exists():
+                size_mb = generic_exe.stat().st_size / (1024 * 1024)
+                print(f"    ✅ Electron empaquetado como Astra.exe ({size_mb:.0f} MB)")
+                return True
+            else:
+                print("    ✅ Electron empaquetado (verificar nombre del .exe)")
+                return True
+        else:
+            print("    ⚠️ electron-builder terminó pero no se encontró win-unpacked/")
+
+    # Fallback: empaquetado manual (copia binarios de electron + código de la app)
+    print("    Usando empaquetado manual de Electron...")
+    return _manual_electron_package(desktop_dir)
 
 
 def _manual_electron_package(desktop_dir: Path) -> bool:

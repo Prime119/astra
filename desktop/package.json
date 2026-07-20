@@ -6,23 +6,43 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "electron:dev": "node electron/main.js",
-    "start": "vite build && electron .",
+    "electron:dev": "electron .",
+    "start": "electron .",
+    "pack": "electron-builder --win --dir",
+    "dist": "electron-builder --win",
     "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.prime119.astra",
+    "productName": "Astra",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json",
+      "public/**/*"
+    ],
+    "extraResources": [],
+    "win": {
+      "target": "dir",
+      "icon": "public/icon.png"
+    },
+    "asar": false
   },
   "dependencies": {
     "@babylonjs/core": "^7.0.0",
     "@babylonjs/gui": "^2.0.0",
     "animejs": "^3.2.0",
     "babylonjs": "^9.0.0",
-    "electron": "latest",
+    "electron": "^33.0.0",
     "gsap": "^3.12.0",
     "vue": "^3.0.0"
   },
   "devDependencies": {
     "@electron/rebuild": "latest",
     "@vitejs/plugin-vue": "latest",
-    "electron-builder": "latest",
+    "electron-builder": "^25.0.0",
     "vite": "latest"
   }
 }

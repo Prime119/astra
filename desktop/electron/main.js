@@ -1,22 +1,24 @@
-const { app, BrowserWindow, ipcMain, Menu, session } = require('electron')
+const { app, BrowserWindow, Tray, Menu, ipcMain, session, nativeImage } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const { spawn, execSync } = require('child_process')
+const { spawn } = require('child_process')
 
 // === HABILITAR SPEECH RECOGNITION EN ELECTRON ===
 app.commandLine.appendSwitch('enable-speech-dispatcher')
 app.commandLine.appendSwitch('enable-features', 'WebSpeechAPI')
 app.commandLine.appendSwitch('enable-web-speech-api')
 
-// Suprimir errores de pipe rotos (son inofensivos)
+// Suprimir errores de pipe rotos
 process.on('uncaughtException', (err) => {
   if (err.code === 'EPIPE' || err.message.includes('EPIPE')) return
   console.error('Error:', err.message)
 })
 
 let mainWindow
+let tray = null
 let pythonProcess
 let setupProcess
+let isQuitting = false
 
 // === PATHS ===
 const ASTRA_ROOT = path.join(__dirname, '../..')
@@ -25,26 +27,34 @@ const MODELS_DIR = path.join(ASTRA_ROOT, 'models')
 const NEEDS_SETUP_FILE = path.join(CONFIG_DIR, '.needs_setup')
 const INSTALLER_STATE_FILE = path.join(CONFIG_DIR, '.installer_state.json')
 
+// === SINGLE INSTANCE LOCK ===
+// Solo una instancia de Astra puede correr a la vez
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    // Si intentan abrir otra instancia, mostrar la ventana existente
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.show()
+      mainWindow.focus()
+    }
+  })
+}
+
 // === FIRST-RUN DETECTION ===
 function needsFirstRun() {
-  // Check 1: Explicit marker file from installer
-  if (fs.existsSync(NEEDS_SETUP_FILE)) {
-    return true
-  }
+  if (fs.existsSync(NEEDS_SETUP_FILE)) return true
 
-  // Check 2: No installer state (never ran setup)
   if (!fs.existsSync(INSTALLER_STATE_FILE)) {
-    // Check if there are any models downloaded
     if (fs.existsSync(MODELS_DIR)) {
       const files = fs.readdirSync(MODELS_DIR).filter(f => f.endsWith('.gguf'))
-      if (files.length > 0) {
-        return false // Has models, not first run
-      }
+      if (files.length > 0) return false
     }
     return true
   }
 
-  // Check 3: Installer state exists but first_run not complete
   try {
     const state = JSON.parse(fs.readFileSync(INSTALLER_STATE_FILE, 'utf8'))
     return !state.first_run_complete
@@ -54,26 +64,20 @@ function needsFirstRun() {
 }
 
 function getPythonPath() {
-  // Check for embedded Python first (installed version)
   const embeddedPython = path.join(ASTRA_ROOT, 'python', 'python.exe')
-  if (fs.existsSync(embeddedPython)) {
-    return embeddedPython
-  }
-  // Fallback to system Python
+  if (fs.existsSync(embeddedPython)) return embeddedPython
   return process.platform === 'win32' ? 'python' : 'python3'
 }
 
 // === FIRST-RUN SETUP ===
 function runFirstTimeSetup() {
-  return new Promise((resolve, reject) => {
-    console.log('[Astra] First-run detected — launching model selector...')
-
+  return new Promise((resolve) => {
+    console.log('[Astra] First-run — launching model selector...')
     const pythonPath = getPythonPath()
     const setupScript = path.join(ASTRA_ROOT, 'installer', 'first_run.py')
 
-    // Check if setup script exists
     if (!fs.existsSync(setupScript)) {
-      console.log('[Astra] Setup script not found, skipping first-run.')
+      console.log('[Astra] Setup script not found, skipping.')
       resolve(false)
       return
     }
@@ -88,24 +92,15 @@ function runFirstTimeSetup() {
       const msg = data.toString().trim()
       if (msg) console.log(`[Setup] ${msg}`)
     })
-
     setupProcess.stderr.on('data', (data) => {
       const msg = data.toString().trim()
       if (msg) console.error(`[Setup] ${msg}`)
     })
-
     setupProcess.on('close', (code) => {
-      console.log(`[Astra] Setup finished with code ${code}`)
-      // Remove the needs_setup marker
-      try {
-        if (fs.existsSync(NEEDS_SETUP_FILE)) {
-          fs.unlinkSync(NEEDS_SETUP_FILE)
-        }
-      } catch (e) { /* ignore */ }
+      try { if (fs.existsSync(NEEDS_SETUP_FILE)) fs.unlinkSync(NEEDS_SETUP_FILE) } catch (e) {}
       setupProcess = null
       resolve(code === 0)
     })
-
     setupProcess.on('error', (err) => {
       console.error(`[Astra] Setup error: ${err.message}`)
       setupProcess = null
@@ -114,10 +109,85 @@ function runFirstTimeSetup() {
   })
 }
 
+// === SYSTEM TRAY ===
+function createTray() {
+  // Intentar cargar icono, usar uno por defecto si no existe
+  let iconPath = path.join(__dirname, '../public/icon.png')
+  if (!fs.existsSync(iconPath)) {
+    // Crear un icono mínimo en memoria (16x16 azul)
+    iconPath = null
+  }
+
+  let trayIcon
+  if (iconPath) {
+    trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+  } else {
+    // Icono fallback: un cuadrado azul 16x16
+    trayIcon = nativeImage.createEmpty()
+  }
+
+  tray = new Tray(trayIcon)
+  tray.setToolTip('Astra — IA Personal (corriendo en segundo plano)')
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Abrir Astra',
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show()
+          mainWindow.focus()
+        } else {
+          createWindow()
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Gestionar Modelos',
+      click: () => {
+        const pythonPath = getPythonPath()
+        spawn(pythonPath, ['-m', 'installer.first_run', '--manage'], {
+          cwd: ASTRA_ROOT,
+          env: { ...process.env, ASTRA_MODE: 'desktop' },
+          stdio: 'inherit'
+        })
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Salir completamente',
+      click: () => {
+        isQuitting = true
+        if (pythonProcess) {
+          pythonProcess.kill()
+          pythonProcess = null
+        }
+        app.quit()
+      }
+    }
+  ])
+
+  tray.setContextMenu(contextMenu)
+
+  // Doble clic en el tray → mostrar ventana
+  tray.on('double-click', () => {
+    if (mainWindow) {
+      mainWindow.show()
+      mainWindow.focus()
+    } else {
+      createWindow()
+    }
+  })
+}
 
 // === WINDOW CREATION ===
 function createWindow() {
-  // Quitar menú de Electron (File, Edit, View, Window)
+  if (mainWindow) {
+    mainWindow.show()
+    mainWindow.focus()
+    return
+  }
+
   Menu.setApplicationMenu(null)
 
   mainWindow = new BrowserWindow({
@@ -133,37 +203,53 @@ function createWindow() {
     resizable: true,
     movable: true,
     title: 'ASTRA',
+    show: false, // No mostrar hasta que cargue
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
     }
   })
 
-  // Maximizar al abrir (pantalla completa en PC)
   mainWindow.maximize()
 
   // Permisos de micrófono y cámara
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
     const allowed = ['media', 'mediaKeySystem', 'geolocation', 'notifications', 'midi', 'pointerLock', 'fullscreen']
-    if (allowed.includes(permission)) {
-      callback(true)
-    } else {
-      callback(false)
-    }
+    callback(allowed.includes(permission))
   })
 
-  // Cargar la interfaz web del backend Python (localhost:3000)
+  // Cargar la interfaz web
   mainWindow.loadURL('http://localhost:3000', {
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
   })
 
+  // Mostrar cuando esté listo
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show()
+  })
+
+  // MINIMIZAR AL TRAY en vez de cerrar (segundo plano)
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault()
+      mainWindow.hide()
+      // Notificar al usuario la primera vez
+      if (tray) {
+        tray.displayBalloon({
+          title: 'Astra sigue activa',
+          content: 'Astra está corriendo en segundo plano. Haz doble clic en el icono del tray para abrir.',
+          noSound: true
+        })
+      }
+    }
+  })
+
   mainWindow.on('closed', () => {
     mainWindow = null
-    if (pythonProcess) pythonProcess.kill()
   })
 }
 
-// === SPLASH/LOADING WINDOW (shown during setup) ===
+// === SPLASH WINDOW ===
 function createSplashWindow() {
   const splash = new BrowserWindow({
     width: 500,
@@ -172,13 +258,10 @@ function createSplashWindow() {
     transparent: true,
     alwaysOnTop: true,
     resizable: false,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    }
+    skipTaskbar: true,
+    webPreferences: { nodeIntegration: true, contextIsolation: false }
   })
 
-  // Simple HTML splash screen
   const splashHTML = `
     <html>
     <body style="margin:0; display:flex; align-items:center; justify-content:center; 
@@ -192,21 +275,15 @@ function createSplashWindow() {
           <div style="width:60%; height:100%; background:#00d4ff; border-radius:2px;
                       animation: pulse 1.5s ease-in-out infinite;"></div>
         </div>
-        <p style="color:#4a5a6a; font-size:11px; margin-top:16px;">
-          Esto solo ocurre la primera vez
-        </p>
+        <p style="color:#4a5a6a; font-size:11px; margin-top:16px;">Esto solo ocurre la primera vez</p>
       </div>
     </body>
-    <style>
-      @keyframes pulse { 0%,100%{width:30%} 50%{width:80%} }
-    </style>
-    </html>
-  `
+    <style>@keyframes pulse { 0%,100%{width:30%} 50%{width:80%} }</style>
+    </html>`
 
   splash.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(splashHTML))
   return splash
 }
-
 
 // === PYTHON BACKEND ===
 function startPythonBackend() {
@@ -222,46 +299,32 @@ function startPythonBackend() {
   pythonProcess.stdout.on('data', (data) => {
     try { process.stdout.write(`[Python] ${data.toString().trim()}\n`) } catch(e) {}
   })
-
   pythonProcess.stderr.on('data', (data) => {
     try { process.stderr.write(`[Python] ${data.toString().trim()}\n`) } catch(e) {}
   })
-
   pythonProcess.on('error', (err) => {
     console.error('Error al iniciar Python:', err.message)
   })
-
   pythonProcess.on('close', (code) => {
     console.log(`[Python] Backend terminó con código ${code}`)
     pythonProcess = null
   })
 }
 
-// Wait for backend to be ready (poll localhost:3000)
+// Wait for backend
 function waitForBackend(timeoutMs = 15000) {
   return new Promise((resolve) => {
     const start = Date.now()
     const http = require('http')
-
     const check = () => {
-      if (Date.now() - start > timeoutMs) {
-        console.log('[Astra] Backend timeout — opening window anyway')
-        resolve(false)
-        return
-      }
-
+      if (Date.now() - start > timeoutMs) { resolve(false); return }
       const req = http.get('http://localhost:3000/api/status', (res) => {
-        if (res.statusCode === 200) {
-          resolve(true)
-        } else {
-          setTimeout(check, 500)
-        }
+        resolve(res.statusCode === 200)
       })
       req.on('error', () => setTimeout(check, 500))
       req.setTimeout(2000, () => { req.destroy(); setTimeout(check, 500) })
     }
-
-    setTimeout(check, 1000) // Wait 1s before first check
+    setTimeout(check, 1000)
   })
 }
 
@@ -273,28 +336,17 @@ ipcMain.on('window-maximize', () => {
 })
 ipcMain.on('window-close', () => mainWindow?.close())
 
-// IPC: abrir simulación en ventana separada
 ipcMain.on('open-simulation', (event, simUrl) => {
   const simWindow = new BrowserWindow({
-    width: 600,
-    height: 500,
-    minWidth: 400,
-    minHeight: 350,
-    frame: true,
-    title: 'ASTRA — Simulación 3D',
-    backgroundColor: '#030608',
-    resizable: true,
-    movable: true,
+    width: 600, height: 500, minWidth: 400, minHeight: 350,
+    frame: true, title: 'ASTRA — Simulación 3D',
+    backgroundColor: '#030608', resizable: true,
     parent: mainWindow,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-    }
+    webPreferences: { nodeIntegration: true, contextIsolation: false }
   })
   simWindow.loadURL(simUrl || 'http://localhost:3000')
 })
 
-// IPC: Get model info
 ipcMain.handle('get-model-status', async () => {
   try {
     const http = require('http')
@@ -303,73 +355,51 @@ ipcMain.handle('get-model-status', async () => {
         let data = ''
         res.on('data', chunk => data += chunk)
         res.on('end', () => {
-          try { resolve(JSON.parse(data)) }
-          catch (e) { resolve({ error: 'parse error' }) }
+          try { resolve(JSON.parse(data)) } catch (e) { resolve({ error: 'parse error' }) }
         })
       }).on('error', () => resolve({ error: 'not available' }))
     })
-  } catch (e) {
-    return { error: e.message }
-  }
+  } catch (e) { return { error: e.message } }
 })
 
-// IPC: Run model manager UI
 ipcMain.on('open-model-manager', () => {
   const pythonPath = getPythonPath()
   spawn(pythonPath, ['-m', 'installer.first_run', '--manage'], {
-    cwd: ASTRA_ROOT,
-    env: { ...process.env, ASTRA_MODE: 'desktop' },
-    stdio: 'inherit'
+    cwd: ASTRA_ROOT, env: { ...process.env, ASTRA_MODE: 'desktop' }, stdio: 'inherit'
   })
 })
 
-
 // === APP LIFECYCLE ===
 app.whenReady().then(async () => {
-  // Check if first-run setup is needed
+  // Crear system tray PRIMERO (siempre en segundo plano)
+  createTray()
+
+  // First-run setup si es necesario
   if (needsFirstRun()) {
     console.log('[Astra] First-run setup needed')
-
-    // Show splash while setup runs
     const splash = createSplashWindow()
-
     try {
-      const setupOk = await runFirstTimeSetup()
-      console.log(`[Astra] Setup result: ${setupOk ? 'OK' : 'partial/failed'}`)
+      await runFirstTimeSetup()
     } catch (e) {
       console.error(`[Astra] Setup error: ${e.message}`)
     }
-
-    // Close splash
-    if (splash && !splash.isDestroyed()) {
-      splash.close()
-    }
+    if (splash && !splash.isDestroyed()) splash.close()
   }
 
-  // Start Python backend
+  // Iniciar backend Python
   startPythonBackend()
 
-  // Wait for backend to be ready
+  // Esperar backend
   console.log('[Astra] Waiting for backend...')
-  const backendReady = await waitForBackend(15000)
+  await waitForBackend(15000)
 
-  if (backendReady) {
-    console.log('[Astra] Backend ready — opening window')
-  } else {
-    console.log('[Astra] Backend may not be ready — opening window anyway')
-  }
-
+  // Abrir ventana principal
   createWindow()
 })
 
+// NO cerrar la app cuando se cierran las ventanas — sigue en tray
 app.on('window-all-closed', () => {
-  // Kill Python backend when all windows close
-  if (pythonProcess) {
-    console.log('[Astra] Stopping Python backend...')
-    pythonProcess.kill()
-    pythonProcess = null
-  }
-  if (process.platform !== 'darwin') app.quit()
+  // No hacer nada — Astra sigue en segundo plano (system tray)
 })
 
 app.on('activate', () => {
@@ -377,13 +407,7 @@ app.on('activate', () => {
 })
 
 app.on('before-quit', () => {
-  // Cleanup on quit
-  if (pythonProcess) {
-    pythonProcess.kill()
-    pythonProcess = null
-  }
-  if (setupProcess) {
-    setupProcess.kill()
-    setupProcess = null
-  }
+  isQuitting = true
+  if (pythonProcess) { pythonProcess.kill(); pythonProcess = null }
+  if (setupProcess) { setupProcess.kill(); setupProcess = null }
 })

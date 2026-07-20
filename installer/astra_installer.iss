@@ -62,8 +62,8 @@ Name: "desktopicon"; Description: "Crear acceso directo en el Escritorio"; Group
 Name: "autostart"; Description: "Iniciar Astra con Windows (segundo plano)"; GroupDescription: "Opciones adicionales:"
 
 [Files]
-; === ELECTRON APP (empaquetada) ===
-Source: "..\dist\electron\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+; === ELECTRON APP (empaquetada con binarios completos) ===
+Source: "..\dist\electron\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; === PYTHON EMBEBIDO ===
 Source: "..\dist\python-embedded\*"; DestDir: "{app}\python"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -93,24 +93,24 @@ Source: "..\dist\Astra-Launcher.bat"; DestDir: "{app}"; Flags: ignoreversion ski
 Name: "{app}\models"; Permissions: users-full
 
 [Icons]
-; Menú inicio
-Name: "{group}\{#MyAppName}"; Filename: "{app}\Astra-Launcher.bat"; IconFilename: "{app}\llama-cpp\llama-server.exe"
+; Menú inicio — apunta a Astra.exe (Electron, que inicia Python backend internamente)
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\Gestionar Modelos"; Filename: "{app}\python\python.exe"; Parameters: "-m installer.first_run --manage"; WorkingDir: "{app}"
 Name: "{group}\Desinstalar {#MyAppName}"; Filename: "{uninstallexe}"
 ; Escritorio
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Astra-Launcher.bat"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Registry]
-; Auto-start con Windows (opcional)
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Astra"; ValueData: """{app}\Astra-Launcher.bat"""; Flags: uninsdeletevalue; Tasks: autostart
+; Auto-start con Windows (segundo plano — Astra vive en system tray)
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Astra"; ValueData: """{app}\{#MyAppExeName}"" --background"; Flags: uninsdeletevalue; Tasks: autostart
 
 [Run]
 ; Instalar dependencias Python después de la instalación
 Filename: "{app}\python\python.exe"; Parameters: "-m pip install --no-warn-script-location -r ""{app}\requirements.txt"""; WorkingDir: "{app}"; StatusMsg: "Instalando dependencias de Python..."; Flags: runhidden waituntilterminated
-; Ejecutar setup de primera vez
+; Ejecutar setup de primera vez (selector de modelos)
 Filename: "{app}\python\python.exe"; Parameters: "-m installer.first_run"; WorkingDir: "{app}"; StatusMsg: "Configurando Astra (selección de modelos)..."; Flags: nowait
-; Lanzar Astra después de instalar
-Filename: "{app}\Astra-Launcher.bat"; Description: "Iniciar {#MyAppName}"; Flags: nowait postinstall skipifsilent
+; Lanzar Astra después de instalar (se queda en tray)
+Filename: "{app}\{#MyAppExeName}"; Description: "Iniciar {#MyAppName}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 ; Limpiar archivos generados
